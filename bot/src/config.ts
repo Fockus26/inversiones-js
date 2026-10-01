@@ -19,6 +19,8 @@ export const config = {
   credenciales:
     process.env.GOOGLE_APPLICATION_CREDENTIALS ?? "/secretos/google.json",
   calendarId: requerida("GOOGLE_CALENDAR_ID"),
+  /** Proyecto de Firebase del panel, si no es el mismo de la cuenta de servicio. */
+  proyectoFirebase: process.env.FIREBASE_PROJECT_ID?.trim() ?? "",
   /** Número(s) del asesor que recibe los avisos, separados por coma (58412…). Opcional. */
   asesores: (process.env.ASESOR_NUMEROS ?? "")
     .split(",")

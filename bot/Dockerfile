@@ -1,5 +1,5 @@
 # Se construye desde la raíz del repo: el bot usa lib/catalogo y lib/horario del panel.
-FROM oven/bun:1.3-slim
+FROM oven/bun:1-slim
 ENV NODE_ENV=production TZ=America/Caracas
 WORKDIR /app
 COPY lib/catalogo ./lib/catalogo

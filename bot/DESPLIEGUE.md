@@ -98,6 +98,12 @@ docker compose up -d --build
 docker compose logs -f gaby      # debe decir "Gaby escuchando en :3000 …"  (Ctrl+C para salir)
 ```
 
+Comprueba todas las conexiones (Firestore, Calendar, Evolution) antes de vincular:
+
+```bash
+docker compose run --rm gaby bun src/diagnostico.ts
+```
+
 `restart: unless-stopped` la mantiene siempre arriba: si se cae o se reinicia el VPS, Docker la
 vuelve a levantar sola.
 

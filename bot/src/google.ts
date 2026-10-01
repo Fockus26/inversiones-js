@@ -29,13 +29,16 @@ const clave = JSON.parse(
   readFileSync(config.credenciales, "utf8"),
 ) as ClaveServicio;
 
+/** Proyecto de Firebase del panel; por defecto, el de la cuenta de servicio. */
+export const proyectoFirestore = config.proyectoFirebase || clave.project_id;
+
 const app = initializeApp({
   credential: cert({
     clientEmail: clave.client_email,
     privateKey: clave.private_key,
     projectId: clave.project_id,
   }),
-  projectId: clave.project_id,
+  projectId: proyectoFirestore,
 });
 const db = getFirestore(app);
 
@@ -159,6 +162,19 @@ export interface EventoCita {
   extendedProperties?: { private?: Record<string, string> };
 }
 
+export async function borrarEvento(id: string): Promise<void> {
+  const res = await fetch(
+    `${API}/calendars/${cal()}/events/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${await tokenCalendar()}` },
+    },
+  );
+  if (!res.ok && res.status !== 410) {
+    throw new Error(`Calendar ${res.status}: ${await res.text()}`);
+  }
+}
+
 export async function crearEvento(evento: {
   inicio: string;
   fin: string;
@@ -166,8 +182,8 @@ export async function crearEvento(evento: {
   descripcion: string;
   ubicacion: string;
   privado: Record<string, string>;
-}): Promise<void> {
-  await calendar(`/calendars/${cal()}/events`, {
+}): Promise<string> {
+  const creado = await calendar<{ id: string }>(`/calendars/${cal()}/events`, {
     method: "POST",
     body: JSON.stringify({
       summary: evento.titulo,
@@ -178,6 +194,7 @@ export async function crearEvento(evento: {
       extendedProperties: { private: evento.privado },
     }),
   });
+  return creado.id;
 }
 
 /** Citas creadas por Gaby que empiezan entre `desde` y `hasta`. */
