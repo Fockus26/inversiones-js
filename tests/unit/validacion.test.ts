@@ -10,9 +10,12 @@ import {
   parsearEntero,
   parsearMonto,
   validarCantidad,
-  validarProducto,
+  validarProducto as validarConMarcas,
   varianteConFormatoSugerido,
 } from "@/lib/catalogo/validacion";
+
+const MARCAS = ["HONOR", "INFINIX", "REDMI", "SAMSUNG", "TECNO"];
+const validarProducto = (f: FormularioProducto) => validarConMarcas(f, MARCAS);
 
 const base: FormularioProducto = {
   marca: "HONOR",
@@ -112,6 +115,15 @@ describe("validarProducto", () => {
     const r = validarProducto({ ...base, marca: "APPLE" });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errores.marca).toBeDefined();
+  });
+
+  test("una marca registrada después vale (la lista no es fija)", () => {
+    const r = validarConMarcas({ ...base, marca: "apple" }, [
+      ...MARCAS,
+      "APPLE",
+    ]);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.valor.marca).toBe("APPLE");
   });
 
   test("montos inválidos o fuera de rango", () => {

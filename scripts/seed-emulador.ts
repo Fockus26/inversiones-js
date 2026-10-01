@@ -10,7 +10,12 @@ import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { CATALOGO_INICIAL } from "@/lib/catalogo/catalogo-inicial";
-import { COLECCION_ADMINS, COLECCION_PRODUCTOS } from "@/lib/catalogo/tipos";
+import {
+  COLECCION_ADMINS,
+  COLECCION_MARCAS,
+  COLECCION_PRODUCTOS,
+  MARCAS_INICIALES,
+} from "@/lib/catalogo/tipos";
 
 /** Cuentas que SOLO existen en el emulador (proyecto demo-*). */
 export const CUENTAS_EMULADOR = {
@@ -61,6 +66,13 @@ await db
   .set({ email: CUENTAS_EMULADOR.admin.email });
 
 const lote = db.batch();
+for (const nombre of MARCAS_INICIALES) {
+  lote.set(db.collection(COLECCION_MARCAS).doc(nombre), {
+    nombre,
+    actualizadoEn: FieldValue.serverTimestamp(),
+    actualizadoPor: "seed",
+  });
+}
 for (const { id, ...producto } of CATALOGO_INICIAL) {
   lote.set(db.collection(COLECCION_PRODUCTOS).doc(id), {
     ...producto,
@@ -71,6 +83,6 @@ for (const { id, ...producto } of CATALOGO_INICIAL) {
 await lote.commit();
 
 console.log(
-  `✓ ${CATALOGO_INICIAL.length} productos y 2 cuentas en ${projectId} (admin: ${CUENTAS_EMULADOR.admin.email})`,
+  `✓ ${MARCAS_INICIALES.length} marcas, ${CATALOGO_INICIAL.length} productos y 2 cuentas en ${projectId} (admin: ${CUENTAS_EMULADOR.admin.email})`,
 );
 process.exit(0);

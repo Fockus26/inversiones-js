@@ -14,6 +14,17 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    // D025: nombre de marca = id de marcas/{nombre}. Mismo patrón que lib/catalogo/marcas.ts.
+    function marcaValida(m) {
+      return m is string && m.size() >= 1 && m.size() <= 30
+        && m.matches('^[A-Z0-9ÁÉÍÓÚÜÑ][A-Z0-9ÁÉÍÓÚÜÑ &.+-]*$');
+    }
+
+    // existsAfter: en un lote (renombrar marca) ve la marca nueva creada en el mismo lote.
+    function marcaRegistrada(m) {
+      return existsAfter(/databases/$(database)/documents/marcas/$(m));
+    }
+
     function productoValido(p) {
       return p.keys().hasOnly([
           'marca', 'nombre', 'variante', 'inicial', 'cuota', 'numeroCuotas',
@@ -23,7 +34,7 @@ service cloud.firestore {
           'marca', 'nombre', 'variante', 'inicial', 'cuota', 'numeroCuotas',
           'cantidad', 'activo', 'orden'
         ])
-        && p.marca in ['HONOR', 'INFINIX', 'REDMI', 'SAMSUNG', 'TECNO']
+        && marcaValida(p.marca)
         && p.nombre is string && p.nombre.size() >= 1 && p.nombre.size() <= 80
         && p.variante is string && p.variante.size() <= 20
         && p.inicial is number && p.inicial >= 0 && p.inicial <= 100000
@@ -48,9 +59,31 @@ service cloud.firestore {
 
     match /productos/{id} {
       allow read: if esAdmin();
-      allow create, update: if esAdmin()
+      allow create: if esAdmin()
         && productoValido(request.resource.data)
+        && conHuella(request.resource.data)
+        && marcaRegistrada(request.resource.data.marca);
+      // Si la marca no cambia no se exige que esté registrada: los productos de antes de D025
+      // siguen editándose aunque su marca aún no tenga documento.
+      allow update: if esAdmin()
+        && productoValido(request.resource.data)
+        && conHuella(request.resource.data)
+        && (request.resource.data.marca == resource.data.marca
+          || marcaRegistrada(request.resource.data.marca));
+      allow delete: if esAdmin();
+    }
+
+    match /marcas/{nombre} {
+      allow read: if esAdmin();
+      // Solo crear: el id es el nombre, así que sobrescribir = duplicar. Renombrar es
+      // crear la nueva + borrar la vieja (en lote, ver renombrarMarca).
+      allow create: if esAdmin()
+        && request.resource.data.keys().hasOnly(['nombre', 'actualizadoEn', 'actualizadoPor'])
+        && request.resource.data.nombre == nombre
+        && marcaValida(nombre)
         && conHuella(request.resource.data);
+      allow update: if false;
+      // Que no tenga productos lo comprueba el panel: las reglas no pueden consultar.
       allow delete: if esAdmin();
     }
 

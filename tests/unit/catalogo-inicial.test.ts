@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { CATALOGO_INICIAL, idDeSemilla } from "@/lib/catalogo/catalogo-inicial";
-import { MARCAS } from "@/lib/catalogo/tipos";
+import { MARCAS_INICIALES } from "@/lib/catalogo/tipos";
 
 describe("catálogo inicial (29/09)", () => {
   test("trae los 23 equipos de la lista del cliente", () => {
@@ -14,7 +14,7 @@ describe("catálogo inicial (29/09)", () => {
 
   test("solo marcas conocidas y montos positivos", () => {
     for (const p of CATALOGO_INICIAL) {
-      expect(MARCAS).toContain(p.marca);
+      expect(MARCAS_INICIALES as readonly string[]).toContain(p.marca);
       expect(p.inicial).toBeGreaterThan(0);
       expect(p.cuota).toBeGreaterThan(0);
       expect(p.numeroCuotas).toBe(6);

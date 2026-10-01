@@ -9,6 +9,7 @@ import {
   PlusIcon,
   SearchIcon,
   SearchXIcon,
+  TagsIcon,
   Trash2Icon,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,10 +26,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MARCAS, type Marca, type ProductoConId } from "@/lib/catalogo/tipos";
+import { unirMarcas } from "@/lib/catalogo/marcas";
+import type { Marca, ProductoConId } from "@/lib/catalogo/tipos";
 import { cn } from "@/lib/utils";
 import { CantidadRapida } from "./cantidad-rapida";
 import { DialogoBorrar, nombreCompleto } from "./dialogo-borrar";
+import { DialogoMarcas } from "./dialogo-marcas";
 import { DialogoProducto } from "./dialogo-producto";
 import {
   FOCO,
@@ -48,7 +51,7 @@ export function CatalogoProductos() {
   return (
     <div className="grid gap-6">
       {estado.tipo === "listo" ? (
-        <Lista productos={estado.productos} />
+        <Lista productos={estado.productos} marcas={estado.marcas} />
       ) : (
         <>
           <Encabezado />
@@ -157,9 +160,17 @@ function plural(n: number, uno: string, varios: string) {
   return `${n} ${n === 1 ? uno : varios}`;
 }
 
-function Lista({ productos }: { productos: ProductoConId[] }) {
+function Lista({
+  productos,
+  marcas,
+}: {
+  productos: ProductoConId[];
+  /** Registradas en `marcas` (D025). */
+  marcas: Marca[];
+}) {
   const [busqueda, setBusqueda] = useState("");
-  const [marca, setMarca] = useState<Marca | null>(null);
+  const [marcaElegida, setMarca] = useState<Marca | null>(null);
+  const [marcasAbierto, setMarcasAbierto] = useState(false);
   const [editando, setEditando] = useState<ProductoConId | null>(null);
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
   const [borrando, setBorrando] = useState<ProductoConId | null>(null);
@@ -169,6 +180,15 @@ function Lista({ productos }: { productos: ProductoConId[] }) {
     for (const p of productos) c.set(p.marca, (c.get(p.marca) ?? 0) + 1);
     return c;
   }, [productos]);
+
+  // Registradas + las que usan productos aunque no estén registradas (datos de antes de D025).
+  const todas = useMemo(
+    () => unirMarcas(marcas, [...conteoPorMarca.keys()]),
+    [marcas, conteoPorMarca],
+  );
+  // Si la marca filtrada se renombró o se borró, el filtro vuelve a "Todas".
+  const marca =
+    marcaElegida && todas.includes(marcaElegida) ? marcaElegida : null;
 
   const filtrados = useMemo(() => {
     const q = normalizarBusqueda(busqueda);
@@ -183,11 +203,13 @@ function Lista({ productos }: { productos: ProductoConId[] }) {
 
   const grupos = useMemo(
     () =>
-      MARCAS.map((m) => ({
-        marca: m,
-        productos: filtrados.filter((p) => p.marca === m),
-      })).filter((g) => g.productos.length > 0),
-    [filtrados],
+      todas
+        .map((m) => ({
+          marca: m,
+          productos: filtrados.filter((p) => p.marca === m),
+        }))
+        .filter((g) => g.productos.length > 0),
+    [todas, filtrados],
   );
 
   const agotados = productos.filter((p) => p.cantidad === 0).length;
@@ -213,13 +235,23 @@ function Lista({ productos }: { productos: ProductoConId[] }) {
       <Encabezado
         resumen={resumen}
         accion={
-          <Button
-            className={cn("h-11 px-4", FOCO)}
-            onClick={() => abrirEditar(null)}
-          >
-            <PlusIcon aria-hidden="true" />
-            Nuevo producto
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              className={cn("h-11 px-4", FOCO)}
+              onClick={() => setMarcasAbierto(true)}
+            >
+              <TagsIcon aria-hidden="true" />
+              Marcas
+            </Button>
+            <Button
+              className={cn("h-11 px-4", FOCO)}
+              onClick={() => abrirEditar(null)}
+            >
+              <PlusIcon aria-hidden="true" />
+              Nuevo producto
+            </Button>
+          </div>
         }
       />
 
@@ -251,7 +283,7 @@ function Lista({ productos }: { productos: ProductoConId[] }) {
           <Chip activo={marca === null} onClick={() => setMarca(null)}>
             Todas <Contador n={productos.length} />
           </Chip>
-          {MARCAS.map((m) => (
+          {todas.map((m) => (
             <Chip
               key={m}
               activo={marca === m}
@@ -326,7 +358,8 @@ function Lista({ productos }: { productos: ProductoConId[] }) {
         abierto={dialogoAbierto}
         alCambiarAbierto={setDialogoAbierto}
         producto={editando}
-        marcaInicial={marca ?? undefined}
+        marcaInicial={marca && marcas.includes(marca) ? marca : undefined}
+        marcas={marcas}
         ordenNuevo={ordenNuevo}
         alPedirBorrar={(p) => {
           setDialogoAbierto(false);
@@ -334,6 +367,12 @@ function Lista({ productos }: { productos: ProductoConId[] }) {
         }}
       />
       <DialogoBorrar producto={borrando} alCerrar={() => setBorrando(null)} />
+      <DialogoMarcas
+        abierto={marcasAbierto}
+        alCambiarAbierto={setMarcasAbierto}
+        marcas={marcas}
+        conteo={conteoPorMarca}
+      />
     </>
   );
 }

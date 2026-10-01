@@ -1,4 +1,5 @@
-import { type CamposEditables, MARCAS, type Marca } from "./tipos";
+import { normalizarMarca } from "./marcas";
+import type { CamposEditables, Marca } from "./tipos";
 
 /**
  * Validación pura del formulario de producto (sin Firebase). Los límites son los mismos que
@@ -57,8 +58,8 @@ export function varianteConFormatoSugerido(variante: string): boolean {
   return /^\d+\/\d+$/.test(variante.trim());
 }
 
-export function esMarca(valor: string): valor is Marca {
-  return (MARCAS as readonly string[]).includes(valor);
+export function esMarca(valor: string, marcas: readonly Marca[]): boolean {
+  return marcas.includes(valor);
 }
 
 function validarMonto(
@@ -87,12 +88,17 @@ function validarEntero(
   return { valor: n };
 }
 
-export function validarProducto(f: FormularioProducto): ResultadoValidacion {
+/** `marcas`: las registradas en `marcas` (D025); la del producto debe ser una de ellas. */
+export function validarProducto(
+  f: FormularioProducto,
+  marcas: readonly Marca[],
+): ResultadoValidacion {
   const errores: ErroresFormulario = {};
   const avisos: ErroresFormulario = {};
 
-  const marca = f.marca.trim().toUpperCase();
-  if (!esMarca(marca)) errores.marca = "Elige una marca de la lista.";
+  const marca = normalizarMarca(f.marca);
+  const marcaValida = esMarca(marca, marcas);
+  if (!marcaValida) errores.marca = "Elige una marca de la lista.";
 
   const nombre = f.nombre.trim().replace(/\s+/g, " ");
   if (nombre.length === 0) errores.nombre = "Escribe el nombre del equipo.";
@@ -132,7 +138,7 @@ export function validarProducto(f: FormularioProducto): ResultadoValidacion {
     "error" in cuota ||
     "error" in numeroCuotas ||
     "error" in cantidad ||
-    !esMarca(marca)
+    !marcaValida
   ) {
     return { ok: false, errores, avisos };
   }
