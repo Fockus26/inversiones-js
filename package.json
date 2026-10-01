@@ -13,7 +13,9 @@
     "test:related": "bun test ./tests/unit --pass-with-no-tests",
     "emulators": "firebase emulators:start --project demo-inversiones-js",
     "emulators:test": "bun test ./tests/rules",
-    "seed:emulador": "bun scripts/seed-emulador.ts"
+    "seed:emulador": "bun scripts/seed-emulador.ts",
+    "seed:produccion": "bun scripts/seed-produccion.ts",
+    "admin:crear": "bun scripts/crear-admin.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
