@@ -1,13 +1,16 @@
-// Placeholder de la ola 0. W1 (feat/auth-login) lo reemplaza por el guard de sesión + admin
-// y la cabecera con "Cerrar sesión". W2 no toca este archivo.
+import { GuardPanel } from "@/lib/auth/guard-panel";
+import { SesionProvider } from "@/lib/auth/sesion";
+
+// Todo lo que cuelga de (panel) exige sesión de admin (D011). El guard es de cliente: la
+// seguridad la ponen las reglas de Firestore (D003), no hay middleware ni cookies (D004).
 export default function PanelLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-      {children}
-    </main>
+    <SesionProvider>
+      <GuardPanel>{children}</GuardPanel>
+    </SesionProvider>
   );
 }
