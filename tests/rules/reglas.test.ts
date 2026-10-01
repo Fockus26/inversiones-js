@@ -22,8 +22,13 @@ import {
   setLogLevel,
   Timestamp,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
-import { COLECCION_ADMINS, COLECCION_PRODUCTOS } from "@/lib/catalogo/tipos";
+import {
+  COLECCION_ADMINS,
+  COLECCION_MARCAS,
+  COLECCION_PRODUCTOS,
+} from "@/lib/catalogo/tipos";
 
 const PROYECTO = "demo-reglas-w1";
 const ADMIN = "uid-admin";
@@ -76,6 +81,11 @@ beforeEach(async () => {
   await entorno.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
     await setDoc(doc(db, COLECCION_ADMINS, ADMIN), { nombre: "Admin" });
+    await setDoc(doc(db, COLECCION_MARCAS, "HONOR"), {
+      nombre: "HONOR",
+      actualizadoPor: ADMIN,
+      actualizadoEn: Timestamp.now(),
+    });
     await setDoc(doc(db, COLECCION_PRODUCTOS, "p1"), {
       ...producto(),
       actualizadoPor: ADMIN,
@@ -202,13 +212,105 @@ describe("productos: escritura", () => {
     }
   });
 
-  test("marca fuera de lista falla", async () => {
+  test("marca no registrada falla al crear y al cambiar de marca", async () => {
     await assertFails(
       setDoc(doc(dbAdmin(), COLECCION_PRODUCTOS, "p2"), {
         ...producto({ marca: "APPLE" }),
         ...huella(ADMIN),
       }),
     );
+    await assertFails(
+      updateDoc(doc(dbAdmin(), COLECCION_PRODUCTOS, "p1"), {
+        marca: "APPLE",
+        ...huella(ADMIN),
+      }),
+    );
+  });
+
+  test("producto de antes de D025 (marca sin documento) se sigue editando", async () => {
+    await entorno.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), COLECCION_PRODUCTOS, "viejo"), {
+        ...producto({ marca: "TECNO" }),
+        actualizadoPor: ADMIN,
+        actualizadoEn: Timestamp.now(),
+      });
+    });
+    await assertSucceeds(
+      updateDoc(doc(dbAdmin(), COLECCION_PRODUCTOS, "viejo"), {
+        cantidad: 4,
+        ...huella(ADMIN),
+      }),
+    );
+  });
+});
+
+describe("marcas", () => {
+  const marca = (nombre: string, uid = ADMIN) => ({
+    nombre,
+    ...huella(uid),
+  });
+
+  test("admin lee; anónimo y sin acceso no", async () => {
+    await assertSucceeds(getDoc(doc(dbAdmin(), COLECCION_MARCAS, "HONOR")));
+    await assertFails(getDoc(doc(dbOtro(), COLECCION_MARCAS, "HONOR")));
+    await assertFails(getDoc(doc(dbAnonima(), COLECCION_MARCAS, "HONOR")));
+  });
+
+  test("admin crea una marca nueva y luego un producto con ella", async () => {
+    const db = dbAdmin();
+    await assertSucceeds(
+      setDoc(doc(db, COLECCION_MARCAS, "MOTOROLA"), marca("MOTOROLA")),
+    );
+    await assertSucceeds(
+      setDoc(doc(db, COLECCION_PRODUCTOS, "p2"), {
+        ...producto({ marca: "MOTOROLA" }),
+        ...huella(ADMIN),
+      }),
+    );
+  });
+
+  test("sin acceso no crea ni borra marcas", async () => {
+    await assertFails(
+      setDoc(
+        doc(dbOtro(), COLECCION_MARCAS, "MOTOROLA"),
+        marca("MOTOROLA", OTRO),
+      ),
+    );
+    await assertFails(deleteDoc(doc(dbOtro(), COLECCION_MARCAS, "HONOR")));
+  });
+
+  test("nombre distinto del id, minúsculas, campo extra o sin huella fallan", async () => {
+    const db = dbAdmin();
+    await assertFails(setDoc(doc(db, COLECCION_MARCAS, "ZTE"), marca("NOKIA")));
+    await assertFails(setDoc(doc(db, COLECCION_MARCAS, "zte"), marca("zte")));
+    await assertFails(
+      setDoc(doc(db, COLECCION_MARCAS, "ZTE"), { ...marca("ZTE"), extra: 1 }),
+    );
+    await assertFails(
+      setDoc(doc(db, COLECCION_MARCAS, "ZTE"), { nombre: "ZTE" }),
+    );
+  });
+
+  test("no se sobrescribe una marca existente", async () => {
+    await assertFails(
+      setDoc(doc(dbAdmin(), COLECCION_MARCAS, "HONOR"), marca("HONOR")),
+    );
+  });
+
+  test("renombrar en lote: crea la nueva, mueve el producto y borra la vieja", async () => {
+    const db = dbAdmin();
+    const lote = writeBatch(db);
+    lote.set(doc(db, COLECCION_MARCAS, "HONOR X"), marca("HONOR X"));
+    lote.update(doc(db, COLECCION_PRODUCTOS, "p1"), {
+      marca: "HONOR X",
+      ...huella(ADMIN),
+    });
+    lote.delete(doc(db, COLECCION_MARCAS, "HONOR"));
+    await assertSucceeds(lote.commit());
+  });
+
+  test("admin borra una marca", async () => {
+    await assertSucceeds(deleteDoc(doc(dbAdmin(), COLECCION_MARCAS, "HONOR")));
   });
 });
 

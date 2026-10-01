@@ -6,16 +6,24 @@ import {
   deleteDoc,
   doc,
   type FirestoreError,
+  getDocs,
+  limit,
   onSnapshot,
+  query,
   serverTimestamp,
+  setDoc,
   Timestamp,
   updateDoc,
+  where,
+  writeBatch,
 } from "firebase/firestore";
 import { firebaseAuth, firestore } from "@/lib/firebase/client";
 import {
   type CamposEditables,
+  COLECCION_MARCAS,
   COLECCION_PRODUCTOS,
-  MARCAS,
+  compararMarcas,
+  type Marca,
   type Producto,
   type ProductoConId,
 } from "./tipos";
@@ -47,11 +55,11 @@ function aProducto(id: string, data: Record<string, unknown>): ProductoConId {
   };
 }
 
-/** Marca (en el orden de MARCAS) y luego `orden`. En cliente: dos orderBy pedirían índice. */
+/** Marca (alfabético) y luego `orden`. En cliente: dos orderBy pedirían índice. */
 export function ordenarProductos(lista: ProductoConId[]): ProductoConId[] {
   return [...lista].sort(
     (a, b) =>
-      MARCAS.indexOf(a.marca) - MARCAS.indexOf(b.marca) ||
+      compararMarcas(a.marca, b.marca) ||
       a.orden - b.orden ||
       a.nombre.localeCompare(b.nombre, "es"),
   );
@@ -103,4 +111,69 @@ export async function actualizarProducto(
 
 export async function borrarProducto(id: string): Promise<void> {
   await deleteDoc(doc(firestore(), COLECCION_PRODUCTOS, id));
+}
+
+/* ── Marcas (D025) ─────────────────────────────────────────────────────────────────────────
+ * `marcas/{nombre}`: el id ES el nombre. Así la regla de `productos` comprueba que la marca
+ * exista con un `existsAfter` y nadie puede crear dos marcas iguales (la regla no deja
+ * sobrescribir una marca existente).
+ */
+
+/** Escucha las marcas registradas (ordenadas). Devuelve la función para dejar de escuchar. */
+export function escucharMarcas(
+  alCambiar: (marcas: Marca[]) => void,
+  alFallar: (error: FirestoreError) => void,
+): () => void {
+  return onSnapshot(
+    collection(firestore(), COLECCION_MARCAS),
+    (snap) => alCambiar(snap.docs.map((d) => d.id).sort(compararMarcas)),
+    alFallar,
+  );
+}
+
+/** `nombre` ya validado con `validarMarca`. */
+export async function crearMarca(nombre: Marca): Promise<void> {
+  await setDoc(doc(firestore(), COLECCION_MARCAS, nombre), {
+    nombre,
+    ...huella(),
+  });
+}
+
+/** Productos que usan la marca (consulta de un campo: índice automático). */
+async function productosDeMarca(marca: Marca, maximo?: number) {
+  const col = collection(firestore(), COLECCION_PRODUCTOS);
+  const q =
+    maximo === undefined
+      ? query(col, where("marca", "==", marca))
+      : query(col, where("marca", "==", marca), limit(maximo));
+  return (await getDocs(q)).docs;
+}
+
+/**
+ * Renombra en un solo lote: crea la marca nueva, mueve a ella todos sus productos y borra la
+ * vieja. O se aplica todo o nada. Un lote admite 500 escrituras (de sobra para el catálogo).
+ * Si la vieja no estaba registrada (datos de antes de D025), solo se crea la nueva.
+ */
+export async function renombrarMarca(
+  vieja: Marca,
+  nueva: Marca,
+): Promise<number> {
+  if (vieja === nueva) return 0;
+  const db = firestore();
+  const productos = await productosDeMarca(vieja);
+  const lote = writeBatch(db);
+  lote.set(doc(db, COLECCION_MARCAS, nueva), { nombre: nueva, ...huella() });
+  for (const p of productos) lote.update(p.ref, { marca: nueva, ...huella() });
+  lote.delete(doc(db, COLECCION_MARCAS, vieja));
+  await lote.commit();
+  return productos.length;
+}
+
+/** Solo borra marcas sin productos: si alguno la usa, falla con un mensaje para la persona. */
+export async function borrarMarca(nombre: Marca): Promise<void> {
+  if ((await productosDeMarca(nombre, 1)).length > 0)
+    throw new Error(
+      `${nombre} todavía tiene productos: muévelos a otra marca o bórralos primero.`,
+    );
+  await deleteDoc(doc(firestore(), COLECCION_MARCAS, nombre));
 }

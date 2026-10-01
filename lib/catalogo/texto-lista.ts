@@ -1,4 +1,4 @@
-import { MARCAS, type Producto } from "./tipos";
+import { compararMarcas, type Producto } from "./tipos";
 
 /**
  * Texto de la "Lista de precios actualizada" en el mismo formato que el cliente manda por chat
@@ -94,8 +94,8 @@ export function lineasDeProducto(
 }
 
 /**
- * Lista completa: título, y un bloque por marca (en el orden de `MARCAS`, marcas sin productos
- * se omiten) con sus productos ordenados por `orden`. Omite siempre `activo == false`.
+ * Lista completa: título, y un bloque por marca (en orden alfabético, `compararMarcas`; marcas
+ * sin productos se omiten) con sus productos ordenados por `orden`. Omite siempre `activo == false`.
  * Separadores como en la lista del cliente: una línea en blanco entre productos, dos entre marcas.
  */
 export function textoListaDePrecios(
@@ -109,7 +109,10 @@ export function textoListaDePrecios(
   );
 
   const bloques: string[] = [];
-  for (const marca of MARCAS) {
+  const marcas = [...new Set(visibles.map((p) => p.marca))].sort(
+    compararMarcas,
+  );
+  for (const marca of marcas) {
     const deLaMarca = visibles
       .filter((p) => p.marca === marca)
       .sort((a, b) => a.orden - b.orden);
