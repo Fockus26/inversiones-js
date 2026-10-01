@@ -12,6 +12,11 @@
 | D012 | decisions/02-auth.md | Errores de login que no revelan cuentas |
 | D013 | decisions/02-auth.md | Cabecera sobre tinta con foco amarillo |
 | D014 | decisions/02-auth.md | Tests de reglas con bun y proyecto `demo-reglas-w1` |
+| D015 | decisions/03-catalogo.md | Cantidad: autoguardado (800 ms / al salir / Enter) |
+| D016 | decisions/03-catalogo.md | Lista: tarjetas en móvil, tabla desde `md` |
+| D017 | decisions/03-catalogo.md | Orden en cliente; nuevos al final (`orden` máx + 1) |
+| D018 | decisions/03-catalogo.md | Montos: coma o punto al escribir, `125,50$` al mostrar |
+| D019 | decisions/03-catalogo.md | Foco a opacidad completa en el catálogo (local) |
 | D020 | decisions/04-chatbot.md | Texto de lista de precios en el formato del cliente |
 | D021 | decisions/04-chatbot.md | Agotados marcados por defecto; fecha en hora de Caracas |
 | D022 | decisions/04-chatbot.md | Alta de admins por script con contraseña temporal |
