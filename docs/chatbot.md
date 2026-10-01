@@ -87,6 +87,13 @@ const texto = textoListaDePrecios(productos, new Date());
 // HONOR
 // 600 Elite 8/256
 // Inic 125$.   6 quincenas 63$
+//
+// Magic 8 Lite 8/256
+// Inic 130$.   6 quincenas 65$
+// ...
+//
+//
+// INFINIX
 // ...
 ```
 

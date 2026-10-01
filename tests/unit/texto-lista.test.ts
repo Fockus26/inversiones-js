@@ -10,62 +10,87 @@ import {
 // 29/09/2026 a las 22:00 en Caracas = 30/09 02:00 UTC: prueba la zona horaria.
 const FECHA = new Date("2026-09-30T02:00:00Z");
 
-/** Lista del 29/09 del cliente, con los nombres normalizados como quedaron en el seed. */
+/**
+ * Lista del 29/09 del cliente con su forma exacta: una línea en blanco tras el título y entre
+ * productos, dos entre marcas. Los nombres van normalizados como quedaron en el seed.
+ */
 const LISTA_DEL_CLIENTE = `Lista de precios actualizada (29/09)
 
 HONOR
 600 Elite 8/256
 Inic 125$.   6 quincenas 63$
+
 Magic 8 Lite 8/256
 Inic 130$.   6 quincenas 65$
+
 Play 10 3/64
 Inic 33$.   6 quincenas 16$
+
 T10 4/128
 Inic 42$.   6 quincenas 20$
+
 X5D 4/256
 Inic 60$.   6 quincenas 30$
+
 X6E 4/256
 Inic 73$.   6 quincenas 36$
+
 X7D 8/256
 Inic 92$.   6 quincenas 46$
+
 
 INFINIX
 Smart 20 4/128
 Inic 52$.   6 quincenas 26$
+
 Smart 20 4/64
 Inic 47$.   6 quincenas 24$
+
 
 REDMI
 15 6/128
 Inic 62$.   6 quincenas 31$
+
 15 8/256
 Inic 72$.   6 quincenas 36$
+
 A7 Pro 4/64
 Inic 39$.   6 quincenas 20$
+
 Note 15 8/256
 Inic 80$.   6 quincenas 40$
+
 Note 17 6/256
 Inic 82$.   6 quincenas 41$
+
 
 SAMSUNG
 A06 4/64
 Inic 40$.   6 quincenas 20$
+
 A07 4/64
 Inic 42$.   6 quincenas 21$
+
 A07 4/128
 Inic 44$.   6 quincenas 22$
+
 A16 4/128
 Inic 53$.   6 quincenas 27$
+
 A17 4/128
 Inic 52$.   6 quincenas 26$
+
 A57 12/512
 Inic 255$.   6 quincenas 100$
+
 
 TECNO
 Camon 50 Ultra 5G 8/256
 Inic 136$.   6 quincenas 68$
+
 Spark GO 3 4/128
 Inic 48$.   6 quincenas 24$
+
 Spark GO 3 4/64
 Inic 42$.   6 quincenas 24$`;
 

@@ -10,7 +10,16 @@ import { MARCAS, type Producto } from "./tipos";
  *   HONOR
  *   600 Elite 8/256
  *   Inic 125$.   6 quincenas 63$
+ *
+ *   Magic 8 Lite 8/256
+ *   Inic 130$.   6 quincenas 65$
  *   ...
+ *
+ *
+ *   INFINIX
+ *   ...
+ *
+ * Una línea en blanco tras el título y entre productos; dos entre marcas.
  */
 
 /** Lo mínimo que hace falta de cada producto (sirve un doc de Firestore tal cual). */
@@ -87,6 +96,7 @@ export function lineasDeProducto(
 /**
  * Lista completa: título, y un bloque por marca (en el orden de `MARCAS`, marcas sin productos
  * se omiten) con sus productos ordenados por `orden`. Omite siempre `activo == false`.
+ * Separadores como en la lista del cliente: una línea en blanco entre productos, dos entre marcas.
  */
 export function textoListaDePrecios(
   productos: readonly ProductoDeLista[],
@@ -104,10 +114,14 @@ export function textoListaDePrecios(
       .filter((p) => p.marca === marca)
       .sort((a, b) => a.orden - b.orden);
     if (deLaMarca.length === 0) continue;
-    const lineas = deLaMarca.flatMap((p) => lineasDeProducto(p, { agotados }));
-    bloques.push([marca.toUpperCase(), ...lineas].join("\n"));
+    const productosDeLaMarca = deLaMarca
+      .map((p) => lineasDeProducto(p, { agotados }).join("\n"))
+      .join("\n\n");
+    bloques.push(`${marca.toUpperCase()}\n${productosDeLaMarca}`);
   }
 
   const titulo = `Lista de precios actualizada (${formatearFechaCorta(fecha, opciones.zonaHoraria)})`;
-  return [titulo, ...bloques].join("\n\n");
+  return bloques.length === 0
+    ? titulo
+    : `${titulo}\n\n${bloques.join("\n\n\n")}`;
 }

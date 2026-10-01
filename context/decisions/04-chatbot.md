@@ -1,11 +1,14 @@
 # D020 — Texto de la lista: mismo formato que el cliente manda por chat
 
 `lib/catalogo/texto-lista.ts` (puro, sin Firebase) arma `Lista de precios actualizada (DD/MM)`,
-un bloque por marca (orden de `MARCAS`, en mayúsculas, marcas vacías se omiten, línea en blanco
-entre bloques) y por producto dos líneas: `<nombre> <variante>` y
-`Inic 125$.   6 quincenas 63$`. Dentro de la marca, por `orden`. Montos con hasta 2 decimales.
-No se tuvo el texto original de la lista: si el cliente pone producto y precio en una sola
-línea, se cambia solo `lineasDeProducto` y el test de la lista.
+una línea en blanco, y un bloque por marca (orden de `MARCAS`, en mayúsculas, marcas vacías se
+omiten). Por producto dos líneas: `<nombre> <variante>` y `Inic 125$.   6 quincenas 63# D020 — Texto de la lista: mismo formato que el cliente manda por chat
+
+`lib/catalogo/texto-lista.ts` (puro, sin Firebase) arma `Lista de precios actualizada (DD/MM)`,
+
+(tres espacios, "quincenas" en minúscula). Una línea en blanco entre productos y dos entre
+marcas, como en el texto original del cliente (29/09). Dentro de la marca, por `orden`. Montos
+con hasta 2 decimales. Los nombres salen como están en Firestore (normalizados en el seed).
 
 # D021 — Agotados marcados por defecto; fecha en hora de Caracas
 
