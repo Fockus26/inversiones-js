@@ -3,6 +3,7 @@
 import {
   CircleAlertIcon,
   CircleCheckIcon,
+  CircleDashedIcon,
   LoaderCircleIcon,
   MinusIcon,
   PlusIcon,
@@ -138,7 +139,9 @@ export function CantidadRapida({
       className={cn(
         compacta
           ? "relative mx-auto flex w-fit"
-          : "flex flex-col items-start gap-1",
+          : // Tarjeta: el estado va al lado en vez de debajo, así la tarjeta no reserva una
+            // línea vacía.
+            "flex items-center gap-2",
         className,
       )}
     >
@@ -232,7 +235,7 @@ export function CantidadRapida({
           // el texto queda para lectores de pantalla.
           compacta
             ? "absolute top-1/2 left-full ml-1.5 size-4 -translate-y-1/2 [&_.texto]:sr-only"
-            : "min-h-4",
+            : "min-w-4 [&_.texto]:sr-only sm:[&_.texto]:not-sr-only",
         )}
       >
         {valido === null ? (
@@ -259,7 +262,10 @@ export function CantidadRapida({
             <span className="texto">No se guardó</span>
           </span>
         ) : estado === "pendiente" ? (
-          <span className="texto">Sin guardar…</span>
+          <>
+            <CircleDashedIcon className="size-3.5" aria-hidden="true" />
+            <span className="texto">Sin guardar…</span>
+          </>
         ) : null}
       </output>
     </div>

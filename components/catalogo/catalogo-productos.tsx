@@ -476,39 +476,68 @@ function Acciones({
 function Tarjetas({ productos, alEditar, alBorrar }: PropsFilas) {
   return (
     <ul className="grid gap-3 md:grid-cols-2 lg:hidden">
-      {productos.map((p) => (
-        <li
-          key={p.id}
-          className={cn(
-            "grid gap-3 rounded-xl border bg-card p-4 text-card-foreground",
-            !p.activo && "border-dashed",
-          )}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="font-medium break-words">
+      {productos.map((p) => {
+        const nombre = nombreCompleto(p);
+        return (
+          <li
+            key={p.id}
+            className={cn(
+              "grid gap-3 rounded-xl border bg-card p-4 text-card-foreground",
+              !p.activo && "border-dashed",
+            )}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="min-w-0 text-base leading-snug font-semibold text-balance break-words">
                 {p.nombre}{" "}
                 {p.variante && (
-                  <span className="text-muted-foreground">{p.variante}</span>
+                  <span className="font-normal whitespace-nowrap text-muted-foreground">
+                    {p.variante}
+                  </span>
                 )}
               </h3>
-              <p className="text-sm">
-                Inicial <strong>{formatearMonto(p.inicial)}</strong> ·{" "}
-                {formatearCuota(p.numeroCuotas, p.cuota)}
-              </p>
+              <Estado p={p} className="shrink-0 justify-end" />
             </div>
-            <Estado p={p} />
-          </div>
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <CantidadRapida
-              id={p.id}
-              cantidad={p.cantidad}
-              nombre={nombreCompleto(p)}
-            />
-            <Acciones p={p} alEditar={alEditar} alBorrar={alBorrar} />
-          </div>
-        </li>
-      ))}
+            <dl className="grid grid-cols-2 gap-2 text-sm">
+              <div className="rounded-lg bg-muted/60 px-3 py-2">
+                <dt className="text-xs text-muted-foreground">Inicial</dt>
+                <dd className="font-semibold tabular-nums">
+                  {formatearMonto(p.inicial)}
+                </dd>
+              </div>
+              <div className="rounded-lg bg-muted/60 px-3 py-2">
+                <dt className="text-xs text-muted-foreground">Cuotas</dt>
+                <dd className="font-semibold tabular-nums">
+                  {formatearCuota(p.numeroCuotas, p.cuota)}
+                </dd>
+              </div>
+            </dl>
+            <div className="flex items-center justify-between gap-2 border-t pt-3">
+              <CantidadRapida id={p.id} cantidad={p.cantidad} nombre={nombre} />
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  className={cn("size-11", FOCO)}
+                  onClick={() => alEditar(p)}
+                  aria-label={`Editar ${nombre}`}
+                >
+                  <PencilIcon aria-hidden="true" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "size-11 text-destructive hover:text-destructive",
+                    FOCO,
+                  )}
+                  onClick={() => alBorrar(p)}
+                  aria-label={`Borrar ${nombre}`}
+                >
+                  <Trash2Icon aria-hidden="true" />
+                </Button>
+              </div>
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }
