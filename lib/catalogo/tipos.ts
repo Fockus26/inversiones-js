@@ -3,21 +3,34 @@
  * El chatbot lee esta misma colección: renombrar un campo rompe al chatbot (ver docs/chatbot.md).
  */
 
-export const MARCAS = [
+/**
+ * Marcas con las que arranca el catálogo (seed). Desde D025 las marcas viven en la colección
+ * `marcas` y el cliente las agrega, renombra y borra desde el panel: no asumas esta lista.
+ */
+export const MARCAS_INICIALES = [
   "HONOR",
   "INFINIX",
   "REDMI",
   "SAMSUNG",
   "TECNO",
 ] as const;
-export type Marca = (typeof MARCAS)[number];
+
+/** Nombre de marca en mayúsculas, p. ej. "HONOR". Es también el id de `marcas/{nombre}`. */
+export type Marca = string;
+
+/** Orden de presentación de las marcas (panel y texto del chatbot): alfabético. */
+export function compararMarcas(a: Marca, b: Marca): number {
+  return a.localeCompare(b, "es");
+}
 
 export const COLECCION_PRODUCTOS = "productos";
+/** Documento `marcas/{nombre}`: la marca existe ⇔ existe su documento (D025). */
+export const COLECCION_MARCAS = "marcas";
 /** Documento `admins/{uid}` existe ⇔ ese usuario puede entrar al panel y escribir (D003). */
 export const COLECCION_ADMINS = "admins";
 
 export interface Producto {
-  /** Marca del equipo; agrupa la lista en el panel y en el texto del chatbot. */
+  /** Marca del equipo (una de `marcas`); agrupa la lista en el panel y en el texto del chatbot. */
   marca: Marca;
   /** Modelo tal como lo ve el cliente final, p. ej. "600 Elite". */
   nombre: string;
@@ -38,6 +51,13 @@ export interface Producto {
   /** Fecha de la última edición (serverTimestamp en Firestore; Date en el cliente). */
   actualizadoEn?: Date | null;
   /** UID de quien hizo la última edición. */
+  actualizadoPor?: string | null;
+}
+
+export interface MarcaRegistrada {
+  /** Igual al id del documento, en mayúsculas. */
+  nombre: Marca;
+  actualizadoEn?: Date | null;
   actualizadoPor?: string | null;
 }
 

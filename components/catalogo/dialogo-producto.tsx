@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { unirMarcas } from "@/lib/catalogo/marcas";
 import { actualizarProducto, crearProducto } from "@/lib/catalogo/repositorio";
-import { MARCAS, type Marca, type ProductoConId } from "@/lib/catalogo/tipos";
+import type { Marca, ProductoConId } from "@/lib/catalogo/tipos";
 import {
   type CampoFormulario,
   type FormularioProducto,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/catalogo/validacion";
 import { cn } from "@/lib/utils";
 import { FOCO, haceCuanto } from "./formato";
+import { SelectorMarca } from "./selector-marca";
 
 interface Props {
   abierto: boolean;
@@ -33,6 +35,8 @@ interface Props {
   producto: ProductoConId | null;
   /** Marca preseleccionada al crear (la del filtro activo). */
   marcaInicial?: Marca;
+  /** Marcas registradas (D025): las opciones del select. */
+  marcas: readonly Marca[];
   /** `orden` para un producto nuevo (último + 1). */
   ordenNuevo: number;
   alPedirBorrar: (producto: ProductoConId) => void;
@@ -94,6 +98,7 @@ const ORDEN_CAMPOS: CampoFormulario[] = [
 function Formulario({
   producto,
   marcaInicial,
+  marcas,
   ordenNuevo,
   alCambiarAbierto,
   alPedirBorrar,
@@ -105,15 +110,20 @@ function Formulario({
   const [intentado, setIntentado] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
-  const resultado = validarProducto(form);
+  // Un producto de antes de D025 puede tener una marca sin registrar: la regla deja guardarlo
+  // si no la cambia, así que se ofrece como opción.
+  const opciones =
+    producto && !marcas.includes(producto.marca)
+      ? unirMarcas(marcas, [producto.marca])
+      : marcas;
+  const resultado = validarProducto(form, opciones);
   const errores = resultado.ok ? {} : resultado.errores;
   const errorVisible = (c: CampoFormulario) =>
     intentado || tocados.has(c) ? errores[c] : undefined;
 
   const idDe = (c: CampoFormulario) => `${prefijo}-${c}`;
   const cambiar =
-    (c: CampoFormulario) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    (c: CampoFormulario) => (e: React.ChangeEvent<HTMLInputElement>) =>
       setForm((f) => ({ ...f, [c]: e.target.value }));
   const tocar = (c: CampoFormulario) => () =>
     setTocados((t) => (t.has(c) ? t : new Set(t).add(c)));
@@ -211,25 +221,19 @@ function Formulario({
 
       <div className="grid gap-1.5">
         <Label htmlFor={idDe("marca")}>Marca</Label>
-        <select
+        <SelectorMarca
           id={idDe("marca")}
           name="marca"
           value={form.marca}
-          onChange={cambiar("marca")}
+          marcas={opciones}
+          onValueChange={(m) => {
+            setForm((f) => ({ ...f, marca: m }));
+            tocar("marca")();
+          }}
           onBlur={tocar("marca")}
-          aria-invalid={errorMarca ? true : undefined}
-          aria-describedby={errorMarca ? `${idDe("marca")}-error` : undefined}
-          className="h-11 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring aria-invalid:border-destructive md:text-sm dark:bg-input/30"
-        >
-          <option value="" disabled>
-            Elige una marca
-          </option>
-          {MARCAS.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
+          invalido={!!errorMarca}
+          describedBy={errorMarca ? `${idDe("marca")}-error` : undefined}
+        />
         {errorMarca && (
           <p id={`${idDe("marca")}-error`} className="text-xs text-destructive">
             {errorMarca}

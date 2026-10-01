@@ -10,7 +10,7 @@ Colección `productos`, un documento por equipo (D002).
 
 | Campo | Tipo | Qué significa |
 |---|---|---|
-| `marca` | string | Una de `HONOR`, `INFINIX`, `REDMI`, `SAMSUNG`, `TECNO` (en mayúsculas). |
+| `marca` | string | Nombre de la marca en mayúsculas (`HONOR`, `REDMI`…). **No es una lista fija** (D025): el cliente agrega, renombra y borra marcas desde el panel. |
 | `nombre` | string | Modelo como lo ve el cliente final: `"600 Elite"`, `"Note 15"`. No incluye la marca. |
 | `variante` | string | RAM/almacenamiento en GB: `"8/256"`. Puede venir vacío. |
 | `inicial` | number | Pago inicial en USD. Normalmente entero; puede traer decimales. |
@@ -25,10 +25,14 @@ Colección `productos`, un documento por equipo (D002).
 - **Id del documento:** los del catálogo inicial son estables (`honor-600-elite-8-256`); los
   productos creados desde el panel usan id automático. No dependas del formato del id: busca
   por `marca` + `nombre` + `variante`.
+- **Marcas:** viven en la colección `marcas` (id = nombre, `{ nombre, actualizadoEn,
+  actualizadoPor }`). El chatbot no necesita leerla: basta con el campo `marca` de cada
+  producto. Al renombrar una marca, el panel actualiza `marca` en todos sus productos a la vez.
+  Ordénalas alfabéticamente (`compararMarcas` de `lib/catalogo/tipos.ts`), como el panel.
 - **Montos:** son números, no texto. Para mostrarlos como el cliente (`125$`) usa
   `formatearMonto` de `lib/catalogo/texto-lista.ts`.
 - **Qué NO cambiar sin coordinar:** nombres de campo, tipos (precios como número), valores de
-  `marca` en mayúsculas y el significado de `activo`/`cantidad`. Las reglas de Firestore
+  `marca` en mayúsculas (sin asumir una lista cerrada) y el significado de `activo`/`cantidad`. Las reglas de Firestore
   (`firestore.rules`) validan estos mismos campos: un cambio aquí exige cambiarlas también.
 - **El chatbot solo lee.** Toda escritura pasa por el panel (las reglas exigen sesión de admin y
   dejan la huella `actualizadoPor`/`actualizadoEn`).

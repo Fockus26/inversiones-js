@@ -139,7 +139,7 @@ describe("textoListaDePrecios", () => {
     expect(texto).toContain("A07 4/64");
   });
 
-  test("ordena por marca (orden de MARCAS) y por `orden` dentro de la marca", () => {
+  test("ordena por marca (alfabético) y por `orden` dentro de la marca", () => {
     const productos: ProductoDeLista[] = [
       { ...conStock[22], orden: 1 },
       { ...conStock[0], orden: 9 },
