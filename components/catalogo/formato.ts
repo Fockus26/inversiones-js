@@ -49,3 +49,11 @@ export function normalizarBusqueda(texto: string): string {
  */
 export const FOCO =
   "focus-visible:ring-ring aria-invalid:focus-visible:ring-ring aria-invalid:focus-visible:border-ring";
+
+/**
+ * DialogContent de una columna flexible: el cuerpo se desplaza (`overflow-y-auto` en el hijo)
+ * y el pie queda fijo abajo. 100dvh sigue al alto visible, también con el teclado del teléfono
+ * abierto (ver `interactiveWidget` en app/layout.tsx).
+ */
+export const DIALOGO_CON_PIE_FIJO =
+  "flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg";

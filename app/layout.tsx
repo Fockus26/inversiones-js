@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
@@ -18,6 +18,15 @@ export const metadata: Metadata = {
   title: { default: "Panel · Inversiones JS", template: "%s · Inversiones JS" },
   description: "Panel administrativo del catálogo de Inversiones JS.",
   robots: { index: false, follow: false },
+};
+
+// Con el teclado del teléfono abierto, Chrome en Android achica también el viewport de layout:
+// los diálogos (max-h en dvh) se encogen y su pie con «Guardar» no queda tapado. Sin
+// maximumScale ni userScalable: el zoom con dos dedos sigue disponible.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -69,8 +69,13 @@ export function SesionProvider({ children }: { children: React.ReactNode }) {
           doc(firestore(), COLECCION_ADMINS, usuario.uid),
         );
         esAdmin = ficha.exists();
-      } catch {
-        // Sin poder comprobarlo, lo conservador es no dejar pasar (D010).
+      } catch (error) {
+        // Sin poder comprobarlo, lo conservador es no dejar pasar (D010). Se registra el
+        // motivo porque, si no, se confunde con "no es admin".
+        console.error(
+          `[sesion] No se pudo comprobar admins/${usuario.uid}:`,
+          error,
+        );
         esAdmin = false;
       }
       if (miTurno !== turno) return;
