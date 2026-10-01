@@ -1,4 +1,8 @@
-// Placeholder de la ola 0. Lo implementa W2 (feat/catalogo-crud).
+import type { Metadata } from "next";
+import { CatalogoProductos } from "@/components/catalogo/catalogo-productos";
+
+export const metadata: Metadata = { title: "Productos" };
+
 export default function ProductosPage() {
-  return <h1 className="text-2xl font-semibold">Productos</h1>;
+  return <CatalogoProductos />;
 }
