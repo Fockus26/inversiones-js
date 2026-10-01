@@ -80,13 +80,17 @@ function Contenido({ marcas, conteo }: Props) {
     e.preventDefault();
     setIntentoNueva(true);
     if (!resultadoNueva.ok) return;
+    const valor = resultadoNueva.valor;
+    // Se vacía antes de guardar: la lista en vivo recibe la marca antes de que crearMarca
+    // resuelva y, con el campo aún lleno, se vería un instante «ya existe».
+    setNueva("");
+    setIntentoNueva(false);
     setOcupado(true);
     try {
-      await crearMarca(resultadoNueva.valor);
-      toast.success(`Agregaste la marca ${resultadoNueva.valor}`);
-      setNueva("");
-      setIntentoNueva(false);
+      await crearMarca(valor);
+      toast.success(`Agregaste la marca ${valor}`);
     } catch (err) {
+      setNueva(valor);
       toast.error("No se pudo agregar la marca", {
         description: mensajeDe(err),
       });

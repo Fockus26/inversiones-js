@@ -407,9 +407,9 @@ function Contador({ n }: { n: number }) {
   return <span className="tabular-nums opacity-80">({n})</span>;
 }
 
-function Estado({ p }: { p: ProductoConId }) {
+function Estado({ p, className }: { p: ProductoConId; className?: string }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className={cn("flex flex-wrap gap-1", className)}>
       {p.cantidad === 0 && (
         <Badge
           variant="destructive"
@@ -516,15 +516,24 @@ function Tabla({
 }: PropsFilas & { marca: Marca }) {
   return (
     <div className="hidden rounded-xl border bg-card md:block">
-      <Table>
+      {/* table-fixed + anchos fijos: todas las marcas se ven con las mismas columnas. */}
+      <Table className="table-fixed">
         <caption className="sr-only">Productos {marca}</caption>
+        <colgroup>
+          <col />
+          <col className="w-24" />
+          <col className="w-28" />
+          <col className="w-44" />
+          <col className="w-32" />
+          <col className="w-48" />
+        </colgroup>
         <TableHeader>
           <TableRow>
             <TableHead>Producto</TableHead>
-            <TableHead>Inicial</TableHead>
-            <TableHead>Cuota</TableHead>
-            <TableHead>Cantidad</TableHead>
-            <TableHead>Estado</TableHead>
+            <TableHead className="text-center">Inicial</TableHead>
+            <TableHead className="text-center">Cuota</TableHead>
+            <TableHead className="text-center">Cantidad</TableHead>
+            <TableHead className="text-center">Estado</TableHead>
             <TableHead>
               <span className="sr-only">Acciones</span>
             </TableHead>
@@ -539,10 +548,10 @@ function Tabla({
                   <span className="text-muted-foreground">{p.variante}</span>
                 )}
               </TableCell>
-              <TableCell className="tabular-nums">
+              <TableCell className="text-center tabular-nums">
                 {formatearMonto(p.inicial)}
               </TableCell>
-              <TableCell className="tabular-nums">
+              <TableCell className="text-center tabular-nums">
                 {formatearCuota(p.numeroCuotas, p.cuota)}
               </TableCell>
               <TableCell>
@@ -550,10 +559,11 @@ function Tabla({
                   id={p.id}
                   cantidad={p.cantidad}
                   nombre={nombreCompleto(p)}
+                  compacta
                 />
               </TableCell>
               <TableCell>
-                <Estado p={p} />
+                <Estado p={p} className="justify-center" />
               </TableCell>
               <TableCell>
                 <div className="flex justify-end">

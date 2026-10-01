@@ -25,6 +25,11 @@ interface Props {
   cantidad: number;
   /** "HONOR 600 Elite 8/256", para las etiquetas accesibles y el toast. */
   nombre: string;
+  /**
+   * Para la tabla: botones más chicos y el estado como icono al lado (texto solo para
+   * lectores de pantalla), así la fila no crece y el stepper queda centrado.
+   */
+  compacta?: boolean;
   className?: string;
 }
 
@@ -33,7 +38,13 @@ interface Props {
  * Guarda con debounce o al salir del campo; si Firestore lo rechaza, vuelve al valor
  * anterior y avisa con un toast.
  */
-export function CantidadRapida({ id, cantidad, nombre, className }: Props) {
+export function CantidadRapida({
+  id,
+  cantidad,
+  nombre,
+  compacta = false,
+  className,
+}: Props) {
   const idInput = useId();
   const idEstado = useId();
   const [texto, setTexto] = useState(String(cantidad));
@@ -122,7 +133,14 @@ export function CantidadRapida({ id, cantidad, nombre, className }: Props) {
   }
 
   return (
-    <div className={cn("flex flex-col items-start gap-1", className)}>
+    <div
+      className={cn(
+        compacta
+          ? "relative mx-auto flex w-fit"
+          : "flex flex-col items-start gap-1",
+        className,
+      )}
+    >
       {/* biome-ignore lint/a11y/useSemanticElements: un fieldset aquí rompe el layout de la fila; role=group da la misma semántica */}
       <div
         role="group"
@@ -132,7 +150,7 @@ export function CantidadRapida({ id, cantidad, nombre, className }: Props) {
         <Button
           type="button"
           variant="outline"
-          className={cn("size-11", FOCO)}
+          className={cn(compacta ? "size-9" : "size-11", FOCO)}
           aria-label="Restar 1"
           disabled={base <= 0}
           onClick={() => paso(-1)}
@@ -150,7 +168,10 @@ export function CantidadRapida({ id, cantidad, nombre, className }: Props) {
           value={texto}
           aria-invalid={valido === null}
           aria-describedby={idEstado}
-          className="h-11 w-16 rounded-lg border border-input bg-transparent text-center text-base tabular-nums outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring aria-invalid:border-destructive dark:bg-input/30 aria-invalid:focus-visible:border-ring"
+          className={cn(
+            compacta ? "h-9 w-12" : "h-11 w-16",
+            "rounded-lg border border-input bg-transparent text-center text-base tabular-nums outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring aria-invalid:border-destructive dark:bg-input/30 aria-invalid:focus-visible:border-ring",
+          )}
           onFocus={(e) => {
             enFoco.current = true;
             e.currentTarget.select();
@@ -188,7 +209,7 @@ export function CantidadRapida({ id, cantidad, nombre, className }: Props) {
         <Button
           type="button"
           variant="outline"
-          className={cn("size-11", FOCO)}
+          className={cn(compacta ? "size-9" : "size-11", FOCO)}
           aria-label="Sumar 1"
           disabled={base >= LIMITES.cantidadMax}
           onClick={() => paso(1)}
@@ -198,12 +219,19 @@ export function CantidadRapida({ id, cantidad, nombre, className }: Props) {
       </div>
       <output
         id={idEstado}
-        className="flex min-h-4 items-center gap-1 text-xs text-muted-foreground"
+        className={cn(
+          "flex items-center gap-1 text-xs text-muted-foreground",
+          // Compacta: solo el icono, flotando a la derecha para no descentrar el stepper;
+          // el texto queda para lectores de pantalla.
+          compacta
+            ? "absolute top-1/2 left-full ml-1.5 size-4 -translate-y-1/2 [&_.texto]:sr-only"
+            : "min-h-4",
+        )}
       >
         {valido === null ? (
           <span className="flex items-center gap-1 text-destructive">
             <CircleAlertIcon className="size-3.5" aria-hidden="true" />
-            Usa un número entero
+            <span className="texto">Usa un número entero</span>
           </span>
         ) : estado === "guardando" ? (
           <>
@@ -211,20 +239,20 @@ export function CantidadRapida({ id, cantidad, nombre, className }: Props) {
               className="size-3.5 motion-safe:animate-spin"
               aria-hidden="true"
             />
-            Guardando…
+            <span className="texto">Guardando…</span>
           </>
         ) : estado === "guardado" ? (
           <span className="flex items-center gap-1 text-success">
             <CircleCheckIcon className="size-3.5" aria-hidden="true" />
-            Guardado
+            <span className="texto">Guardado</span>
           </span>
         ) : estado === "error" ? (
           <span className="flex items-center gap-1 text-destructive">
             <CircleAlertIcon className="size-3.5" aria-hidden="true" />
-            No se guardó
+            <span className="texto">No se guardó</span>
           </span>
         ) : estado === "pendiente" ? (
-          "Sin guardar…"
+          <span className="texto">Sin guardar…</span>
         ) : null}
       </output>
     </div>
