@@ -1,0 +1,36 @@
+# D020 — Texto de la lista: mismo formato que el cliente manda por chat
+
+`lib/catalogo/texto-lista.ts` (puro, sin Firebase) arma `Lista de precios actualizada (DD/MM)`,
+un bloque por marca (orden de `MARCAS`, en mayúsculas, marcas vacías se omiten, línea en blanco
+entre bloques) y por producto dos líneas: `<nombre> <variante>` y
+`Inic 125$.   6 quincenas 63$`. Dentro de la marca, por `orden`. Montos con hasta 2 decimales.
+No se tuvo el texto original de la lista: si el cliente pone producto y precio en una sola
+línea, se cambia solo `lineasDeProducto` y el test de la lista.
+
+# D021 — Agotados marcados por defecto; fecha en hora de Caracas
+
+`activo == false` se omite siempre. `cantidad == 0`: `{ agotados: "marcar" }` (por defecto) añade
+` (agotado)`; `"ocultar"` lo quita. Se marca por defecto porque ocultar un equipo hace que el
+chatbot diga "no lo tenemos" cuando sí se trabaja. Ojo: el seed arranca con `cantidad = 0`.
+El `DD/MM` usa `America/Caracas` por defecto (supuesto: precios en USD y pago quincenal); el
+servidor del chatbot suele estar en UTC. Ambos son parámetros.
+
+# D022 — Alta de admins por script con contraseña temporal
+
+`bun run admin:crear <correo> (--emulador | --prod)`: crea o encuentra el usuario en Auth y crea
+`admins/{uid}`. Si el usuario es nuevo, contraseña aleatoria (24 caracteres) impresa una sola
+vez; si ya existía, su contraseña no se toca. Producción exige `--prod` y
+`GOOGLE_APPLICATION_CREDENTIALS`; con emulador, el proyecto debe ser `demo-*`.
+
+# D023 — Seed de producción que no pisa ediciones
+
+`bun run seed:produccion --prod` crea solo los productos del catálogo inicial que no existen
+(por id estable); `--forzar` los reescribe enteros. `--emulador --proyecto=demo-x` permite
+ensayarlo sin tocar los datos de desarrollo. Mismas salvaguardas que D022.
+
+# D024 — El chatbot lee con una cuenta de solo lectura y caché de 60 s
+
+Cuenta de servicio aparte con `roles/datastore.viewer` (no la de Firebase Admin). Consulta
+`productos where activo == true` con el Admin SDK. Recomendado: caché en memoria de 60 s
+(cambios visibles en < 1 min, pocas lecturas); `onSnapshot` solo si el chatbot es un proceso
+persistente. Detalle en `docs/chatbot.md`.
