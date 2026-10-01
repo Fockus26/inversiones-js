@@ -27,7 +27,8 @@ interface Props {
   nombre: string;
   /**
    * Para la tabla: botones más chicos y el estado como icono al lado (texto solo para
-   * lectores de pantalla), así la fila no crece y el stepper queda centrado.
+   * lectores de pantalla), así la fila no crece y el stepper queda centrado. Con pantalla
+   * táctil (una tablet que ya muestra la tabla) vuelven a 44 px.
    */
   compacta?: boolean;
   className?: string;
@@ -150,7 +151,10 @@ export function CantidadRapida({
         <Button
           type="button"
           variant="outline"
-          className={cn(compacta ? "size-9" : "size-11", FOCO)}
+          className={cn(
+            compacta ? "size-9 pointer-coarse:size-11" : "size-11",
+            FOCO,
+          )}
           aria-label="Restar 1"
           disabled={base <= 0}
           onClick={() => paso(-1)}
@@ -169,7 +173,7 @@ export function CantidadRapida({
           aria-invalid={valido === null}
           aria-describedby={idEstado}
           className={cn(
-            compacta ? "h-9 w-12" : "h-11 w-16",
+            compacta ? "h-9 w-12 pointer-coarse:h-11" : "h-11 w-16",
             "rounded-lg border border-input bg-transparent text-center text-base tabular-nums outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring aria-invalid:border-destructive dark:bg-input/30 aria-invalid:focus-visible:border-ring",
           )}
           onFocus={(e) => {
@@ -209,7 +213,10 @@ export function CantidadRapida({
         <Button
           type="button"
           variant="outline"
-          className={cn(compacta ? "size-9" : "size-11", FOCO)}
+          className={cn(
+            compacta ? "size-9 pointer-coarse:size-11" : "size-11",
+            FOCO,
+          )}
           aria-label="Sumar 1"
           disabled={base >= LIMITES.cantidadMax}
           onClick={() => paso(1)}

@@ -64,7 +64,9 @@ export function DialogoBorrar({ producto, alCerrar }: Props) {
         if (!abierto) alCerrar();
       }}
     >
-      <AlertDialogContent>
+      {/* Nombres largos o letra grande en el teléfono: el contenido se desplaza en vez de
+          salirse de la pantalla. */}
+      <AlertDialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>¿Borrar {nombre}?</AlertDialogTitle>
           <AlertDialogDescription>

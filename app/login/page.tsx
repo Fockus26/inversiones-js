@@ -7,7 +7,8 @@ export const metadata: Metadata = { title: "Iniciar sesión" };
 
 export default function LoginPage() {
   return (
-    <main className="flex flex-1 items-center justify-center bg-background px-4 py-10">
+    // Teléfono: arriba, para que «Entrar» quede por encima del teclado; desde sm, centrado.
+    <main className="flex flex-1 items-start justify-center bg-background px-4 py-8 sm:items-center sm:py-10">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex justify-center">
           <span className="flex items-center gap-2 rounded-xl bg-sidebar px-4 py-2.5 text-lg font-semibold tracking-tight text-sidebar-foreground">

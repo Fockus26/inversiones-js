@@ -31,7 +31,7 @@ import {
 } from "@/lib/catalogo/repositorio";
 import type { Marca } from "@/lib/catalogo/tipos";
 import { cn } from "@/lib/utils";
-import { FOCO } from "./formato";
+import { DIALOGO_CON_PIE_FIJO, FOCO } from "./formato";
 
 interface Props {
   abierto: boolean;
@@ -54,10 +54,7 @@ function mensajeDe(e: unknown) {
 export function DialogoMarcas(props: Props) {
   return (
     <Dialog open={props.abierto} onOpenChange={props.alCambiarAbierto}>
-      <DialogContent
-        showCloseButton={false}
-        className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg"
-      >
+      <DialogContent showCloseButton={false} className={DIALOGO_CON_PIE_FIJO}>
         {props.abierto && <Contenido {...props} />}
       </DialogContent>
     </Dialog>
@@ -151,176 +148,180 @@ function Contenido({ marcas, conteo }: Props) {
     intentoNueva && !resultadoNueva.ok ? resultadoNueva.error : undefined;
 
   return (
-    <div className="grid gap-4">
-      <DialogHeader>
-        <DialogTitle>Marcas</DialogTitle>
-        <DialogDescription>
-          Se muestran en orden alfabético, en el panel y en la lista del
-          chatbot. Al renombrar una marca se actualizan todos sus productos.
-        </DialogDescription>
-      </DialogHeader>
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Solo se desplaza la lista; «Cerrar» queda siempre a la vista. */}
+      <div className="grid min-h-0 gap-4 overflow-y-auto overscroll-contain p-4">
+        <DialogHeader>
+          <DialogTitle>Marcas</DialogTitle>
+          <DialogDescription>
+            Se muestran en orden alfabético, en el panel y en la lista del
+            chatbot. Al renombrar una marca se actualizan todos sus productos.
+          </DialogDescription>
+        </DialogHeader>
 
-      <form onSubmit={agregar} noValidate className="grid gap-1.5">
-        <Label htmlFor={idNueva}>Nueva marca</Label>
-        <div className="flex gap-2">
-          <Input
-            id={idNueva}
-            value={nueva}
-            onChange={(e) => {
-              setNueva(e.target.value);
-              setIntentoNueva(false);
-            }}
-            placeholder="p. ej. Motorola"
-            maxLength={MARCA_MAX + 10}
-            autoComplete="off"
-            autoCapitalize="characters"
-            aria-invalid={errorNueva ? true : undefined}
-            aria-describedby={errorNueva ? `${idNueva}-error` : undefined}
-            className={cn("h-11 uppercase placeholder:normal-case", FOCO)}
-          />
-          <Button
-            type="submit"
-            className={cn("h-11 px-4", FOCO)}
-            disabled={ocupado}
-          >
-            <PlusIcon aria-hidden="true" />
-            Agregar
-          </Button>
-        </div>
-        {errorNueva && (
-          <p id={`${idNueva}-error`} className="text-xs text-destructive">
-            {errorNueva}
+        <form onSubmit={agregar} noValidate className="grid gap-1.5">
+          <Label htmlFor={idNueva}>Nueva marca</Label>
+          <div className="flex gap-2">
+            <Input
+              id={idNueva}
+              value={nueva}
+              onChange={(e) => {
+                setNueva(e.target.value);
+                setIntentoNueva(false);
+              }}
+              placeholder="p. ej. Motorola"
+              maxLength={MARCA_MAX + 10}
+              autoComplete="off"
+              autoCapitalize="characters"
+              aria-invalid={errorNueva ? true : undefined}
+              aria-describedby={errorNueva ? `${idNueva}-error` : undefined}
+              className={cn("h-11 uppercase placeholder:normal-case", FOCO)}
+            />
+            <Button
+              type="submit"
+              className={cn("h-11 px-4", FOCO)}
+              disabled={ocupado}
+            >
+              <PlusIcon aria-hidden="true" />
+              Agregar
+            </Button>
+          </div>
+          {errorNueva && (
+            <p id={`${idNueva}-error`} className="text-xs text-destructive">
+              {errorNueva}
+            </p>
+          )}
+        </form>
+
+        {todas.length === 0 ? (
+          <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+            Todavía no hay marcas. Agrega la primera arriba.
           </p>
-        )}
-      </form>
-
-      {todas.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-          Todavía no hay marcas. Agrega la primera arriba.
-        </p>
-      ) : (
-        <ul className="grid divide-y rounded-lg border" aria-label="Marcas">
-          {todas.map((m) => {
-            const n = conteo.get(m) ?? 0;
-            const registrada = marcas.includes(m);
-            if (editando === m)
-              return (
-                <FilaEditando
-                  key={m}
-                  marca={m}
-                  cantidad={n}
-                  todas={todas}
-                  ocupado={ocupado}
-                  alGuardar={(nueva) => renombrar(m, nueva)}
-                  alCancelar={() => setEditando(null)}
-                />
-              );
-            if (borrando === m)
-              return (
-                <li key={m} className="grid gap-2 p-3">
-                  {n > 0 ? (
-                    <p className="text-sm" role="alert">
-                      <strong>{m}</strong> tiene {productos(n)}. Muévelos a otra
-                      marca o bórralos antes de borrar la marca.
-                    </p>
-                  ) : (
-                    <p className="text-sm" role="alert">
-                      ¿Borrar la marca <strong>{m}</strong>? No tiene productos.
-                    </p>
-                  )}
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      className={cn("h-11", FOCO)}
-                      disabled={ocupado}
-                      onClick={() => setBorrando(null)}
-                    >
-                      {n > 0 ? "Entendido" : "Cancelar"}
-                    </Button>
-                    {n === 0 && (
+        ) : (
+          <ul className="grid divide-y rounded-lg border" aria-label="Marcas">
+            {todas.map((m) => {
+              const n = conteo.get(m) ?? 0;
+              const registrada = marcas.includes(m);
+              if (editando === m)
+                return (
+                  <FilaEditando
+                    key={m}
+                    marca={m}
+                    cantidad={n}
+                    todas={todas}
+                    ocupado={ocupado}
+                    alGuardar={(nueva) => renombrar(m, nueva)}
+                    alCancelar={() => setEditando(null)}
+                  />
+                );
+              if (borrando === m)
+                return (
+                  <li key={m} className="grid gap-2 p-3">
+                    {n > 0 ? (
+                      <p className="text-sm" role="alert">
+                        <strong>{m}</strong> tiene {productos(n)}. Muévelos a
+                        otra marca o bórralos antes de borrar la marca.
+                      </p>
+                    ) : (
+                      <p className="text-sm" role="alert">
+                        ¿Borrar la marca <strong>{m}</strong>? No tiene
+                        productos.
+                      </p>
+                    )}
+                    <div className="flex flex-wrap justify-end gap-2">
                       <Button
-                        variant="destructive"
-                        className={cn("h-11 dark:bg-destructive/10", FOCO)}
+                        variant="outline"
+                        className={cn("h-11", FOCO)}
                         disabled={ocupado}
-                        onClick={() => borrar(m)}
+                        onClick={() => setBorrando(null)}
                       >
-                        {ocupado ? (
-                          <LoaderCircleIcon
-                            className="motion-safe:animate-spin"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <Trash2Icon aria-hidden="true" />
-                        )}
-                        Borrar
+                        {n > 0 ? "Entendido" : "Cancelar"}
                       </Button>
+                      {n === 0 && (
+                        <Button
+                          variant="destructive"
+                          className={cn("h-11 dark:bg-destructive/10", FOCO)}
+                          disabled={ocupado}
+                          onClick={() => borrar(m)}
+                        >
+                          {ocupado ? (
+                            <LoaderCircleIcon
+                              className="motion-safe:animate-spin"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <Trash2Icon aria-hidden="true" />
+                          )}
+                          Borrar
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                );
+              return (
+                <li
+                  key={m}
+                  className="flex flex-wrap items-center justify-between gap-2 py-1 pr-1 pl-3"
+                >
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="font-medium break-all">{m}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {productos(n)}
+                    </span>
+                    {!registrada && (
+                      <Badge variant="outline">Sin registrar</Badge>
                     )}
                   </div>
+                  {registrada ? (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        className={cn("size-11", FOCO)}
+                        disabled={ocupado}
+                        onClick={() => {
+                          setBorrando(null);
+                          setEditando(m);
+                        }}
+                        aria-label={`Renombrar ${m}`}
+                      >
+                        <PencilIcon aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "size-11 text-destructive hover:text-destructive",
+                          FOCO,
+                        )}
+                        disabled={ocupado}
+                        onClick={() => {
+                          setEditando(null);
+                          setBorrando(m);
+                        }}
+                        aria-label={`Borrar ${m}`}
+                      >
+                        <Trash2Icon aria-hidden="true" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className={cn("h-11 px-3", FOCO)}
+                      disabled={ocupado}
+                      onClick={() => registrar(m)}
+                      aria-label={`Registrar ${m}`}
+                    >
+                      <PlusIcon aria-hidden="true" />
+                      <span aria-hidden="true">Registrar</span>
+                    </Button>
+                  )}
                 </li>
               );
-            return (
-              <li
-                key={m}
-                className="flex flex-wrap items-center justify-between gap-2 py-1 pr-1 pl-3"
-              >
-                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-medium break-all">{m}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {productos(n)}
-                  </span>
-                  {!registrada && (
-                    <Badge variant="outline">Sin registrar</Badge>
-                  )}
-                </div>
-                {registrada ? (
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      className={cn("size-11", FOCO)}
-                      disabled={ocupado}
-                      onClick={() => {
-                        setBorrando(null);
-                        setEditando(m);
-                      }}
-                      aria-label={`Renombrar ${m}`}
-                    >
-                      <PencilIcon aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className={cn(
-                        "size-11 text-destructive hover:text-destructive",
-                        FOCO,
-                      )}
-                      disabled={ocupado}
-                      onClick={() => {
-                        setEditando(null);
-                        setBorrando(m);
-                      }}
-                      aria-label={`Borrar ${m}`}
-                    >
-                      <Trash2Icon aria-hidden="true" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className={cn("h-11 px-3", FOCO)}
-                    disabled={ocupado}
-                    onClick={() => registrar(m)}
-                    aria-label={`Registrar ${m}`}
-                  >
-                    <PlusIcon aria-hidden="true" />
-                    <span aria-hidden="true">Registrar</span>
-                  </Button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+            })}
+          </ul>
+        )}
+      </div>
 
-      <DialogFooter>
+      <DialogFooter className="m-0">
         <DialogClose
           render={<Button variant="outline" className={cn("h-11", FOCO)} />}
         >

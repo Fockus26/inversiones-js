@@ -25,7 +25,7 @@ import {
   validarProducto,
 } from "@/lib/catalogo/validacion";
 import { cn } from "@/lib/utils";
-import { FOCO, haceCuanto } from "./formato";
+import { DIALOGO_CON_PIE_FIJO, FOCO, haceCuanto } from "./formato";
 import { SelectorMarca } from "./selector-marca";
 
 interface Props {
@@ -42,14 +42,15 @@ interface Props {
   alPedirBorrar: (producto: ProductoConId) => void;
 }
 
-/** Mismo diálogo para editar y para crear. El formulario se monta de cero en cada apertura. */
+/**
+ * Mismo diálogo para editar y para crear. El formulario se monta de cero en cada apertura.
+ * En pantallas bajas (o con el teclado del teléfono abierto) solo se desplazan los campos: el
+ * pie con «Guardar» queda siempre a la vista.
+ */
 export function DialogoProducto(props: Props) {
   return (
     <Dialog open={props.abierto} onOpenChange={props.alCambiarAbierto}>
-      <DialogContent
-        showCloseButton={false}
-        className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg"
-      >
+      <DialogContent showCloseButton={false} className={DIALOGO_CON_PIE_FIJO}>
         {props.abierto && <Formulario {...props} />}
       </DialogContent>
     </Dialog>
@@ -207,109 +208,131 @@ function Formulario({
     : "Nuevo producto";
 
   return (
-    <form ref={formRef} onSubmit={enviar} noValidate className="grid gap-4">
-      <DialogHeader>
-        <DialogTitle>{titulo}</DialogTitle>
-        <DialogDescription>
-          {producto
-            ? producto.actualizadoEn
-              ? `Actualizado ${haceCuanto(producto.actualizadoEn)}. Lo que guardes es lo que responde el chatbot.`
-              : "Lo que guardes es lo que responde el chatbot."
-            : "Se agrega al final de su marca. Lo que guardes es lo que responde el chatbot."}
-        </DialogDescription>
-      </DialogHeader>
+    <form
+      ref={formRef}
+      onSubmit={enviar}
+      noValidate
+      className="flex min-h-0 flex-1 flex-col"
+    >
+      <div className="grid min-h-0 gap-4 overflow-y-auto overscroll-contain p-4">
+        <DialogHeader>
+          <DialogTitle>{titulo}</DialogTitle>
+          <DialogDescription>
+            {producto
+              ? producto.actualizadoEn
+                ? `Actualizado ${haceCuanto(producto.actualizadoEn)}. Lo que guardes es lo que responde el chatbot.`
+                : "Lo que guardes es lo que responde el chatbot."
+              : "Se agrega al final de su marca. Lo que guardes es lo que responde el chatbot."}
+          </DialogDescription>
+        </DialogHeader>
 
-      <div className="grid gap-1.5">
-        <Label htmlFor={idDe("marca")}>Marca</Label>
-        <SelectorMarca
-          id={idDe("marca")}
-          name="marca"
-          value={form.marca}
-          marcas={opciones}
-          onValueChange={(m) => {
-            setForm((f) => ({ ...f, marca: m }));
-            tocar("marca")();
-          }}
-          onBlur={tocar("marca")}
-          invalido={!!errorMarca}
-          describedBy={errorMarca ? `${idDe("marca")}-error` : undefined}
-        />
-        {errorMarca && (
-          <p id={`${idDe("marca")}-error`} className="text-xs text-destructive">
-            {errorMarca}
-          </p>
+        <div className="grid gap-1.5">
+          <Label htmlFor={idDe("marca")}>Marca</Label>
+          <SelectorMarca
+            id={idDe("marca")}
+            name="marca"
+            value={form.marca}
+            marcas={opciones}
+            onValueChange={(m) => {
+              setForm((f) => ({ ...f, marca: m }));
+              tocar("marca")();
+            }}
+            onBlur={tocar("marca")}
+            invalido={!!errorMarca}
+            describedBy={errorMarca ? `${idDe("marca")}-error` : undefined}
+          />
+          {errorMarca && (
+            <p
+              id={`${idDe("marca")}-error`}
+              className="text-xs text-destructive"
+            >
+              {errorMarca}
+            </p>
+          )}
+        </div>
+
+        {campoTexto("nombre", "Nombre", {
+          maxLength: LIMITES.nombreMax,
+          placeholder: "600 Elite",
+        })}
+        {campoTexto(
+          "variante",
+          "Variante (RAM/almacenamiento)",
+          { maxLength: LIMITES.varianteMax, placeholder: "8/256" },
+          "Opcional. Formato sugerido: 8/256.",
         )}
-      </div>
 
-      {campoTexto("nombre", "Nombre", {
-        maxLength: LIMITES.nombreMax,
-        placeholder: "600 Elite",
-      })}
-      {campoTexto(
-        "variante",
-        "Variante (RAM/almacenamiento)",
-        { maxLength: LIMITES.varianteMax, placeholder: "8/256" },
-        "Opcional. Formato sugerido: 8/256.",
-      )}
+        {/* Dos columnas también en el teléfono: son cuatro números cortos y así se ve todo
+          el precio sin desplazarse. Solo a menos de 360 px se apilan. */}
+        <div className="grid grid-cols-2 items-start gap-4 max-[359px]:grid-cols-1">
+          {campoTexto("inicial", "Inicial ($)", {
+            inputMode: "decimal",
+            placeholder: "125",
+          })}
+          {campoTexto("cuota", "Cuota quincenal ($)", {
+            inputMode: "decimal",
+            placeholder: "63",
+          })}
+          {campoTexto("numeroCuotas", "Número de cuotas", {
+            inputMode: "numeric",
+          })}
+          {campoTexto("cantidad", "Cantidad disponible", {
+            inputMode: "numeric",
+          })}
+        </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {campoTexto("inicial", "Inicial ($)", {
-          inputMode: "decimal",
-          placeholder: "125",
-        })}
-        {campoTexto("cuota", "Cuota quincenal ($)", {
-          inputMode: "decimal",
-          placeholder: "63",
-        })}
-        {campoTexto("numeroCuotas", "Número de cuotas", {
-          inputMode: "numeric",
-        })}
-        {campoTexto("cantidad", "Cantidad disponible", {
-          inputMode: "numeric",
-        })}
-      </div>
-
-      <div className="flex items-start gap-3 rounded-lg border px-3 py-1">
-        <input
-          id={`${prefijo}-activo`}
-          type="checkbox"
-          name="activo"
-          checked={form.activo}
-          onChange={(e) => setForm((f) => ({ ...f, activo: e.target.checked }))}
-          aria-describedby={`${prefijo}-activo-ayuda`}
-          className="mt-3 size-5 accent-[var(--brand-teal)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        />
-        <div className="grid flex-1">
-          <label
-            htmlFor={`${prefijo}-activo`}
-            className="flex min-h-11 cursor-pointer items-center text-sm font-medium"
-          >
-            Activo
-          </label>
-          <p
-            id={`${prefijo}-activo-ayuda`}
-            className="pb-2 text-xs text-muted-foreground"
-          >
-            Si lo desmarcas, el chatbot deja de ofrecerlo, pero no se borra.
-          </p>
+        <div className="flex items-start gap-3 rounded-lg border px-3 py-1">
+          <input
+            id={`${prefijo}-activo`}
+            type="checkbox"
+            name="activo"
+            checked={form.activo}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, activo: e.target.checked }))
+            }
+            aria-describedby={`${prefijo}-activo-ayuda`}
+            className="mt-3 size-5 accent-[var(--brand-teal)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          />
+          <div className="grid flex-1">
+            <label
+              htmlFor={`${prefijo}-activo`}
+              className="flex min-h-11 cursor-pointer items-center text-sm font-medium"
+            >
+              Activo
+            </label>
+            <p
+              id={`${prefijo}-activo-ayuda`}
+              className="pb-2 text-xs text-muted-foreground"
+            >
+              Si lo desmarcas, el chatbot deja de ofrecerlo, pero no se borra.
+            </p>
+          </div>
         </div>
       </div>
 
-      <DialogFooter className="sm:justify-between">
+      {/* Una sola fila también en móvil: tres botones apilados se comerían media pantalla
+          con el teclado abierto. «Borrar» queda solo como icono bajo sm. */}
+      <DialogFooter className="m-0 flex-row items-center justify-between sm:justify-between">
         {producto ? (
           <Button
             type="button"
             variant="destructive"
-            className={cn("h-11 dark:bg-destructive/10", FOCO)}
+            className={cn(
+              "h-11 max-sm:w-11 max-sm:px-0 dark:bg-destructive/10",
+              FOCO,
+            )}
             onClick={() => alPedirBorrar(producto)}
+            aria-label={`Borrar ${producto.marca} ${producto.nombre}`}
           >
             <Trash2Icon aria-hidden="true" />
-            Borrar
+            <span aria-hidden="true" className="max-sm:sr-only">
+              Borrar
+            </span>
           </Button>
         ) : (
-          <span className="hidden sm:block" />
+          <span />
         )}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        <div className="flex gap-2">
           <DialogClose
             render={<Button variant="outline" className={cn("h-11", FOCO)} />}
           >

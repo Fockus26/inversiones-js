@@ -148,6 +148,7 @@ export function FormularioLogin() {
               type="email"
               inputMode="email"
               autoComplete="username"
+              enterKeyHint="next"
               autoCapitalize="none"
               spellCheck={false}
               required
@@ -165,6 +166,7 @@ export function FormularioLogin() {
                 name="password"
                 type={verContrasena ? "text" : "password"}
                 autoComplete="current-password"
+                enterKeyHint="go"
                 required
                 value={contrasena}
                 onChange={(e) => setContrasena(e.target.value)}

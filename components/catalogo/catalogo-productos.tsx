@@ -42,8 +42,10 @@ import {
 import { useCatalogo } from "./use-catalogo";
 
 /**
- * /productos: lista del catálogo agrupada por marca. Móvil: tarjetas; ≥ md: tabla.
- * La cantidad se edita en la misma fila; el resto, en el diálogo.
+ * /productos: lista del catálogo agrupada por marca. Móvil: tarjetas; tablet (md): tarjetas en
+ * 2 columnas; ≥ lg: tabla. A 768 px la tabla de columnas fijas deja a «Producto» en ~60 px y
+ * el nombre se parte en tres líneas; en tarjetas cada equipo se lee de un vistazo y todos los
+ * controles miden 44 px. La cantidad se edita en la misma fila; el resto, en el diálogo.
  */
 export function CatalogoProductos() {
   const estado = useCatalogo();
@@ -111,7 +113,7 @@ function Encabezado({
 }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
-      <div className="grid gap-1">
+      <div className="grid min-w-0 gap-1">
         <h1 className="text-2xl font-semibold">Productos</h1>
         {resumen && (
           <p className="text-sm text-muted-foreground" aria-live="polite">
@@ -150,7 +152,7 @@ function Cargando() {
     <div className="grid gap-3" aria-busy="true">
       <output className="sr-only">Cargando productos…</output>
       {["a", "b", "c", "d"].map((k) => (
-        <Skeleton key={k} className="h-24 w-full md:h-12" />
+        <Skeleton key={k} className="h-24 w-full lg:h-12" />
       ))}
     </div>
   );
@@ -235,7 +237,8 @@ function Lista({
       <Encabezado
         resumen={resumen}
         accion={
-          <div className="flex flex-wrap gap-2">
+          // Móvil: los dos botones reparten el ancho; desde sm vuelven a su tamaño natural.
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
             <Button
               variant="outline"
               className={cn("h-11 px-4", FOCO)}
@@ -274,11 +277,13 @@ function Lista({
             autoComplete="off"
           />
         </div>
+        {/* Móvil: una sola fila con scroll horizontal (de borde a borde) en vez de tres filas
+            de chips que empujan la lista hacia abajo; desde sm vuelven a envolverse. */}
         {/* biome-ignore lint/a11y/useSemanticElements: grupo de botones de filtro, no un formulario */}
         <div
           role="group"
           aria-label="Filtrar por marca"
-          className="flex flex-wrap gap-2"
+          className="-mx-4 flex scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden"
         >
           <Chip activo={marca === null} onClick={() => setMarca(null)}>
             Todas <Contador n={productos.length} />
@@ -392,7 +397,7 @@ function Chip({
       aria-pressed={activo}
       onClick={onClick}
       className={cn(
-        "inline-flex h-11 items-center gap-1.5 rounded-full border px-4 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring focus-visible:border-ring",
+        "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 whitespace-nowrap text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring focus-visible:border-ring",
         activo
           ? "border-transparent bg-primary text-primary-foreground"
           : "bg-card hover:bg-muted",
@@ -470,7 +475,7 @@ function Acciones({
 
 function Tarjetas({ productos, alEditar, alBorrar }: PropsFilas) {
   return (
-    <ul className="grid gap-3 md:hidden">
+    <ul className="grid gap-3 md:grid-cols-2 lg:hidden">
       {productos.map((p) => (
         <li
           key={p.id}
@@ -515,7 +520,7 @@ function Tabla({
   alBorrar,
 }: PropsFilas & { marca: Marca }) {
   return (
-    <div className="hidden rounded-xl border bg-card md:block">
+    <div className="hidden rounded-xl border bg-card lg:block">
       {/* table-fixed + anchos fijos: todas las marcas se ven con las mismas columnas. */}
       <Table className="table-fixed">
         <caption className="sr-only">Productos {marca}</caption>
