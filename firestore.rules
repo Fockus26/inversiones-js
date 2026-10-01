@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// D003: solo los usuarios con documento admins/{uid} leen o escriben el catálogo.
+// El chatbot NO pasa por estas reglas: lee con el Admin SDK desde su servidor (D005).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function esAdmin() {
+      return autenticado()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function productoValido(p) {
+      return p.keys().hasOnly([
+          'marca', 'nombre', 'variante', 'inicial', 'cuota', 'numeroCuotas',
+          'cantidad', 'activo', 'orden', 'actualizadoEn', 'actualizadoPor'
+        ])
+        && p.keys().hasAll([
+          'marca', 'nombre', 'variante', 'inicial', 'cuota', 'numeroCuotas',
+          'cantidad', 'activo', 'orden'
+        ])
+        && p.marca in ['HONOR', 'INFINIX', 'REDMI', 'SAMSUNG', 'TECNO']
+        && p.nombre is string && p.nombre.size() >= 1 && p.nombre.size() <= 80
+        && p.variante is string && p.variante.size() <= 20
+        && p.inicial is number && p.inicial >= 0 && p.inicial <= 100000
+        && p.cuota is number && p.cuota >= 0 && p.cuota <= 100000
+        && p.numeroCuotas is int && p.numeroCuotas >= 1 && p.numeroCuotas <= 48
+        && p.cantidad is int && p.cantidad >= 0 && p.cantidad <= 100000
+        && p.activo is bool
+        && p.orden is number;
+    }
+
+    // Toda escritura desde el panel deja huella de quién y cuándo.
+    function conHuella(p) {
+      return p.actualizadoPor == request.auth.uid
+        && p.actualizadoEn == request.time;
+    }
+
+    match /admins/{uid} {
+      // Cada quien puede comprobar si es admin; la lista se gestiona solo desde consola/Admin SDK.
+      allow read: if autenticado() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /productos/{id} {
+      allow read: if esAdmin();
+      allow create, update: if esAdmin()
+        && productoValido(request.resource.data)
+        && conHuella(request.resource.data);
+      allow delete: if esAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
