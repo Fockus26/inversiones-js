@@ -129,6 +129,26 @@ curl -s -H "apikey: $(grep ^EVOLUTION_API_KEY .env | cut -d= -f2)" \
 Desde **otro** teléfono escribe "Hola" al número del negocio. Gaby responde en 3–10 s
 (simula que escribe). Mira lo que pasa con `docker compose logs -f gaby`.
 
+## Encender y apagar a Gaby (para atender tú a mano)
+
+| Escribe… | Qué pasa |
+|---|---|
+| `gaby off` | Gaby deja de responder **a todos**. Atiendes tú. Los mensajes quedan sin leer para que los veas. |
+| `gaby on` | Gaby vuelve a responder a todos (también donde habías escrito tú). |
+| `gaby estado` | Te dice si está encendida y en cuántos chats está callada. |
+
+Dónde escribirlo (cualquiera sirve):
+
+1. **Desde tu número personal** (el de `ASESOR_NUMEROS`) al número del negocio. Te contesta.
+2. **En "Mensajes para mí"** (tu propio chat) en el teléfono del negocio. Te contesta ahí.
+   En el chat de un cliente también funciona, pero no contesta (para que el cliente no lo vea).
+3. **En el VPS:** `./scripts/gaby.sh off` · `./scripts/gaby.sh on` · `./scripts/gaby.sh estado`.
+
+El estado sobrevive a reinicios. Los recordatorios de citas ya agendadas salen aunque esté apagada.
+
+**Automático:** si escribes tú a mano en el chat de un cliente (desde el teléfono o WhatsApp Web),
+Gaby se calla **solo en ese chat** durante 12 h (`HORAS_PAUSA`). Así no te pisa.
+
 ## Uso diario
 
 | Para… | Comando (en `/opt/inversiones-js/bot`) |
@@ -136,11 +156,13 @@ Desde **otro** teléfono escribe "Hola" al número del negocio. Gaby responde en
 | Ver logs | `docker compose logs -f --tail 100 gaby` |
 | Actualizar a la última versión | `git pull && docker compose up -d --build` |
 | Reiniciar | `docker compose restart gaby` |
+| Apagar / encender a Gaby | `./scripts/gaby.sh off` · `./scripts/gaby.sh on` |
 | Estado del número | `curl -s -H "apikey: …" http://localhost:8080/instance/connectionState/inversiones-js` |
 
 ## Cuidar el número (riesgo de baneo)
 
-Ya incluido en el bot: pausa aleatoria con "escribiendo…", marca leído antes de responder, 5
+Ya incluido en el bot: topes de respuestas (8 por chat cada 10 min, 60 por hora), se calla
+cuando escribes tú, pausa aleatoria con "escribiendo…", marca leído antes de responder, 5
 redacciones distintas de cada mensaje, solo responde a quien escribe primero, ignora grupos y el
 historial viejo, y espacia los recordatorios.
 
