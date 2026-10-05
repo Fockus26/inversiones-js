@@ -37,13 +37,3 @@ Cuenta de servicio aparte con `roles/datastore.viewer` (no la de Firebase Admin)
 `productos where activo == true` con el Admin SDK. Recomendado: caché en memoria de 60 s
 (cambios visibles en < 1 min, pocas lecturas); `onSnapshot` solo si el chatbot es un proceso
 persistente. Detalle en `docs/chatbot.md`.
-
-# D027 — Bot de WhatsApp con Baileys en `chatbot/`, flujo por menú y frenos anti-baneo
-
-Paquete aparte (`chatbot/`, sus propias dependencias) que se despliega en un VPS con pm2. Se
-conecta como dispositivo vinculado con Baileys (no oficial: riesgo de baneo asumido por el
-cliente; la API oficial es la salida si crece). Importa `lib/catalogo/tipos.ts` y
-`texto-lista.ts` del repo (bun build los empaqueta) y lee como D024. Flujo determinista, sin
-IA: menú 1 lista / 2 modelo / 3 asesor; pedir asesor o escribir el dueño desde el teléfono
-calla al bot en ese chat 12 h. Solo responde, nunca inicia; cola global con "escribiendo…",
-pausas al azar y topes por chat y por hora. Estado de chats en `datos/chats.json`.

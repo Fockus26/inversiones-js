@@ -4,9 +4,6 @@ El panel y el chatbot comparten **una colección de Firestore**: `productos`. Lo
 guarda en el panel es lo que el chatbot responde (D005). Este archivo es el contrato entre los
 dos: si cambias el modelo (`lib/catalogo/tipos.ts`), actualiza aquí y anota la decisión.
 
-El bot de WhatsApp que usa este contrato vive en [`chatbot/`](../chatbot/README.md) (D027):
-instalación en el VPS, flujo y reglas anti-baneo.
-
 ## Contrato de datos
 
 Colección `productos`, un documento por equipo (D002).

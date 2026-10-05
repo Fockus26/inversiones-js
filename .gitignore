@@ -52,8 +52,3 @@ context/CONTENT_CHECKLIST.md
 context/PHASE_LOG/
 context/plans/
 .pr-shots/
-
-# chatbot (sesión de WhatsApp = acceso a la cuenta: nunca a git)
-/chatbot/node_modules
-/chatbot/dist
-/chatbot/datos
