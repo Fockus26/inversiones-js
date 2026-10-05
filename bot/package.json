@@ -1,0 +1,17 @@
+{
+  "name": "inversiones-js-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun src/servidor.ts",
+    "test": "bun test ./tests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "typescript": "^5"
+  }
+}

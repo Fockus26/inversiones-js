@@ -24,3 +24,4 @@
 | D024 | decisions/04-chatbot.md | Chatbot: cuenta de solo lectura + caché 60 s |
 | D025 | decisions/05-marcas.md | Marcas editables en `marcas/{nombre}`; renombrar en lote |
 | D026 | decisions/05-marcas.md | Select propio (Base UI) en vez del `<select>` nativo |
+| D027 | decisions/04-chatbot.md | Bot propio en `bot/`; horario en Firestore, citas en Calendar |
