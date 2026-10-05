@@ -124,6 +124,29 @@ curl -s -H "apikey: $(grep ^EVOLUTION_API_KEY .env | cut -d= -f2)" \
 # → "state":"open"
 ```
 
+### Si sale "No se pudo vincular el dispositivo" o `pairingCode: null`
+
+Fallo conocido de Evolution 2.3.x: se atasca guardando el historial mientras vincula. Arreglo
+aplicado en este VPS (5/10/2026) con un override junto al compose de Evolution
+(`/root/evolution-api/docker-compose.override.yml`, que Compose junta solo):
+
+```yaml
+services:
+  <servicio de evolution>:
+    environment:
+      CACHE_REDIS_ENABLED: "false"
+      CACHE_LOCAL_ENABLED: "true"
+      DATABASE_SAVE_DATA_CHATS: "false"
+      DATABASE_SAVE_DATA_CONTACTS: "false"
+      DATABASE_SAVE_DATA_HISTORIC: "false"
+      DATABASE_SAVE_DATA_LABELS: "false"
+      CONFIG_SESSION_PHONE_VERSION: "2.3000.1033773198"
+      WEBHOOK_GLOBAL_ENABLED: "false"   # evita que un webhook global (n8n) responda en paralelo
+```
+
+Luego `docker compose up -d` en esa carpeta, borrar la instancia (`/instance/logout` y
+`/instance/delete`) y volver a correr `vincular.sh`.
+
 ## I. Probar
 
 Desde **otro** teléfono escribe "Hola" al número del negocio. Gaby responde en 3–10 s
