@@ -14,6 +14,7 @@ WEBHOOK="http://gaby:3000/webhook/$WEBHOOK_TOKEN"
 echo "→ Creando instancia $INST (si ya existe, sigue)…"
 curl -s "${H[@]}" -X POST "$EVO/instance/create" -d "{
   \"instanceName\": \"$INST\",
+  \"number\": \"$NUMERO\",
   \"integration\": \"WHATSAPP-BAILEYS\",
   \"qrcode\": true,
   \"groupsIgnore\": true,
@@ -36,9 +37,13 @@ curl -s "${H[@]}" -X POST "$EVO/webhook/set/$INST" -d "{
 }" | head -c 300; echo
 
 echo "→ Pidiendo código de vinculación para $NUMERO…"
-RESP=$(curl -s "${H[@]}" "$EVO/instance/connect/$INST?number=$NUMERO")
-CODIGO=$(echo "$RESP" | grep -o '"pairingCode":"[^"]*"' | cut -d'"' -f4 || true)
-echo "$RESP" | grep -o '"base64":"[^"]*"' | cut -d'"' -f4 | sed 's/^data:image\/png;base64,//' | base64 -d > qr.png 2>/dev/null || true
+CODIGO=""
+for intento in 1 2 3; do
+  RESP=$(curl -s "${H[@]}" "$EVO/instance/connect/$INST?number=$NUMERO")
+  CODIGO=$(echo "$RESP" | grep -o '"pairingCode":"[^"]*"' | cut -d'"' -f4 || true)
+  [ -n "$CODIGO" ] && break
+  sleep 3
+done
 
 echo
 if [ -n "$CODIGO" ]; then
@@ -46,9 +51,20 @@ if [ -n "$CODIGO" ]; then
   echo "  En el teléfono del negocio: WhatsApp › ⋮ › Dispositivos vinculados › Vincular un dispositivo"
   echo "  › 'Vincular con el número de teléfono' e ingresa el código."
 else
-  echo "  No llegó código de vinculación. Respuesta de Evolution:"
-  echo "$RESP" | head -c 500; echo
+  # Algunas versiones de Evolution no dan código: se muestra el QR en la terminal.
+  QR=$(echo "$RESP" | grep -o '"code":"[^"]*"' | cut -d'"' -f4 || true)
+  if [ -n "$QR" ] && command -v qrencode >/dev/null; then
+    echo "  Evolution no dio código. Escanea este QR YA (vence en ~40 s; si vence, corre el script otra vez):"
+    echo "  WhatsApp › ⋮ › Dispositivos vinculados › Vincular un dispositivo › apunta la cámara."
+    echo
+    echo "$QR" | qrencode -t ansiutf8
+  elif [ -n "$QR" ]; then
+    echo "  Evolution no dio código. Instala qrencode para ver el QR aquí y repite:"
+    echo "    apt install -y qrencode && ./scripts/vincular.sh $NUMERO"
+  else
+    echo "  Evolution no dio código ni QR. Respuesta:"
+    echo "$RESP" | head -c 500; echo
+  fi
 fi
-[ -s qr.png ] && echo "  (También se guardó qr.png por si prefieres escanear el QR.)"
 echo
 echo "Después comprueba:  curl -s -H \"apikey: \$EVOLUTION_API_KEY\" $EVO/instance/connectionState/$INST"
