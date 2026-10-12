@@ -15,6 +15,9 @@
     "tests/**/*.ts",
     "../lib/catalogo/tipos.ts",
     "../lib/catalogo/texto-lista.ts",
-    "../lib/horario/*.ts"
+    "../lib/horario/*.ts",
+    "../lib/rcv/tipos.ts",
+    "../lib/rcv/cotizacion.ts",
+    "../lib/rcv/planes-iniciales.ts"
   ]
 }

@@ -43,12 +43,13 @@ El chatbot **no puede** usar el SDK web de Firebase sin sesión: las reglas solo
 `productos` a usuarios con documento en `admins/{uid}` (D003). Lee con el **Admin SDK**
 (`firebase-admin`) desde su servidor, que no pasa por las reglas.
 
-### Credenciales: cuenta de servicio de solo lectura (D024)
+### Credenciales: cuenta de servicio del bot (D024, D030)
 
 1. Google Cloud Console del proyecto › IAM y administración › Cuentas de servicio › Crear.
    Nombre sugerido: `chatbot-lectura`.
-2. Rol: **Cloud Datastore Viewer** (`roles/datastore.viewer`). Solo lectura de Firestore; no
-   uses la cuenta de servicio por defecto de Firebase Admin (puede escribir todo).
+2. Rol: **Cloud Datastore User** (`roles/datastore.user`). Desde D030 el bot guarda las
+   solicitudes de póliza RCV; antes bastaba Datastore Viewer. No uses la cuenta por defecto
+   de Firebase Admin (además de Firestore, administra Auth y todo el proyecto).
 3. Claves › Agregar clave › JSON. Guárdala en el gestor de secretos del hosting del chatbot
    (variable de entorno o archivo montado). **Nunca** en git.
 4. En el servidor del chatbot: `GOOGLE_APPLICATION_CREDENTIALS=/ruta/a/la/clave.json`.
@@ -199,12 +200,12 @@ junto a Evolution API (WhatsApp). Usa directamente `lib/catalogo/` (lista de equ
 - **Flujo:** `bot/src/flujo.ts` (menú 1 loterías → cita en Google Calendar; 2 teléfono →
   lista numerada sin agotados → al elegir, requisitos: cédula, RIF actualizado y 2 referencias
   familiares; 3 RCV → ver abajo). Textos con 5 variantes cada uno en `bot/src/textos.ts`.
-- **Póliza RCV (D029):** "Adquirir o comercializar póliza RCV" → tipo de transporte
-  (1 público, 2 privado, 3 placas extranjeras) → lista de vehículos de esa categoría
-  (privado: planes 1–4; público: 1–6 y 8; extranjeras: solo el 7, que va directo) → precio en
-  €, $, COP y Bs. + requisitos → si es público y minibuses, pregunta financiamiento →
-  nombre, correo y teléfono (`ESTE` = su número de WhatsApp) → se guarda la solicitud y se
-  avisa al asesor. Planes y requisitos en `bot/src/rcv.ts`.
+- **Póliza RCV (D029, D030):** "Adquirir o comercializar póliza RCV" → tipo de transporte
+  (1 público, 2 privado, 3 placas extranjeras) → lista de los transportes activos de esa
+  categoría (si hay uno solo, como placas extranjeras, va directo) → precio en €, $ y Bs. +
+  requisitos → si el plan tiene financiamiento y es público, lo pregunta → nombre, correo y
+  teléfono (`ESTE` = su número de WhatsApp) → se guarda en `solicitudesRcv` y se avisa al
+  asesor. Todo se edita en el panel, sección **Póliza RCV** (`/rcv`); ver abajo.
 - **Horario de atención:** documento `configuracion/horario` (tipo `HorarioAtencion` de
   `lib/horario/tipos.ts`). Si no existe, el bot usa `HORARIO_POR_DEFECTO` (lun–vie 9–17,
   sáb 9–13, citas de 60 min, mínimo 3 h de anticipación).
@@ -213,16 +214,31 @@ junto a Evolution API (WhatsApp). Usa directamente `lib/catalogo/` (lista de equ
   WhatsApp (24 h y 2 h antes) se leen de ahí: si el dueño mueve o borra la cita en Calendar,
   el bot lo respeta.
 
+## Póliza RCV (D030)
+
+Se edita en el panel (`/rcv`). Modelo en `lib/rcv/tipos.ts`; el bot lo lee con caché de 60 s.
+
+| Dónde | Campos | Quién escribe |
+|---|---|---|
+| `planesRcv/{id}` | `clase`, `descripcion`, `precioEur` (number, o `null` = "Solicitar cotización"), `categorias` (`publico`/`privado`/`extranjeras`, al menos una), `financiamiento` (bool), `activo` (bool), `orden` (number), huella | Panel |
+| `configuracion/rcv` | `tasaUsd` (1 € = X $), `tasaBs` (1 € = X Bs.), `requisitos` (`{ publico, privado, extranjeras }`: listas de texto), huella | Panel |
+| `solicitudesRcv/{id}` | `nombre`, `correo`, `telefono`, `whatsapp`, `categoria`, `planId`, `clase`, `descripcion`, `precioEur`, `precioUsd`, `precioBs` (los del momento), `financiamiento` (bool o `null`), `creadoEn` | Bot (Admin SDK) |
+
+- **Precios:** el euro es fijo por transporte; dólares y bolívares = `precioEur × tasa`,
+  redondeados a 2 decimales (`cotizar` de `lib/rcv/cotizacion.ts`). Sin tasas guardadas, el
+  chat muestra solo euros.
+- **Requisitos:** si `configuracion/rcv` no trae los de una categoría, el bot usa
+  `REQUISITOS_RCV_POR_DEFECTO` (provisionales) y el panel avisa que lo son.
+- **Escritura del bot:** la cuenta `chatbot-lectura` pasa a **Cloud Datastore User**
+  (`roles/datastore.user`) para poder crear `solicitudesRcv`. El código solo escribe ahí.
+- Seed: `bun run seed:emulador` y `bun run seed:produccion` cargan la tabla del cliente
+  (`lib/rcv/planes-iniciales.ts`) y sus tasas implícitas (1 € = 1,1193 $ = 979,0788 Bs.).
+
 ### Por resolver (póliza RCV)
 
-- **Requisitos por tipo de transporte:** los de `REQUISITOS_RCV` (`bot/src/rcv.ts`) son
-  **provisionales, inventados** para armar el flujo. El cliente debe pasar la lista real.
-- **Planes y precios desde la página web:** hoy salen de `PLANES_RCV_POR_DEFECTO` (la tabla
-  que pasó el cliente, con su cambio a $, COP y Bs. de ese día). Falta definir la página web
-  para que `servicios.planesRcv()` los lea de allí.
-- **Base de datos de la página web:** las solicitudes (nombre, correo, teléfono, plan,
-  financiamiento) se guardan por ahora en la tabla `solicitudes_rcv` del SQLite del bot y
-  van completas en el aviso al asesor. Falta cambiar `servicios.guardarSolicitudRcv()` para
-  que escriba en la base de la página.
+- **Requisitos reales:** los provisionales están **inventados**. El cliente los cambia desde
+  el panel (botón **Requisitos**); mientras tanto el panel muestra un aviso.
+- **Pesos colombianos (COP):** la tabla original los traía; el panel solo maneja tasas de $ y
+  Bs. Si se quieren de vuelta, es una tasa más en `configuracion/rcv`.
 - **Financiamiento de minibuses:** el bot solo registra si lo quiere; faltan las condiciones
   (inicial, cuotas) si se quieren mostrar en el chat.

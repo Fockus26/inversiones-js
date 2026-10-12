@@ -3,11 +3,16 @@ import {
   type Turno,
   turnosDisponibles,
 } from "../../lib/horario/turnos";
-import { guardarSolicitudRcv } from "./estado";
 import { avisarAsesores } from "./evolution";
 import type { Contacto, DatosCita, Servicios } from "./flujo";
-import { crearEvento, leerCatalogo, leerHorario, ocupados } from "./google";
-import { PLANES_RCV_POR_DEFECTO } from "./rcv";
+import {
+  crearEvento,
+  guardarSolicitudRcv,
+  leerCatalogo,
+  leerHorario,
+  leerRcv,
+  ocupados,
+} from "./google";
 
 /** `Servicios` reales del flujo: Firestore, Google Calendar y avisos por WhatsApp. */
 
@@ -60,9 +65,8 @@ export const servicios: Servicios = {
   catalogo: leerCatalogo,
   turnosDisponibles: turnos,
   agendar,
-  // POR RESOLVER: leer planes y precios de la página web y guardar allí las solicitudes.
-  planesRcv: async () => PLANES_RCV_POR_DEFECTO,
-  guardarSolicitudRcv: async (solicitud) => guardarSolicitudRcv(solicitud),
+  rcv: leerRcv,
+  guardarSolicitudRcv,
   avisarAsesor: avisarAsesores,
   ahora: () => new Date(),
   azar: Math.random,

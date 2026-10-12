@@ -16,6 +16,16 @@ import {
   COLECCION_PRODUCTOS,
   MARCAS_INICIALES,
 } from "@/lib/catalogo/tipos";
+import { COLECCION_CONFIGURACION } from "@/lib/horario/tipos";
+import {
+  PLANES_RCV_INICIALES,
+  TASAS_RCV_INICIALES,
+} from "@/lib/rcv/planes-iniciales";
+import {
+  COLECCION_PLANES_RCV,
+  COLECCION_SOLICITUDES_RCV,
+  DOC_CONFIG_RCV,
+} from "@/lib/rcv/tipos";
 
 /** Cuentas que SOLO existen en el emulador (proyecto demo-*). */
 export const CUENTAS_EMULADOR = {
@@ -80,9 +90,38 @@ for (const { id, ...producto } of CATALOGO_INICIAL) {
     actualizadoPor: "seed",
   });
 }
+for (const { id, ...plan } of PLANES_RCV_INICIALES) {
+  lote.set(db.collection(COLECCION_PLANES_RCV).doc(id), {
+    ...plan,
+    actualizadoEn: FieldValue.serverTimestamp(),
+    actualizadoPor: "seed",
+  });
+}
+lote.set(db.collection(COLECCION_CONFIGURACION).doc(DOC_CONFIG_RCV), {
+  tasaUsd: TASAS_RCV_INICIALES.usd,
+  tasaBs: TASAS_RCV_INICIALES.bs,
+  actualizadoEn: FieldValue.serverTimestamp(),
+  actualizadoPor: "seed",
+});
+// Una solicitud de ejemplo para ver la lista en el panel.
+lote.set(db.collection(COLECCION_SOLICITUDES_RCV).doc("ejemplo"), {
+  nombre: "María Pérez",
+  correo: "maria@ejemplo.com",
+  telefono: "04141234567",
+  whatsapp: "584141234567",
+  categoria: "publico",
+  planId: "minibuses",
+  clase: "MINIBUSES URBANOS Y SUBURBANOS",
+  descripcion: "PLAN II MINIBUSES URBANOS Y SUBURBANOS APOV/EXC",
+  precioEur: 131,
+  precioUsd: 146.63,
+  precioBs: 128259.32,
+  financiamiento: true,
+  creadoEn: FieldValue.serverTimestamp(),
+});
 await lote.commit();
 
 console.log(
-  `✓ ${MARCAS_INICIALES.length} marcas, ${CATALOGO_INICIAL.length} productos y 2 cuentas en ${projectId} (admin: ${CUENTAS_EMULADOR.admin.email})`,
+  `✓ ${MARCAS_INICIALES.length} marcas, ${CATALOGO_INICIAL.length} productos, ${PLANES_RCV_INICIALES.length} transportes RCV y 2 cuentas en ${projectId} (admin: ${CUENTAS_EMULADOR.admin.email})`,
 );
 process.exit(0);

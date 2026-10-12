@@ -336,3 +336,84 @@ describe("resto de la base", () => {
     await assertFails(setDoc(doc(dbAdmin(), "otra", "x"), { a: 1 }));
   });
 });
+
+describe("póliza RCV (D030)", () => {
+  function plan(extra: Record<string, unknown> = {}) {
+    return {
+      clase: "MOTO",
+      descripcion: "MOTOCICLETAS",
+      precioEur: 15,
+      categorias: ["privado", "publico"],
+      financiamiento: false,
+      activo: true,
+      orden: 1,
+      ...extra,
+    };
+  }
+
+  test("admin crea, edita y borra transportes; sin acceso no", async () => {
+    const ref = doc(dbAdmin(), "planesRcv", "moto");
+    await assertSucceeds(setDoc(ref, { ...plan(), ...huella(ADMIN) }));
+    await assertSucceeds(updateDoc(ref, { precioEur: null, ...huella(ADMIN) }));
+    await assertFails(getDoc(doc(dbOtro(), "planesRcv", "moto")));
+    await assertFails(
+      setDoc(doc(dbOtro(), "planesRcv", "x"), { ...plan(), ...huella(OTRO) }),
+    );
+    await assertSucceeds(deleteDoc(ref));
+  });
+
+  test("transporte inválido falla", async () => {
+    const col = (id: string) => doc(dbAdmin(), "planesRcv", id);
+    for (const [id, malo] of [
+      ["a", plan({ categorias: [] })],
+      ["b", plan({ categorias: ["aereo"] })],
+      ["c", plan({ precioEur: -1 })],
+      ["d", plan({ precioEur: "15" })],
+      ["e", plan({ clase: "" })],
+      ["f", plan({ extra: 1 })],
+    ] as const)
+      await assertFails(setDoc(col(id), { ...malo, ...huella(ADMIN) }));
+    await assertFails(setDoc(col("g"), plan()));
+  });
+
+  test("configuracion/rcv: tasas y requisitos por separado", async () => {
+    const ref = doc(dbAdmin(), "configuracion", "rcv");
+    await assertSucceeds(
+      setDoc(ref, { tasaUsd: 1.12, tasaBs: 979.08, ...huella(ADMIN) }),
+    );
+    await assertSucceeds(
+      setDoc(
+        ref,
+        {
+          requisitos: { publico: ["a"], privado: ["b"], extranjeras: ["c"] },
+          ...huella(ADMIN),
+        },
+        { merge: true },
+      ),
+    );
+    await assertFails(setDoc(ref, { tasaUsd: 0, ...huella(ADMIN) }));
+    await assertFails(
+      setDoc(ref, { requisitos: { publico: [] }, ...huella(ADMIN) }),
+    );
+    await assertFails(setDoc(ref, { otra: 1, ...huella(ADMIN) }));
+    await assertFails(deleteDoc(ref));
+    await assertFails(getDoc(doc(dbOtro(), "configuracion", "rcv")));
+    // El resto de configuracion (horario) sigue cerrado al panel.
+    await assertFails(getDoc(doc(dbAdmin(), "configuracion", "horario")));
+  });
+
+  test("solicitudes: admin lee y borra, nadie las crea desde el cliente", async () => {
+    await entorno.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "solicitudesRcv", "s1"), {
+        nombre: "Ana",
+      });
+    });
+    await assertSucceeds(getDoc(doc(dbAdmin(), "solicitudesRcv", "s1")));
+    await assertFails(getDoc(doc(dbOtro(), "solicitudesRcv", "s1")));
+    await assertFails(
+      setDoc(doc(dbAdmin(), "solicitudesRcv", "s2"), { nombre: "x" }),
+    );
+    await assertFails(deleteDoc(doc(dbOtro(), "solicitudesRcv", "s1")));
+    await assertSucceeds(deleteDoc(doc(dbAdmin(), "solicitudesRcv", "s1")));
+  });
+});

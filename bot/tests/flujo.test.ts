@@ -1,6 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import type { ProductoDeLista } from "../../lib/catalogo/texto-lista";
 import type { Turno } from "../../lib/horario/turnos";
+import { cotizar, planesDe, textoPrecio } from "../../lib/rcv/cotizacion";
+import {
+  PLANES_RCV_INICIALES,
+  TASAS_RCV_INICIALES,
+} from "../../lib/rcv/planes-iniciales";
+import {
+  type CategoriaRcv,
+  REQUISITOS_RCV_POR_DEFECTO as REQUISITOS,
+  type SolicitudRcv,
+} from "../../lib/rcv/tipos";
 import {
   type Contacto,
   correoValido,
@@ -13,13 +23,14 @@ import {
   type Servicios,
   telefonoValido,
 } from "../src/flujo";
-import {
-  PLANES_RCV_POR_DEFECTO,
-  planesDe,
-  REQUISITOS_RCV,
-  type SolicitudRcv,
-  textoPrecio,
-} from "../src/rcv";
+import type { DatosRcvFirestore } from "../src/rcv";
+
+const datosRcv: DatosRcvFirestore = {
+  planes: PLANES_RCV_INICIALES,
+  tasas: TASAS_RCV_INICIALES,
+  requisitos: REQUISITOS,
+};
+
 import * as T from "../src/textos";
 
 const AHORA = new Date("2026-10-01T14:00:00Z");
@@ -89,7 +100,7 @@ function falsos(extra: Partial<Servicios> = {}) {
       citas.push({ turno, direccion: datos.direccion });
       return true;
     },
-    planesRcv: async () => PLANES_RCV_POR_DEFECTO,
+    rcv: async () => datosRcv,
     guardarSolicitudRcv: async (sol) => {
       solicitudes.push(sol);
     },
@@ -227,15 +238,22 @@ describe("flujo", () => {
   });
 
   test("planes RCV: privado 1–4, público 1–6 y 8, extranjeras solo 7", () => {
-    const nros = (c: Parameters<typeof planesDe>[1]) =>
-      planesDe(PLANES_RCV_POR_DEFECTO, c).map((p) => p.nro);
+    const nros = (c: CategoriaRcv) =>
+      planesDe(PLANES_RCV_INICIALES, c).map((p) => p.orden);
     expect(nros("privado")).toEqual([1, 2, 3, 4]);
     expect(nros("publico")).toEqual([1, 2, 3, 4, 5, 6, 8]);
     expect(nros("extranjeras")).toEqual([7]);
-    expect(textoPrecio(PLANES_RCV_POR_DEFECTO[0])).toBe(
-      "15,00 € · 16,79$ · 52.047 COP · Bs. 14.686,18",
+    // Las tasas iniciales reproducen la tabla del cliente.
+    expect(textoPrecio(cotizar(15, TASAS_RCV_INICIALES))).toBe(
+      "15,00 € · 16,79$ · Bs. 14.686,18",
     );
-    expect(textoPrecio(PLANES_RCV_POR_DEFECTO[6])).toBe("Solicitar cotización");
+    expect(textoPrecio(cotizar(131, TASAS_RCV_INICIALES))).toBe(
+      "131,00 € · 146,63$ · Bs. 128.259,32",
+    );
+    expect(textoPrecio(cotizar(15, null))).toBe("15,00 €");
+    expect(textoPrecio(cotizar(null, TASAS_RCV_INICIALES))).toBe(
+      "Solicitar cotización",
+    );
   });
 
   test("opción 3 → privado → pick up → precio y requisitos → datos guardados", async () => {
@@ -256,20 +274,25 @@ describe("flujo", () => {
     expect(lista).not.toContain("TAXI");
     expect(lista).toContain("0414-7221091");
     const ficha = respuestas[3][0];
-    expect(ficha).toContain("45,00 € · 50,37$ · 156.141 COP · Bs. 44.058,55");
-    expect(ficha).toContain(REQUISITOS_RCV.privado[0]);
+    expect(ficha).toContain("45,00 € · 50,37$ · Bs. 44.058,55");
+    expect(ficha).toContain(REQUISITOS.privado[0]);
     expect(respuestas[3][1]).toContain("nombre");
     expect(respuestas[4][0]).toContain("María");
     expect(respuestas[6][0]).toContain("asesor");
     expect(solicitudes).toEqual([
       {
-        categoria: "privado",
-        plan: PLANES_RCV_POR_DEFECTO[3],
-        financiamiento: undefined,
         nombre: "María Pérez",
         correo: "maria@correo.com",
         telefono: "584121234567",
-        jid: contacto.jid,
+        whatsapp: "584121234567",
+        categoria: "privado",
+        planId: "pick-up",
+        clase: "PICK UP",
+        descripcion: "PLAN BÁSICO PARTICULAR PICK UP",
+        precioEur: 45,
+        precioUsd: 50.37,
+        precioBs: 44058.55,
+        financiamiento: null,
       },
     ]);
     expect(avisos[0]).toContain("Transporte privado");
@@ -291,7 +314,7 @@ describe("flujo", () => {
     ]);
     expect(respuestas[2][0]).toContain("7. MINIBUSES URBANOS Y SUBURBANOS");
     expect(respuestas[3][0]).toContain("131,00 €");
-    expect(respuestas[3][0]).toContain(REQUISITOS_RCV.publico[3]);
+    expect(respuestas[3][0]).toContain(REQUISITOS.publico[3]);
     expect(respuestas[3][1]).toContain("financiar");
     expect(solicitudes[0].financiamiento).toBe(true);
     expect(solicitudes[0].telefono).toBe("04145551234");
@@ -306,9 +329,24 @@ describe("flujo", () => {
     const { s } = falsos();
     const { respuestas, estado } = await conversar(s, ["hola", "3", "3"]);
     expect(respuestas[2][0]).toContain("Solicitar cotización");
-    expect(respuestas[2][0]).toContain(REQUISITOS_RCV.extranjeras[0]);
+    expect(respuestas[2][0]).toContain(REQUISITOS.extranjeras[0]);
     expect(estado?.paso).toBe("rcv_nombre");
-    expect(estado?.rcv?.plan?.nro).toBe(7);
+    expect(estado?.rcv?.plan?.id).toBe("placas-extranjeras");
+  });
+
+  test("sin tasas el chat muestra solo euros; oculto no aparece", async () => {
+    const { s } = falsos({
+      rcv: async () => ({
+        ...datosRcv,
+        tasas: null,
+        planes: datosRcv.planes.map((p) =>
+          p.id === "taxi" ? { ...p, activo: false } : p,
+        ),
+      }),
+    });
+    const { respuestas } = await conversar(s, ["hola", "3", "1", "1"]);
+    expect(respuestas[2][0]).not.toContain("TAXI");
+    expect(respuestas[3][0]).toContain("💵 Precio: 15,00 €\n");
   });
 
   test("datos inválidos se vuelven a pedir", async () => {

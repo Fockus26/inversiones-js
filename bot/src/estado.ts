@@ -3,7 +3,6 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { config } from "./config";
 import type { Estado } from "./flujo";
-import type { SolicitudRcv } from "./rcv";
 
 /** Estado de cada conversación y mensajes ya procesados, en SQLite (volumen /data). */
 
@@ -22,11 +21,6 @@ db.exec(
 );
 db.exec(
   "CREATE TABLE IF NOT EXISTS pausas (jid TEXT PRIMARY KEY, hasta INTEGER NOT NULL)",
-);
-
-// Respaldo local de las solicitudes de póliza RCV hasta que la página web tenga su base de datos.
-db.exec(
-  "CREATE TABLE IF NOT EXISTS solicitudes_rcv (id INTEGER PRIMARY KEY AUTOINCREMENT, cuando INTEGER NOT NULL, jid TEXT NOT NULL, nombre TEXT NOT NULL, correo TEXT NOT NULL, telefono TEXT NOT NULL, categoria TEXT NOT NULL, plan INTEGER NOT NULL, financiamiento INTEGER)",
 );
 
 const qLeer = db.query<{ estado: string }, [string]>(
@@ -95,23 +89,6 @@ export function chatsPausados(): number {
 /** Quita todas las pausas por chat (al encender con "gaby on"). */
 export function reanudarChats(): void {
   db.exec("DELETE FROM pausas");
-}
-
-const qSolicitud = db.query(
-  "INSERT INTO solicitudes_rcv (cuando, jid, nombre, correo, telefono, categoria, plan, financiamiento) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-);
-
-export function guardarSolicitudRcv(s: SolicitudRcv): void {
-  qSolicitud.run(
-    Date.now(),
-    s.jid,
-    s.nombre,
-    s.correo,
-    s.telefono,
-    s.categoria,
-    s.plan.nro,
-    s.financiamiento === undefined ? null : s.financiamiento ? 1 : 0,
-  );
 }
 
 setInterval(() => qLimpiar.run(Date.now() - 3 * 86_400_000), 3_600_000);

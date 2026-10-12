@@ -8,7 +8,10 @@ Pasos A–E: preparación (Google + VPS). Pasos F–I: levantar el bot y vincula
    Arriba, selecciona **el mismo proyecto** que usa el panel.
 2. Menú ☰ › **IAM y administración › Cuentas de servicio › + Crear cuenta de servicio**.
    - Nombre: `chatbot-lectura` → Crear y continuar.
-   - Rol: **Cloud Datastore Viewer** (busca "Datastore Viewer") → Continuar → Listo.
+   - Rol: **Cloud Datastore User** (busca "Datastore User") → Continuar → Listo. Hace falta
+     para guardar las solicitudes de póliza RCV (D030). Si la cuenta ya existía con
+     "Datastore Viewer": IAM y administración › IAM › lápiz de `chatbot-lectura` › cambia el
+     rol a **Cloud Datastore User** › Guardar.
 3. Abre la cuenta recién creada › pestaña **Claves › Agregar clave › Crear clave nueva › JSON**.
    Se descarga un archivo `.json`. **No lo pegues en el chat ni lo subas a git.**
 4. Copia el correo de la cuenta (algo como `chatbot-lectura@TU-PROYECTO.iam.gserviceaccount.com`).
