@@ -197,8 +197,14 @@ junto a Evolution API (WhatsApp). Usa directamente `lib/catalogo/` (lista de equ
 `lib/horario/` (huecos para citas). Despliegue paso a paso: `bot/DESPLIEGUE.md`.
 
 - **Flujo:** `bot/src/flujo.ts` (menú 1 loterías → cita en Google Calendar; 2 teléfono →
-  lista numerada sin agotados; 3 RCV → público/privado → asesor). Textos con 5 variantes cada
-  uno en `bot/src/textos.ts`.
+  lista numerada sin agotados → al elegir, requisitos: cédula, RIF actualizado y 2 referencias
+  familiares; 3 RCV → ver abajo). Textos con 5 variantes cada uno en `bot/src/textos.ts`.
+- **Póliza RCV (D029):** "Adquirir o comercializar póliza RCV" → tipo de transporte
+  (1 público, 2 privado, 3 placas extranjeras) → lista de vehículos de esa categoría
+  (privado: planes 1–4; público: 1–6 y 8; extranjeras: solo el 7, que va directo) → precio en
+  €, $, COP y Bs. + requisitos → si es público y minibuses, pregunta financiamiento →
+  nombre, correo y teléfono (`ESTE` = su número de WhatsApp) → se guarda la solicitud y se
+  avisa al asesor. Planes y requisitos en `bot/src/rcv.ts`.
 - **Horario de atención:** documento `configuracion/horario` (tipo `HorarioAtencion` de
   `lib/horario/tipos.ts`). Si no existe, el bot usa `HORARIO_POR_DEFECTO` (lun–vie 9–17,
   sáb 9–13, citas de 60 min, mínimo 3 h de anticipación).
@@ -206,3 +212,17 @@ junto a Evolution API (WhatsApp). Usa directamente `lib/catalogo/` (lista de equ
   `chatbot-lectura`) con `extendedProperties.private.origen = "gaby"`. Los recordatorios por
   WhatsApp (24 h y 2 h antes) se leen de ahí: si el dueño mueve o borra la cita en Calendar,
   el bot lo respeta.
+
+### Por resolver (póliza RCV)
+
+- **Requisitos por tipo de transporte:** los de `REQUISITOS_RCV` (`bot/src/rcv.ts`) son
+  **provisionales, inventados** para armar el flujo. El cliente debe pasar la lista real.
+- **Planes y precios desde la página web:** hoy salen de `PLANES_RCV_POR_DEFECTO` (la tabla
+  que pasó el cliente, con su cambio a $, COP y Bs. de ese día). Falta definir la página web
+  para que `servicios.planesRcv()` los lea de allí.
+- **Base de datos de la página web:** las solicitudes (nombre, correo, teléfono, plan,
+  financiamiento) se guardan por ahora en la tabla `solicitudes_rcv` del SQLite del bot y
+  van completas en el aviso al asesor. Falta cambiar `servicios.guardarSolicitudRcv()` para
+  que escriba en la base de la página.
+- **Financiamiento de minibuses:** el bot solo registra si lo quiere; faltan las condiciones
+  (inicial, cuotas) si se quieren mostrar en el chat.

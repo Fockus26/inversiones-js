@@ -5,6 +5,16 @@ import {
 } from "../../lib/catalogo/texto-lista";
 import { compararMarcas } from "../../lib/catalogo/tipos";
 import type { Turno } from "../../lib/horario/turnos";
+import {
+  type CategoriaRcv,
+  nombrePlan,
+  type PlanRcv,
+  planesDe,
+  REQUISITOS_RCV,
+  type SolicitudRcv,
+  TELEFONO_RCV,
+  textoPrecio,
+} from "./rcv";
 import * as T from "./textos";
 
 /**
@@ -18,10 +28,26 @@ export type Paso =
   | "loteria_horario"
   | "loteria_direccion"
   | "telefono_lista"
-  | "rcv_tipo";
+  | "rcv_tipo"
+  | "rcv_plan"
+  | "rcv_financiamiento"
+  | "rcv_nombre"
+  | "rcv_correo"
+  | "rcv_telefono";
 
 export interface DatosCita {
   direccion: string;
+}
+
+/** Lo que se va juntando en el flujo de póliza RCV. */
+export interface DatosRcv {
+  categoria: CategoriaRcv;
+  /** Planes mostrados (para traducir "2" → plan). */
+  planes?: PlanRcv[];
+  plan?: PlanRcv;
+  financiamiento?: boolean;
+  nombre?: string;
+  correo?: string;
 }
 
 export interface Estado {
@@ -31,6 +57,7 @@ export interface Estado {
   turnoElegido?: Turno;
   /** Equipos mostrados (para traducir "5" → equipo). */
   equipos?: string[];
+  rcv?: DatosRcv;
   /** ms epoch de la última interacción. */
   actualizado: number;
 }
@@ -49,6 +76,10 @@ export interface Servicios {
   turnosDisponibles(): Promise<Turno[]>;
   /** Crea la cita. `false` si el horario ya no está libre. */
   agendar(turno: Turno, contacto: Contacto, datos: DatosCita): Promise<boolean>;
+  /** Planes de póliza RCV con sus precios. */
+  planesRcv(): Promise<readonly PlanRcv[]>;
+  /** Guarda nombre, correo y teléfono de quien pidió la póliza. */
+  guardarSolicitudRcv(solicitud: SolicitudRcv): Promise<void>;
   /** Aviso interno al asesor (WhatsApp). Puede no hacer nada si no hay número configurado. */
   avisarAsesor(texto: string): Promise<void>;
   ahora(): Date;
@@ -255,6 +286,165 @@ async function agendar(
   };
 }
 
+const NOMBRES_CATEGORIA: Record<CategoriaRcv, string> = {
+  publico: "Transporte público",
+  privado: "Transporte privado",
+  extranjeras: "Placas extranjeras",
+};
+
+function categoriaRcv(texto: string): CategoriaRcv | null {
+  const num = numeroElegido(texto);
+  const n = normalizar(texto);
+  if (num === 1 || /public/.test(n)) return "publico";
+  if (num === 2 || /privad|particular/.test(n)) return "privado";
+  if (num === 3 || /extranjer/.test(n)) return "extranjeras";
+  return null;
+}
+
+function listaPlanes(planes: PlanRcv[]): string {
+  return planes
+    .map((p, i) => `${i + 1}. ${p.clase} — ${nombrePlan(p)}`)
+    .join("\n");
+}
+
+/** Precio y requisitos del plan elegido. */
+export function fichaPlan(plan: PlanRcv, categoria: CategoriaRcv): string {
+  const requisitos = REQUISITOS_RCV[categoria].map((r) => `• ${r}`).join("\n");
+  return [
+    `🚗 *${plan.clase}* — ${nombrePlan(plan)}`,
+    `💵 Precio: ${textoPrecio(plan)}`,
+    "",
+    "📋 Requisitos:",
+    requisitos,
+  ].join("\n");
+}
+
+/** Nombre y apellido: al menos dos palabras con letras. */
+export function nombreValido(texto: string): string | null {
+  const limpio = texto.trim().replace(/\s+/g, " ");
+  const palabras = limpio.split(" ");
+  if (palabras.length < 2 || limpio.length > 80) return null;
+  if (!palabras.every((p) => /^[\p{L}'.-]+$/u.test(p))) return null;
+  return limpio;
+}
+
+export function correoValido(texto: string): string | null {
+  const c = texto.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(c) && c.length <= 120 ? c : null;
+}
+
+/** Solo dígitos (con o sin +58, guiones o espacios); "este" = el número de WhatsApp. */
+export function telefonoValido(
+  texto: string,
+  contacto: Contacto,
+): string | null {
+  const n = normalizar(texto);
+  if (/^(este|el mismo|mismo|este mismo|este numero|el de whatsapp)$/.test(n)) {
+    return contacto.telefono || null;
+  }
+  if (!/^[+\d\s().-]+$/.test(texto.trim())) return null;
+  const digitos = texto.replace(/\D/g, "");
+  return digitos.length >= 10 && digitos.length <= 15 ? digitos : null;
+}
+
+function primerNombre(nombre: string): string {
+  return nombre.split(" ")[0] ?? nombre;
+}
+
+async function ofrecerPlanes(
+  s: Servicios,
+  contacto: Contacto,
+  categoria: CategoriaRcv,
+): Promise<Resultado> {
+  let planes: PlanRcv[] = [];
+  try {
+    planes = planesDe(await s.planesRcv(), categoria);
+  } catch (e) {
+    console.error("No se pudieron leer los planes RCV", e);
+  }
+  if (planes.length === 0) {
+    await s.avisarAsesor(
+      `🚗 Póliza RCV: no se pudieron mostrar los planes.\nCliente: ${contacto.nombre || "—"} (+${contacto.telefono})\nTipo: ${NOMBRES_CATEGORIA[categoria]}`,
+    );
+    return {
+      respuestas: [T.elegir(T.RCV_SIN_PLANES, {}, s.azar)],
+      estado: nuevo("menu", s),
+    };
+  }
+  // Placas extranjeras es un solo plan: se muestra directo, sin lista.
+  if (planes.length === 1) return elegirPlan(s, { categoria }, planes[0]);
+  const intro = T.elegir(
+    T.RCV_LISTA,
+    { categoria: NOMBRES_CATEGORIA[categoria].toLowerCase() },
+    s.azar,
+  );
+  const noAparece = T.RCV_NO_APARECE.replace("{telefono}", TELEFONO_RCV);
+  return {
+    respuestas: [
+      `${intro}\n\n${listaPlanes(planes)}\n\n${noAparece}\n\n${T.elegir(T.RCV_ELIGE, {}, s.azar)}`,
+    ],
+    estado: nuevo("rcv_plan", s, { rcv: { categoria, planes } }),
+  };
+}
+
+function elegirPlan(s: Servicios, rcv: DatosRcv, plan: PlanRcv): Resultado {
+  const ficha = fichaPlan(plan, rcv.categoria);
+  const datos: DatosRcv = { categoria: rcv.categoria, plan };
+  if (plan.ofreceFinanciamiento && rcv.categoria === "publico") {
+    return {
+      respuestas: [ficha, T.elegir(T.RCV_PREGUNTA_FINANCIAMIENTO, {}, s.azar)],
+      estado: nuevo("rcv_financiamiento", s, { rcv: datos }),
+    };
+  }
+  return {
+    respuestas: [ficha, T.elegir(T.RCV_PIDE_NOMBRE, {}, s.azar)],
+    estado: nuevo("rcv_nombre", s, { rcv: datos }),
+  };
+}
+
+async function cerrarRcv(
+  s: Servicios,
+  contacto: Contacto,
+  rcv: DatosRcv,
+  telefono: string,
+): Promise<Resultado> {
+  const { plan, nombre, correo } = rcv;
+  if (!plan || !nombre || !correo) {
+    return {
+      respuestas: [menu(s, contacto, false)],
+      estado: nuevo("menu", s),
+    };
+  }
+  const solicitud: SolicitudRcv = {
+    categoria: rcv.categoria,
+    plan,
+    financiamiento: rcv.financiamiento,
+    nombre,
+    correo,
+    telefono,
+    jid: contacto.jid,
+  };
+  try {
+    await s.guardarSolicitudRcv(solicitud);
+  } catch (e) {
+    // El aviso al asesor lleva los mismos datos: no se pierden.
+    console.error("No se pudo guardar la solicitud RCV", e);
+  }
+  const financiamiento =
+    rcv.financiamiento === undefined
+      ? ""
+      : `\nFinanciamiento: ${rcv.financiamiento ? "Sí" : "No"}`;
+  await s.avisarAsesor(
+    `🚗 Póliza RCV\nTipo: ${NOMBRES_CATEGORIA[rcv.categoria]}\nPlan: ${plan.clase} — ${nombrePlan(plan)}\nPrecio: ${textoPrecio(plan)}${financiamiento}\nNombre: ${nombre}\nCorreo: ${correo}\nTeléfono: ${telefono}\nWhatsApp: +${contacto.telefono}`,
+  );
+  return {
+    respuestas: [
+      `${T.elegir(T.RCV_CONFIRMADA, { nombre: primerNombre(nombre) }, s.azar)}\n\n${T.elegir(T.MENU_DE_NUEVO, {}, s.azar)} Escribe *MENU* para ver las opciones.`,
+    ],
+    estado: nuevo("menu", s),
+  };
+}
+
 export async function procesar(
   estadoPrevio: Estado | null,
   entrada: Entrada,
@@ -344,7 +534,7 @@ export async function procesar(
         );
         return {
           respuestas: [
-            `${T.elegir(T.TELEFONO_ELEGIDO, { equipo }, s.azar)}\n\n${T.elegir(T.MENU_DE_NUEVO, {}, s.azar)} Escribe *MENU* para ver las opciones.`,
+            `${T.elegir(T.TELEFONO_ELEGIDO, { equipo }, s.azar)}\n\n${T.TELEFONO_REQUISITOS}\n\n${T.elegir(T.MENU_DE_NUEVO, {}, s.azar)} Escribe *MENU* para ver las opciones.`,
           ],
           estado: nuevo("menu", s),
         };
@@ -354,12 +544,8 @@ export async function procesar(
     }
 
     case "rcv_tipo": {
-      const num = numeroElegido(texto);
-      let tipo: string | null = null;
-      if (num === 1 || /public/.test(n)) tipo = "Transporte público";
-      else if (num === 2 || /privad|particular/.test(n))
-        tipo = "Transporte privado";
-      if (!tipo) {
+      const categoria = categoriaRcv(texto);
+      if (!categoria) {
         return {
           respuestas: [
             `${T.elegir(T.NO_ENTENDI, {}, s.azar)} ${T.elegir(T.RCV_PREGUNTA, {}, s.azar)}\n\n${T.OPCIONES_RCV}`,
@@ -367,13 +553,89 @@ export async function procesar(
           estado: nuevo("rcv_tipo", s),
         };
       }
-      await s.avisarAsesor(
-        `🚗 Póliza RCV\nCliente: ${contacto.nombre || "—"} (+${contacto.telefono})\nTipo: ${tipo}`,
-      );
+      return ofrecerPlanes(s, contacto, categoria);
+    }
+
+    case "rcv_plan": {
+      const rcv = estado.rcv;
+      if (!rcv) break;
+      const planes = rcv.planes ?? [];
+      const num = numeroElegido(texto);
+      const plan = num ? planes[num - 1] : undefined;
+      if (!plan) {
+        return {
+          respuestas: [
+            `${T.elegir(T.NO_ENTENDI, {}, s.azar)} ${T.elegir(T.RCV_ELIGE, {}, s.azar)}\n\n${listaPlanes(planes)}`,
+          ],
+          estado: nuevo("rcv_plan", s, { rcv }),
+        };
+      }
+      return elegirPlan(s, rcv, plan);
+    }
+
+    case "rcv_financiamiento": {
+      const rcv = estado.rcv;
+      if (!rcv) break;
+      const si = esSi(texto);
+      if (!si && !esNo(texto)) {
+        return {
+          respuestas: [
+            `${T.elegir(T.NO_ENTENDI, {}, s.azar)} ${T.elegir(T.RCV_PREGUNTA_FINANCIAMIENTO, {}, s.azar)}`,
+          ],
+          estado: nuevo("rcv_financiamiento", s, { rcv }),
+        };
+      }
       return {
-        respuestas: [T.elegir(T.RCV_CONFIRMADA, {}, s.azar)],
-        estado: nuevo("menu", s),
+        respuestas: [T.elegir(T.RCV_PIDE_NOMBRE, {}, s.azar)],
+        estado: nuevo("rcv_nombre", s, { rcv: { ...rcv, financiamiento: si } }),
       };
+    }
+
+    case "rcv_nombre": {
+      const rcv = estado.rcv;
+      if (!rcv) break;
+      const nombre = nombreValido(texto);
+      if (!nombre) {
+        return {
+          respuestas: [T.elegir(T.RCV_NOMBRE_INVALIDO, {}, s.azar)],
+          estado: nuevo("rcv_nombre", s, { rcv }),
+        };
+      }
+      return {
+        respuestas: [
+          T.elegir(T.RCV_PIDE_CORREO, { nombre: primerNombre(nombre) }, s.azar),
+        ],
+        estado: nuevo("rcv_correo", s, { rcv: { ...rcv, nombre } }),
+      };
+    }
+
+    case "rcv_correo": {
+      const rcv = estado.rcv;
+      if (!rcv) break;
+      const correo = correoValido(texto);
+      if (!correo) {
+        return {
+          respuestas: [T.elegir(T.RCV_CORREO_INVALIDO, {}, s.azar)],
+          estado: nuevo("rcv_correo", s, { rcv }),
+        };
+      }
+      return {
+        respuestas: [T.elegir(T.RCV_PIDE_TELEFONO, {}, s.azar)],
+        estado: nuevo("rcv_telefono", s, { rcv: { ...rcv, correo } }),
+      };
+    }
+
+    case "rcv_telefono": {
+      const rcv = estado.rcv;
+      if (!rcv) break;
+      const telefono = telefonoValido(texto, contacto);
+      if (!telefono) {
+        return {
+          respuestas: [T.elegir(T.RCV_TELEFONO_INVALIDO, {}, s.azar)],
+          estado: nuevo("rcv_telefono", s, { rcv }),
+        };
+      }
+      return cerrarRcv(s, contacto, rcv, telefono);
     }
 
     case "menu":

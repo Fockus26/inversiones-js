@@ -20,7 +20,7 @@ export const SALUDO: Variantes = [
 export const OPCIONES_MENU = [
   "1️⃣ Emprender con agencia de loterías",
   "2️⃣ Adquirir teléfono a crédito",
-  "3️⃣ Adquirir póliza RCV",
+  "3️⃣ Adquirir o comercializar póliza RCV",
 ].join("\n");
 
 export const PIE_MENU: Variantes = [
@@ -50,11 +50,11 @@ export const NO_ENTENDI: Variantes = [
 // ── 1. Agencia de loterías ──────────────────────────────────────────────
 
 export const LOTERIA_INFO: Variantes = [
-  "¡Felicidades por tu espíritu emprendedor! Con nosotros vas a tener crecimiento económico y personal. Solo necesitas internet, un espacio físico y muchas ganas de ganar dinero. Nosotros te proveemos los equipos, la publicidad y el respaldo económico.",
-  "¡Qué bueno que quieras emprender! Con Inversiones JS creces económica y personalmente. Lo único que necesitas es internet, un espacio físico y muchas ganas de ganar dinero; nosotros ponemos los equipos, la publicidad y el respaldo económico.",
-  "¡Felicitaciones por dar el paso de emprender! Con nosotros tendrás crecimiento económico y personal. Tú pones internet, un espacio físico y las ganas de ganar dinero; nosotros te damos los equipos, la publicidad y el respaldo económico.",
+  "¡Felicidades por tu espíritu emprendedor! Con nosotros vas a tener crecimiento económico y personal. Solo necesitas internet, un espacio físico y muchas ganas de generar dinero. Nosotros te proveemos los equipos, la publicidad y el respaldo económico.",
+  "¡Qué bueno que quieras emprender! Con Inversiones JS creces económica y personalmente. Lo único que necesitas es internet, un espacio físico y muchas ganas de generar dinero; nosotros ponemos los equipos, la publicidad y el respaldo económico.",
+  "¡Felicitaciones por dar el paso de emprender! Con nosotros tendrás crecimiento económico y personal. Tú pones internet, un espacio físico y las ganas de generar dinero; nosotros te damos los equipos, la publicidad y el respaldo económico.",
   "¡Excelente decisión! Emprender con nosotros te da crecimiento económico y personal. Solo te pedimos internet, un espacio físico y muchas ganas de trabajar; los equipos, la publicidad y el respaldo económico corren por nuestra cuenta.",
-  "¡Admiramos tu espíritu emprendedor! Con Inversiones JS vas a crecer en lo económico y en lo personal. Necesitas internet, un espacio físico y muchas ganas de ganar dinero, y nosotros te proveemos equipos, publicidad y respaldo económico.",
+  "¡Admiramos tu espíritu emprendedor! Con Inversiones JS vas a crecer en lo económico y en lo personal. Necesitas internet, un espacio físico y muchas ganas de generar dinero, y nosotros te proveemos equipos, publicidad y respaldo económico.",
 ];
 
 export const LOTERIA_PREGUNTA_CITA: Variantes = [
@@ -156,11 +156,11 @@ export const RECORDATORIO_2H: Variantes = [
 // ── 2. Teléfono a crédito ───────────────────────────────────────────────
 
 export const TELEFONO_INFO: Variantes = [
-  "Adquirir tu teléfono es muy sencillo: solo necesitas copia de la cédula, RIF actualizado y la inicial del equipo que solicites.",
-  "¡Sacar tu teléfono a crédito es muy fácil! Solo necesitas copia de tu cédula, el RIF actualizado y la inicial del equipo que elijas.",
-  "Es muy sencillo: con copia de la cédula, RIF actualizado y la inicial del equipo que quieras, ya puedes estrenar teléfono.",
-  "Para llevarte tu teléfono solo necesitas tres cosas: copia de la cédula, RIF actualizado y la inicial del equipo.",
-  "¡Estrenar teléfono es muy fácil! Requisitos: copia de la cédula, RIF actualizado y la inicial del equipo que solicites.",
+  "Adquirir tu teléfono es muy sencillo: escoge el equipo, paga la inicial y el resto en cómodas cuotas quincenales.",
+  "¡Sacar tu teléfono a crédito es muy fácil! Eliges el equipo, das la inicial y pagas el resto en cuotas quincenales.",
+  "Es muy sencillo: escoges el equipo que quieras, pagas la inicial y el resto en cuotas cada quincena.",
+  "Para llevarte tu teléfono solo eliges el equipo, das la inicial y pagas el resto por quincenas.",
+  "¡Estrenar teléfono es muy fácil! Escoge tu equipo, paga la inicial y el resto en cuotas quincenales.",
 ];
 
 export const TELEFONO_LISTA: Variantes = [
@@ -187,6 +187,14 @@ export const TELEFONO_ELEGIDO: Variantes = [
   "Anotado el *{equipo}*. Un asesor te contactará para completar tu solicitud.",
 ];
 
+/** Opciones fijas: siempre iguales para que el cliente las reconozca. */
+export const TELEFONO_REQUISITOS = [
+  "📋 Para tu solicitud necesitas:",
+  "• Copia de la cédula",
+  "• Copia del RIF actualizado",
+  "• 2 referencias familiares",
+].join("\n");
+
 export const TELEFONO_SIN_EQUIPOS: Variantes = [
   "En este momento estamos actualizando el inventario. Un asesor te enviará la lista en breve.",
   "Ahorita estoy actualizando los equipos disponibles; un asesor te escribirá con la lista.",
@@ -207,20 +215,104 @@ export const RCV_INFO: Variantes = [
 
 export const RCV_PREGUNTA: Variantes = [
   "¿Para qué tipo de transporte es la póliza?",
-  "¿Tu vehículo es de transporte público o privado?",
+  "¿Tu vehículo es de transporte público, privado o tiene placas extranjeras?",
   "Cuéntame, ¿qué tipo de transporte es?",
-  "¿La póliza es para transporte público o privado?",
+  "¿La póliza es para transporte público, privado o placas extranjeras?",
   "Indícame el tipo de transporte:",
 ];
 
-export const OPCIONES_RCV = "1️⃣ Transporte público\n2️⃣ Transporte privado";
+export const OPCIONES_RCV =
+  "1️⃣ Transporte público\n2️⃣ Transporte privado\n3️⃣ Placas extranjeras";
+
+export const RCV_LISTA: Variantes = [
+  "Estos son los vehículos de {categoria}:",
+  "Para {categoria} tenemos estos planes:",
+  "Mira los planes disponibles para {categoria}:",
+  "Estas son las opciones de {categoria}:",
+  "Te comparto los planes de {categoria}:",
+];
+
+export const RCV_ELIGE: Variantes = [
+  "Responde con el número de tu vehículo.",
+  "Escríbeme el número del tipo de vehículo que tienes.",
+  "¿Cuál es el tuyo? Envíame su número.",
+  "Indícame el número de tu vehículo, por favor.",
+  "Elige uno respondiendo con su número.",
+];
+
+export const RCV_NO_APARECE =
+  "Si tu vehículo no aparece en la lista, solicita información al {telefono}.";
+
+export const RCV_PREGUNTA_FINANCIAMIENTO: Variantes = [
+  "¿Te gustaría financiar tu póliza? Responde *SÍ* o *NO*.",
+  "¿Quieres pagar la póliza con financiamiento? Responde *SÍ* o *NO*.",
+  "Tenemos financiamiento para este plan. ¿Te interesa? Responde *SÍ* o *NO*.",
+  "¿Deseas optar por financiamiento? Contesta *SÍ* o *NO*.",
+  "¿Te interesa financiarla? Respóndeme *SÍ* o *NO*.",
+];
+
+export const RCV_PIDE_NOMBRE: Variantes = [
+  "Para continuar, escríbeme tu nombre y apellido.",
+  "Perfecto. ¿Me regalas tu nombre y apellido?",
+  "¡Listo! Ahora necesito tu nombre completo.",
+  "Muy bien. Indícame tu nombre y apellido, por favor.",
+  "Excelente. ¿Cuál es tu nombre completo?",
+];
+
+export const RCV_NOMBRE_INVALIDO: Variantes = [
+  "Necesito tu nombre y apellido, por ejemplo: *María Pérez*.",
+  "Escríbeme tu nombre completo (nombre y apellido), por favor.",
+  "¿Me das tu nombre y apellido? Por ejemplo: *José Rodríguez*.",
+  "Me falta tu nombre completo: nombre y apellido.",
+  "Por favor envíame tu nombre y apellido.",
+];
+
+export const RCV_PIDE_CORREO: Variantes = [
+  "Gracias, {nombre}. ¿Cuál es tu correo electrónico?",
+  "Perfecto, {nombre}. Ahora envíame tu correo electrónico.",
+  "¡Gracias {nombre}! ¿Me regalas tu correo electrónico?",
+  "Muy bien, {nombre}. Indícame tu correo electrónico, por favor.",
+  "Listo, {nombre}. ¿A qué correo te podemos escribir?",
+];
+
+export const RCV_CORREO_INVALIDO: Variantes = [
+  "Ese correo no parece válido. Escríbelo así: *nombre@correo.com*.",
+  "No reconozco ese correo. ¿Me lo envías de nuevo? Ejemplo: *nombre@gmail.com*.",
+  "Creo que el correo tiene un error. Revísalo y envíamelo otra vez.",
+  "Ese correo no es válido. Por favor escríbelo completo, con @.",
+  "Necesito un correo válido, por ejemplo: *nombre@correo.com*.",
+];
+
+export const RCV_PIDE_TELEFONO: Variantes = [
+  "¿Cuál es tu número de teléfono? Si es este mismo de WhatsApp, responde *ESTE*.",
+  "Envíame tu número de teléfono (o escribe *ESTE* si es el mismo de WhatsApp).",
+  "Por último, ¿a qué número te llamamos? Responde *ESTE* si es este mismo.",
+  "Ahora tu número telefónico, por favor. Si es el de este chat, escribe *ESTE*.",
+  "¿Me das un número de teléfono? Si es este mismo, solo responde *ESTE*.",
+];
+
+export const RCV_TELEFONO_INVALIDO: Variantes = [
+  "Ese número no parece válido. Escríbelo así: *0414-1234567*.",
+  "No reconozco ese número. ¿Me lo envías de nuevo? Ejemplo: *0412-1234567*.",
+  "Creo que el número tiene un error. Revísalo y envíamelo otra vez.",
+  "Necesito un número válido, por ejemplo: *0424-1234567*.",
+  "Ese número no es válido. Escríbelo completo con el código de área.",
+];
 
 export const RCV_CONFIRMADA: Variantes = [
-  "¡Perfecto! Te contactaremos inmediatamente con nuestro asesor.",
-  "¡Listo! En un momento te contacta nuestro asesor.",
-  "Perfecto, ya le aviso a nuestro asesor para que te contacte de inmediato.",
-  "¡Excelente! Nuestro asesor te contactará enseguida.",
-  "Anotado. Te pondremos en contacto con nuestro asesor de inmediato.",
+  "¡Perfecto, {nombre}! Guardé tus datos y nuestro asesor te contactará de inmediato.",
+  "¡Listo, {nombre}! Ya tengo tus datos; en un momento te contacta nuestro asesor.",
+  "Gracias, {nombre}. Ya le aviso a nuestro asesor para que te contacte de inmediato.",
+  "¡Excelente, {nombre}! Registré tus datos y nuestro asesor te contactará enseguida.",
+  "Anotado, {nombre}. Te pondremos en contacto con nuestro asesor de inmediato.",
+];
+
+export const RCV_SIN_PLANES: Variantes = [
+  "En este momento estoy actualizando los planes. Un asesor te contactará en breve.",
+  "Ahorita no pude cargar los planes; un asesor te escribirá con la información.",
+  "Estamos actualizando los precios de las pólizas. En breve un asesor te contacta.",
+  "No pude mostrar los planes en este momento. Un asesor te los enviará pronto.",
+  "Los planes se están actualizando; un asesor te escribirá en breve.",
 ];
 
 /** Elige una variante al azar y reemplaza `{clave}`. */

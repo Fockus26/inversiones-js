@@ -3,13 +3,23 @@ import type { ProductoDeLista } from "../../lib/catalogo/texto-lista";
 import type { Turno } from "../../lib/horario/turnos";
 import {
   type Contacto,
+  correoValido,
   type Estado,
   esNo,
   esSi,
+  nombreValido,
   numeroElegido,
   procesar,
   type Servicios,
+  telefonoValido,
 } from "../src/flujo";
+import {
+  PLANES_RCV_POR_DEFECTO,
+  planesDe,
+  REQUISITOS_RCV,
+  type SolicitudRcv,
+  textoPrecio,
+} from "../src/rcv";
 import * as T from "../src/textos";
 
 const AHORA = new Date("2026-10-01T14:00:00Z");
@@ -71,12 +81,17 @@ const productos: ProductoDeLista[] = [
 function falsos(extra: Partial<Servicios> = {}) {
   const avisos: string[] = [];
   const citas: { turno: Turno; direccion: string }[] = [];
+  const solicitudes: SolicitudRcv[] = [];
   const s: Servicios = {
     catalogo: async () => productos,
     turnosDisponibles: async () => turnos,
     agendar: async (turno, _c, datos) => {
       citas.push({ turno, direccion: datos.direccion });
       return true;
+    },
+    planesRcv: async () => PLANES_RCV_POR_DEFECTO,
+    guardarSolicitudRcv: async (sol) => {
+      solicitudes.push(sol);
     },
     avisarAsesor: async (t) => {
       avisos.push(t);
@@ -85,7 +100,7 @@ function falsos(extra: Partial<Servicios> = {}) {
     azar: () => 0,
     ...extra,
   };
-  return { s, avisos, citas };
+  return { s, avisos, citas, solicitudes };
 }
 
 /** Recorre una conversación y devuelve todas las respuestas y el estado final. */
@@ -188,6 +203,12 @@ describe("flujo", () => {
     expect(estado?.paso).toBe("menu");
   });
 
+  test("textos pedidos por el cliente", () => {
+    expect(T.OPCIONES_MENU).toContain("3️⃣ Adquirir o comercializar póliza RCV");
+    for (const t of T.LOTERIA_INFO) expect(t).not.toContain("ganar dinero");
+    expect(T.LOTERIA_INFO[0]).toContain("muchas ganas de generar dinero");
+  });
+
   test("opción 2 → lista numerada sin agotados → elegir equipo", async () => {
     const { s, avisos } = falsos();
     const { respuestas, estado } = await conversar(s, ["hola", "2", "2"]);
@@ -198,17 +219,129 @@ describe("flujo", () => {
     expect(lista).toContain("*REDMI*\n2. Note 15 8/256");
     expect(lista).not.toContain("X6");
     expect(respuestas[2][0]).toContain("*REDMI Note 15 8/256*");
+    expect(respuestas[2][0]).toContain(
+      "• Copia de la cédula\n• Copia del RIF actualizado\n• 2 referencias familiares",
+    );
     expect(avisos[0]).toContain("REDMI Note 15 8/256");
     expect(estado?.paso).toBe("menu");
   });
 
-  test("opción 3 → transporte público → asesor", async () => {
-    const { s, avisos } = falsos();
-    const { respuestas, estado } = await conversar(s, ["hola", "3", "1"]);
-    expect(respuestas[1][0]).toContain("1️⃣ Transporte público");
-    expect(respuestas[2][0]).toContain("asesor");
-    expect(avisos[0]).toContain("Transporte público");
+  test("planes RCV: privado 1–4, público 1–6 y 8, extranjeras solo 7", () => {
+    const nros = (c: Parameters<typeof planesDe>[1]) =>
+      planesDe(PLANES_RCV_POR_DEFECTO, c).map((p) => p.nro);
+    expect(nros("privado")).toEqual([1, 2, 3, 4]);
+    expect(nros("publico")).toEqual([1, 2, 3, 4, 5, 6, 8]);
+    expect(nros("extranjeras")).toEqual([7]);
+    expect(textoPrecio(PLANES_RCV_POR_DEFECTO[0])).toBe(
+      "15,00 € · 16,79$ · 52.047 COP · Bs. 14.686,18",
+    );
+    expect(textoPrecio(PLANES_RCV_POR_DEFECTO[6])).toBe("Solicitar cotización");
+  });
+
+  test("opción 3 → privado → pick up → precio y requisitos → datos guardados", async () => {
+    const { s, avisos, solicitudes } = falsos();
+    const { respuestas, estado } = await conversar(s, [
+      "hola",
+      "3",
+      "2",
+      "4",
+      "María Pérez",
+      "Maria@Correo.com",
+      "este",
+    ]);
+    expect(respuestas[1][0]).toContain("3️⃣ Placas extranjeras");
+    const lista = respuestas[2][0];
+    expect(lista).toContain("1. MOTO — MOTOCICLETAS");
+    expect(lista).toContain("4. PICK UP — PLAN BÁSICO PARTICULAR PICK UP");
+    expect(lista).not.toContain("TAXI");
+    expect(lista).toContain("0414-7221091");
+    const ficha = respuestas[3][0];
+    expect(ficha).toContain("45,00 € · 50,37$ · 156.141 COP · Bs. 44.058,55");
+    expect(ficha).toContain(REQUISITOS_RCV.privado[0]);
+    expect(respuestas[3][1]).toContain("nombre");
+    expect(respuestas[4][0]).toContain("María");
+    expect(respuestas[6][0]).toContain("asesor");
+    expect(solicitudes).toEqual([
+      {
+        categoria: "privado",
+        plan: PLANES_RCV_POR_DEFECTO[3],
+        financiamiento: undefined,
+        nombre: "María Pérez",
+        correo: "maria@correo.com",
+        telefono: "584121234567",
+        jid: contacto.jid,
+      },
+    ]);
+    expect(avisos[0]).toContain("Transporte privado");
+    expect(avisos[0]).toContain("PICK UP");
     expect(estado?.paso).toBe("menu");
+  });
+
+  test("público → minibuses pregunta financiamiento; taxi no", async () => {
+    const { s, solicitudes, avisos } = falsos();
+    const { respuestas } = await conversar(s, [
+      "hola",
+      "3",
+      "publico",
+      "7",
+      "si",
+      "José Rodríguez",
+      "jose@gmail.com",
+      "0414-555.12.34",
+    ]);
+    expect(respuestas[2][0]).toContain("7. MINIBUSES URBANOS Y SUBURBANOS");
+    expect(respuestas[3][0]).toContain("131,00 €");
+    expect(respuestas[3][0]).toContain(REQUISITOS_RCV.publico[3]);
+    expect(respuestas[3][1]).toContain("financiar");
+    expect(solicitudes[0].financiamiento).toBe(true);
+    expect(solicitudes[0].telefono).toBe("04145551234");
+    expect(avisos[0]).toContain("Financiamiento: Sí");
+
+    const taxi = await conversar(falsos().s, ["hola", "3", "1", "6"]);
+    expect(taxi.respuestas[3][1]).not.toContain("financiar");
+    expect(taxi.estado?.paso).toBe("rcv_nombre");
+  });
+
+  test("placas extranjeras → cotización y requisitos sin lista", async () => {
+    const { s } = falsos();
+    const { respuestas, estado } = await conversar(s, ["hola", "3", "3"]);
+    expect(respuestas[2][0]).toContain("Solicitar cotización");
+    expect(respuestas[2][0]).toContain(REQUISITOS_RCV.extranjeras[0]);
+    expect(estado?.paso).toBe("rcv_nombre");
+    expect(estado?.rcv?.plan?.nro).toBe(7);
+  });
+
+  test("datos inválidos se vuelven a pedir", async () => {
+    const { s, solicitudes } = falsos();
+    const { respuestas, estado } = await conversar(s, [
+      "hola",
+      "3",
+      "2",
+      "9",
+      "1",
+      "María",
+      "María Pérez",
+      "maria",
+      "maria@correo.com",
+      "123",
+    ]);
+    expect(respuestas[3][0]).toContain(T.NO_ENTENDI[0]);
+    expect(respuestas[5][0]).toBe(T.RCV_NOMBRE_INVALIDO[0]);
+    expect(respuestas[7][0]).toBe(T.RCV_CORREO_INVALIDO[0]);
+    expect(respuestas[9][0]).toBe(T.RCV_TELEFONO_INVALIDO[0]);
+    expect(estado?.paso).toBe("rcv_telefono");
+    expect(solicitudes).toHaveLength(0);
+  });
+
+  test("validadores de datos", () => {
+    expect(nombreValido("  ana   maría  ")).toBe("ana maría");
+    expect(nombreValido("Ana")).toBeNull();
+    expect(nombreValido("Ana 123")).toBeNull();
+    expect(correoValido(" A@B.co ")).toBe("a@b.co");
+    expect(correoValido("a@b")).toBeNull();
+    expect(telefonoValido("+58 412-123-4567", contacto)).toBe("584121234567");
+    expect(telefonoValido("el mismo", contacto)).toBe("584121234567");
+    expect(telefonoValido("llámame", contacto)).toBeNull();
   });
 
   test("MENU en medio de un flujo reinicia", async () => {

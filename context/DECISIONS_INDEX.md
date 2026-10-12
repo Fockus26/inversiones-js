@@ -26,3 +26,4 @@
 | D026 | decisions/05-marcas.md | Select propio (Base UI) en vez del `<select>` nativo |
 | D027 | decisions/04-chatbot.md | Bot propio en `bot/`; horario en Firestore, citas en Calendar |
 | D028 | decisions/04-chatbot.md | `gaby on/off`, pausa por chat al escribir a mano, topes de envío |
+| D029 | decisions/04-chatbot.md | RCV por categoría; planes y solicitudes tras `Servicios` (web pendiente) |
