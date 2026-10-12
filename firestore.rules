@@ -51,6 +51,71 @@ service cloud.firestore {
         && p.actualizadoEn == request.time;
     }
 
+    // D030: póliza RCV. Mismos límites que lib/rcv/validacion.ts.
+    function categoriasValidas(c) {
+      return c is list && c.size() >= 1 && c.size() <= 3
+        && c.hasOnly(['publico', 'privado', 'extranjeras']);
+    }
+
+    function planRcvValido(p) {
+      return p.keys().hasOnly([
+          'clase', 'descripcion', 'precioEur', 'categorias', 'financiamiento',
+          'activo', 'orden', 'actualizadoEn', 'actualizadoPor'
+        ])
+        && p.keys().hasAll([
+          'clase', 'descripcion', 'precioEur', 'categorias', 'financiamiento',
+          'activo', 'orden'
+        ])
+        && p.clase is string && p.clase.size() >= 1 && p.clase.size() <= 40
+        && p.descripcion is string && p.descripcion.size() >= 1 && p.descripcion.size() <= 120
+        && (p.precioEur == null
+          || (p.precioEur is number && p.precioEur >= 0 && p.precioEur <= 100000))
+        && categoriasValidas(p.categorias)
+        && p.financiamiento is bool
+        && p.activo is bool
+        && p.orden is number;
+    }
+
+    function listaRequisitos(l) {
+      return l is list && l.size() >= 1 && l.size() <= 20;
+    }
+
+    // Tasas y requisitos se guardan por separado (merge): cada uno es opcional.
+    function configRcvValida(c) {
+      return c.keys().hasOnly(['tasaUsd', 'tasaBs', 'requisitos', 'actualizadoEn', 'actualizadoPor'])
+        && (!('tasaUsd' in c) || (c.tasaUsd is number && c.tasaUsd > 0 && c.tasaUsd <= 1000))
+        && (!('tasaBs' in c) || (c.tasaBs is number && c.tasaBs > 0 && c.tasaBs <= 1000000000))
+        && (!('requisitos' in c) || (
+          c.requisitos is map
+          && c.requisitos.keys().hasOnly(['publico', 'privado', 'extranjeras'])
+          && (!('publico' in c.requisitos) || listaRequisitos(c.requisitos.publico))
+          && (!('privado' in c.requisitos) || listaRequisitos(c.requisitos.privado))
+          && (!('extranjeras' in c.requisitos) || listaRequisitos(c.requisitos.extranjeras))
+        ));
+    }
+
+    match /planesRcv/{id} {
+      allow read, delete: if esAdmin();
+      allow create, update: if esAdmin()
+        && planRcvValido(request.resource.data)
+        && conHuella(request.resource.data);
+    }
+
+    // Solo configuracion/rcv; el resto de `configuracion` (horario) sigue cerrado al panel.
+    match /configuracion/rcv {
+      allow read: if esAdmin();
+      allow create, update: if esAdmin()
+        && configRcvValida(request.resource.data)
+        && conHuella(request.resource.data);
+      allow delete: if false;
+    }
+
+    // Las escribe el bot con el Admin SDK (no pasa por reglas); el panel solo lee y borra.
+    match /solicitudesRcv/{id} {
+      allow read, delete: if esAdmin();
+      allow create, update: if false;
+    }
+
     match /admins/{uid} {
       // Cada quien puede comprobar si es admin; la lista se gestiona solo desde consola/Admin SDK.
       allow read: if autenticado() && request.auth.uid == uid;

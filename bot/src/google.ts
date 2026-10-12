@@ -1,7 +1,7 @@
 import { createSign } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { cert, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import type { ProductoDeLista } from "../../lib/catalogo/texto-lista";
 import { COLECCION_PRODUCTOS } from "../../lib/catalogo/tipos";
 import {
@@ -11,11 +11,22 @@ import {
   normalizarHorario,
 } from "../../lib/horario/tipos";
 import type { Intervalo } from "../../lib/horario/turnos";
+import {
+  COLECCION_PLANES_RCV,
+  COLECCION_SOLICITUDES_RCV,
+  type ConfigRcv,
+  DOC_CONFIG_RCV,
+  type PlanRcvConId,
+  requisitosEfectivos,
+  type SolicitudRcv,
+  tasasDe,
+} from "../../lib/rcv/tipos";
 import { config } from "./config";
 
 /**
  * Acceso a Google con la misma cuenta de servicio (`chatbot-lectura`, D024):
- * - Firestore (solo lectura, rol Datastore Viewer) para catálogo y horario.
+ * - Firestore (rol Datastore User, D030): lee catálogo, horario y póliza RCV; escribe solo
+ *   `solicitudesRcv`.
  * - Calendar (calendario compartido con la cuenta) para huecos, citas y recordatorios.
  */
 
@@ -69,6 +80,26 @@ export const leerHorario = cacheada(async (): Promise<HorarioAtencion> => {
     .get();
   return normalizarHorario(doc.exists ? doc.data() : null);
 });
+
+/** Transportes activos, tasas y requisitos (con los provisionales si faltan). */
+export const leerRcv = cacheada(async () => {
+  const [planes, config] = await Promise.all([
+    db.collection(COLECCION_PLANES_RCV).where("activo", "==", true).get(),
+    db.collection(COLECCION_CONFIGURACION).doc(DOC_CONFIG_RCV).get(),
+  ]);
+  const c = config.exists ? (config.data() as ConfigRcv) : null;
+  return {
+    planes: planes.docs.map((d) => ({ ...d.data(), id: d.id }) as PlanRcvConId),
+    tasas: tasasDe(c),
+    requisitos: requisitosEfectivos(c),
+  };
+});
+
+export async function guardarSolicitudRcv(s: SolicitudRcv): Promise<void> {
+  await db
+    .collection(COLECCION_SOLICITUDES_RCV)
+    .add({ ...s, creadoEn: FieldValue.serverTimestamp() });
+}
 
 // ── Token OAuth de la cuenta de servicio (JWT firmado a mano, sin dependencias) ──
 

@@ -126,7 +126,7 @@ function Encabezado({
   );
 }
 
-function Aviso({
+export function Aviso({
   icono,
   titulo,
   texto,

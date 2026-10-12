@@ -5,7 +5,14 @@ import {
 } from "../../lib/horario/turnos";
 import { avisarAsesores } from "./evolution";
 import type { Contacto, DatosCita, Servicios } from "./flujo";
-import { crearEvento, leerCatalogo, leerHorario, ocupados } from "./google";
+import {
+  crearEvento,
+  guardarSolicitudRcv,
+  leerCatalogo,
+  leerHorario,
+  leerRcv,
+  ocupados,
+} from "./google";
 
 /** `Servicios` reales del flujo: Firestore, Google Calendar y avisos por WhatsApp. */
 
@@ -58,6 +65,8 @@ export const servicios: Servicios = {
   catalogo: leerCatalogo,
   turnosDisponibles: turnos,
   agendar,
+  rcv: leerRcv,
+  guardarSolicitudRcv,
   avisarAsesor: avisarAsesores,
   ahora: () => new Date(),
   azar: Math.random,

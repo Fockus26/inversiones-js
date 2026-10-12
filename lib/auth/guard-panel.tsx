@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Cabecera, CabeceraEsqueleto } from "@/components/panel/cabecera";
+import { Navegacion } from "@/components/panel/navegacion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSesion } from "@/lib/auth/sesion";
 import { AVISO_SIN_ACCESO, urlLoginConSiguiente } from "@/lib/auth/siguiente";
@@ -36,6 +37,7 @@ export function GuardPanel({ children }: { children: React.ReactNode }) {
         id="contenido"
         className="mx-auto w-full max-w-6xl flex-1 px-4 py-6"
       >
+        <Navegacion />
         {children}
       </main>
     </>

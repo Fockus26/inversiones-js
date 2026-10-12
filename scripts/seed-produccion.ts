@@ -4,6 +4,8 @@
  * editado desde el panel. `--forzar` los reescribe enteros (precios, cantidad = 0, activo).
  * Registra en `marcas` (D025) las marcas iniciales y las que ya usen los productos, si faltan;
  * nunca borra ni pisa marcas (ni con `--forzar`): pueden haberse renombrado desde el panel.
+ * Póliza RCV (D030): crea los transportes iniciales que falten (mismo id) y las tasas solo si
+ * `configuracion/rcv` no existe. `--forzar` reescribe los transportes, nunca las tasas.
  *
  *   bun run seed:produccion --prod                     # proyecto real (GOOGLE_APPLICATION_CREDENTIALS)
  *   bun run seed:produccion --emulador --proyecto=demo-x   # ensayo contra los emuladores
@@ -20,6 +22,12 @@ import {
   COLECCION_PRODUCTOS,
   MARCAS_INICIALES,
 } from "@/lib/catalogo/tipos";
+import { COLECCION_CONFIGURACION } from "@/lib/horario/tipos";
+import {
+  PLANES_RCV_INICIALES,
+  TASAS_RCV_INICIALES,
+} from "@/lib/rcv/planes-iniciales";
+import { COLECCION_PLANES_RCV, DOC_CONFIG_RCV } from "@/lib/rcv/tipos";
 
 const USO =
   "Uso: bun run seed:produccion (--prod | --emulador) [--proyecto=<id>] [--forzar]";
@@ -86,7 +94,41 @@ for (const nombre of marcasUsadas) {
   marcasCreadas.push(nombre);
 }
 
-if (creados.length + sobrescritos.length + marcasCreadas.length > 0)
+// Póliza RCV: transportes por id fijo y tasas iniciales si aún no hay configuración.
+const planesCol = db.collection(COLECCION_PLANES_RCV);
+const planesExistentes = new Set(
+  (await db.getAll(...PLANES_RCV_INICIALES.map((p) => planesCol.doc(p.id))))
+    .filter((d) => d.exists)
+    .map((d) => d.id),
+);
+let planesEscritos = 0;
+for (const { id, ...plan } of PLANES_RCV_INICIALES) {
+  if (planesExistentes.has(id) && !forzar) continue;
+  lote.set(planesCol.doc(id), {
+    ...plan,
+    actualizadoEn: FieldValue.serverTimestamp(),
+    actualizadoPor: "seed",
+  });
+  planesEscritos++;
+}
+const configRcv = db.collection(COLECCION_CONFIGURACION).doc(DOC_CONFIG_RCV);
+const tasasCreadas = !(await configRcv.get()).exists;
+if (tasasCreadas)
+  lote.set(configRcv, {
+    tasaUsd: TASAS_RCV_INICIALES.usd,
+    tasaBs: TASAS_RCV_INICIALES.bs,
+    actualizadoEn: FieldValue.serverTimestamp(),
+    actualizadoPor: "seed",
+  });
+
+if (
+  creados.length +
+    sobrescritos.length +
+    marcasCreadas.length +
+    planesEscritos +
+    (tasasCreadas ? 1 : 0) >
+  0
+)
   await lote.commit();
 
 console.log(`Proyecto: ${projectId}`);
@@ -99,6 +141,11 @@ console.log(
   `✓ Marcas: ${marcasCreadas.length} registradas${
     marcasCreadas.length > 0 ? ` (${marcasCreadas.join(", ")})` : ""
   }, ${marcasExistentes.size} ya existían.`,
+);
+console.log(
+  `✓ Póliza RCV: ${planesEscritos} transportes escritos de ${PLANES_RCV_INICIALES.length}; tasas ${
+    tasasCreadas ? "iniciales creadas" : "ya existían (sin tocar)"
+  }.`,
 );
 if (omitidos.length > 0 && !forzar) {
   console.log(`  Sin tocar: ${omitidos.join(", ")}`);
