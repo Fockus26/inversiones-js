@@ -1,0 +1,35 @@
+# Gaby (bot de WhatsApp). Comparte la red `automation-net` con Evolution API, así se llaman
+# por nombre (http://evolution-api:8080 ↔ http://gaby:3000) sin abrir puertos a internet.
+services:
+  gaby:
+    build:
+      context: ..
+      dockerfile: bot/Dockerfile
+    container_name: gaby
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/secretos/google.json
+      - DATA_DIR=/data
+    volumes:
+      - /opt/gaby-secretos:/secretos:ro
+      - gaby_data:/data
+    networks:
+      - automation-net
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/salud').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  automation-net:
+    external: true
+
+volumes:
+  gaby_data:

@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ESNext"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["bun"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "../lib/catalogo/tipos.ts",
+    "../lib/catalogo/texto-lista.ts",
+    "../lib/horario/*.ts"
+  ]
+}

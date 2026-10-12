@@ -37,3 +37,31 @@ Cuenta de servicio aparte con `roles/datastore.viewer` (no la de Firebase Admin)
 `productos where activo == true` con el Admin SDK. Recomendado: caché en memoria de 60 s
 (cambios visibles en < 1 min, pocas lecturas); `onSnapshot` solo si el chatbot es un proceso
 persistente. Detalle en `docs/chatbot.md`.
+
+# D027 — Bot propio (Bun) en `bot/` en vez de n8n; horario en Firestore, citas en Calendar
+
+**Contexto:** el flujo de WhatsApp necesita estado por conversación, leer el catálogo y agendar
+citas contra Google Calendar. El documento inicial proponía n8n.
+
+**Decisión:** servicio Bun/TS en `bot/` del mismo repo, en Docker junto a Evolution API
+(red `automation-net`). Estado en SQLite (volumen). Reusa `lib/catalogo` y `lib/horario`.
+El horario de atención es configuración del negocio → `configuracion/horario` en Firestore
+(editable desde el panel). Las citas viven en Google Calendar (el dueño las ve y mueve desde
+el teléfono); los recordatorios se marcan en el propio evento para no duplicarse.
+Una sola cuenta de servicio (`chatbot-lectura`) para Firestore (lectura) y Calendar (por
+compartir el calendario).
+
+**Por qué:** versionado y testeado como el panel, sin copiar lógica a nodos de n8n, y el
+estado de conversación queda resuelto sin una tabla externa.
+
+# D028 — Gaby se apaga con "gaby off" y se calla sola cuando escribe el dueño
+
+**Contexto:** el dueño quiere alternar entre Gaby y atender a mano, y Gaby respondía encima
+cuando él escribía. Además no había tope de mensajes (riesgo de baneo si otro bot le escribe).
+
+**Decisión:** interruptor general persistido en SQLite (`ajustes.activa`), por comandos
+`gaby on|off|estado` desde un número de `ASESOR_NUMEROS`, desde "Mensajes para mí" del
+teléfono del negocio o con `scripts/gaby.sh`. Un mensaje `fromMe` que no mandó el bot (no está
+en `RegistroEnvios` por id ni por texto) pausa ese chat `HORAS_PAUSA` (12 h); `gaby on` quita
+todas las pausas. Apagada no marca leído. Los recordatorios de citas siguen saliendo.
+Topes: `MAX_POR_CHAT_10MIN` (8) y `MAX_POR_HORA` (60) para las respuestas.

@@ -189,3 +189,20 @@ bun run seed:emulador
 
 En el código del chatbot, antes de `initializeApp`:
 `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080` e `initializeApp({ projectId: "demo-inversiones-js" })`.
+
+## El bot: Gaby (`bot/`, D027)
+
+El chatbot vive en este mismo repo, en `bot/`: un servicio Bun/TypeScript que corre en el VPS
+junto a Evolution API (WhatsApp). Usa directamente `lib/catalogo/` (lista de equipos) y
+`lib/horario/` (huecos para citas). Despliegue paso a paso: `bot/DESPLIEGUE.md`.
+
+- **Flujo:** `bot/src/flujo.ts` (menú 1 loterías → cita en Google Calendar; 2 teléfono →
+  lista numerada sin agotados; 3 RCV → público/privado → asesor). Textos con 5 variantes cada
+  uno en `bot/src/textos.ts`.
+- **Horario de atención:** documento `configuracion/horario` (tipo `HorarioAtencion` de
+  `lib/horario/tipos.ts`). Si no existe, el bot usa `HORARIO_POR_DEFECTO` (lun–vie 9–17,
+  sáb 9–13, citas de 60 min, mínimo 3 h de anticipación).
+- **Citas:** se crean en el calendario `GOOGLE_CALENDAR_ID` (compartido con la cuenta
+  `chatbot-lectura`) con `extendedProperties.private.origen = "gaby"`. Los recordatorios por
+  WhatsApp (24 h y 2 h antes) se leen de ahí: si el dueño mueve o borra la cita en Calendar,
+  el bot lo respeta.
