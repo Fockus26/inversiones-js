@@ -38,6 +38,21 @@
 
 Detalle de tamaños y archivos: `reference/BRAND-ASSETS.md` del kit.
 
+## Correos
+
+| Correo | Lo manda | Destinatario | Estado |
+|---|---|---|---|
+| Restablecer contraseña | Firebase Auth (`sendPasswordResetEmail` en `app/login/formulario-login.tsx`) | admin del panel | pendiente de diseño (hoy sale la plantilla por defecto de Firebase) |
+
+La app no manda otros correos: las altas de admin dan una contraseña temporal por
+`admin:crear` (D022) y el bot habla por WhatsApp. La plantilla se edita en la consola de
+Firebase (Authentication › Templates: remitente, asunto, cuerpo HTML limitado y idioma `es`);
+el emulador no la aplica, solo deja el enlace en su UI.
+
+Remitente: PENDIENTE (`noreply@<proyecto>.firebaseapp.com` por defecto) · Dominio verificado
+(SPF/DKIM): no aplica hasta tener dominio propio. Detalle: `reference/EMAIL-TEMPLATES.md` del kit
+(escrito para React Email + Supabase; aquí solo aplican las reglas de diseño).
+
 ## Funcionalidad más allá de lo estático
 
 - [x] Autenticación de usuarios — destino principal con sesión: el catálogo (`/`)
@@ -45,4 +60,5 @@ Detalle de tamaños y archivos: `reference/BRAND-ASSETS.md` del kit.
 - [ ] Pagos
 - [x] Dashboard
 - [x] Formularios con envío real (catálogo, RCV, clientes)
+- [x] Correos que manda la app (ver § "Correos")
 - [x] PWA con avisos Web Push
