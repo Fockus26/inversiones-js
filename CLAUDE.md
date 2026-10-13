@@ -8,6 +8,8 @@ cliente lee la misma colección de Firestore, así que lo que se guarda aquí es
 chatbot responde.
 
 **Tipo:** dashboard · **Cliente:** Inversiones JS · **Modo git:** ver `context/GIT_STATE.md`
+**Kit:** web-agent-kit, versión en `.kit-version` (se actualiza con `prompts/ACTUALIZAR-KIT.md` del kit) ·
+**Despliegue:** Vercel `inversiones-js` · preview por PR, producción al mergear a `main`
 
 ## Qué leer
 
@@ -16,6 +18,7 @@ chatbot responde.
 | Si la tarea… | Lee además |
 |---|---|
 | toca UI | `context/DESIGN_RULES.md` (colores y reglas de contraste) |
+| toca despliegue, assets o correos | `context/PROJECT_CONTEXT.md` |
 | toca datos, auth o reglas | `lib/catalogo/tipos.ts` + `firestore.rules` + `context/decisions/` (grep) |
 | toca lo que lee el chatbot | `docs/chatbot.md` |
 | llega con un prompt de orquestador | **solo** lo que el prompt cite |
@@ -62,3 +65,10 @@ Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/di
   `.env*` copiados, pero **no** `context/` local: se lee en la carpeta principal
   (`C:\Users\Admin\Documents\Work\inversiones-js`). Si un subagente en un slot no puede
   escribir ahí, lo devuelve en su informe y el orquestador lo copia.
+
+## Feedback para el kit
+
+Cuando César corrija algo que hiciste siguiendo el kit, te pida lo mismo por segunda vez,
+haga a mano un paso que el kit podría hacer, o el kit no diga qué hacer: fila en
+`context/KIT_FEEDBACK.md` (o +1 en "Veces" si ya está). Sin preguntar y sin anunciarlo
+más que en una línea. Cuando pida "el informe para el kit", sigue el formato de ese archivo.

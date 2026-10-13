@@ -49,6 +49,7 @@ service-account*.json
 # local
 context/CURRENT_PHASE.md
 context/CONTENT_CHECKLIST.md
+context/KIT_FEEDBACK.md
 context/PHASE_LOG/
 context/plans/
 .pr-shots/
