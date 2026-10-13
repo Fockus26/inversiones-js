@@ -315,6 +315,56 @@ export const RCV_SIN_PLANES: Variantes = [
   "Los planes se están actualizando; un asesor te escribirá en breve.",
 ];
 
+// Placas extranjeras (D034): sin precio fijo, se cotiza según el vehículo.
+export const RCV_EXTRANJERAS: Variantes = [
+  "🌎 Para vehículos con *placas extranjeras* no manejamos un precio fijo: te hacemos una cotización según el tipo de vehículo.",
+  "🌎 Las pólizas para *placas extranjeras* se cotizan aparte, según el vehículo. Te ayudamos con eso.",
+  "🌎 Con *placas extranjeras* el precio depende del vehículo, así que te preparamos una cotización.",
+  "🌎 Para *placas extranjeras* no hay tarifa fija: cotizamos tu póliza según el tipo de vehículo.",
+  "🌎 Los vehículos con *placas extranjeras* llevan cotización personalizada según su tipo.",
+];
+
+export const RCV_PIDE_VEHICULO: Variantes = [
+  "¿Qué vehículo es? Escríbeme el tipo, la marca, el modelo y el año (por ejemplo: *camioneta Toyota Hilux 2018*).",
+  "Cuéntame qué vehículo tienes: tipo, marca, modelo y año. Ejemplo: *moto Yamaha YBR 2020*.",
+  "Para cotizar necesito saber el vehículo: tipo, marca, modelo y año (ej.: *carro Chevrolet Aveo 2012*).",
+  "¿Me describes el vehículo? Tipo, marca, modelo y año, por ejemplo *autobús Encava 2015*.",
+  "Indícame el vehículo a asegurar: tipo, marca, modelo y año. Ej.: *camión Ford 350 2010*.",
+];
+
+export const RCV_VEHICULO_INVALIDO: Variantes = [
+  "No entendí el vehículo. Escríbelo así: *camioneta Toyota Hilux 2018*.",
+  "¿Me lo describes de nuevo? Tipo, marca, modelo y año, por ejemplo *moto Bera 2021*.",
+  "Necesito el tipo de vehículo con su marca y modelo. Ejemplo: *carro Ford Fiesta 2010*.",
+  "Escríbeme el vehículo en pocas palabras (máximo 120 letras), por ejemplo *camión Iveco 2015*.",
+  "Por favor indícame qué vehículo es: tipo, marca, modelo y año.",
+];
+
+export const RCV_COTIZACION_CONFIRMADA: Variantes = [
+  "¡Perfecto, {nombre}! Guardé tus datos; nuestro asesor te enviará la cotización de inmediato.",
+  "¡Listo, {nombre}! Ya tengo tus datos y los del vehículo; en un momento te llega la cotización.",
+  "Gracias, {nombre}. Le paso tus datos al asesor para que te cotice enseguida.",
+  "¡Excelente, {nombre}! Registré tu solicitud; nuestro asesor te contactará con la cotización.",
+  "Anotado, {nombre}. Nuestro asesor te escribirá con la cotización de tu póliza.",
+];
+
+// Recordatorios de vencimiento de la póliza (D033).
+export const RCV_VENCE_MES: Variantes = [
+  "Hola{nombre} 👋 Te escribimos de Inversiones JS: tu póliza RCV{vehiculo} vence el *{fecha}* (en {dias} días). Renuévala a tiempo para seguir circulando tranquilo. Responde a este mensaje y te ayudamos.",
+  "¡Hola{nombre}! 🚗 Te recordamos que tu póliza RCV{vehiculo} vence el *{fecha}*, en {dias} días. Si quieres renovarla, escríbenos por aquí.",
+  "Hola{nombre}, ¿cómo estás? Tu póliza RCV{vehiculo} vence el *{fecha}* (faltan {dias} días). Con gusto te ayudamos a renovarla: solo responde este mensaje.",
+  "Hola{nombre} 😊 Un recordatorio de Inversiones JS: tu póliza RCV{vehiculo} vence el *{fecha}*. Quedan {dias} días para renovarla sin apuro.",
+  "¡Hola{nombre}! Tu póliza RCV{vehiculo} está por vencer: el *{fecha}* (en {dias} días). Escríbenos y la renovamos.",
+];
+
+export const RCV_VENCE_PRONTO: Variantes = [
+  "Hola{nombre} ⚠️ Tu póliza RCV{vehiculo} vence el *{fecha}* ({cuando}). Recuerda que circular sin RCV vigente te puede traer multas. Responde este mensaje y la renovamos hoy mismo.",
+  "¡Hola{nombre}! ⏰ Último aviso: tu póliza RCV{vehiculo} vence el *{fecha}* ({cuando}). Escríbenos para renovarla a tiempo.",
+  "Hola{nombre}, tu póliza RCV{vehiculo} vence {cuando}, el *{fecha}*. ¿La renovamos? Solo responde a este mensaje.",
+  "Hola{nombre} 🚗 Te recordamos que tu póliza RCV{vehiculo} vence el *{fecha}* ({cuando}). Aún estás a tiempo de renovarla: escríbenos.",
+  "¡Hola{nombre}! Tu póliza RCV{vehiculo} vence {cuando} (*{fecha}*). No te quedes sin cobertura: responde y te ayudamos a renovarla.",
+];
+
 /** Elige una variante al azar y reemplaza `{clave}`. */
 export function elegir(
   variantes: Variantes,

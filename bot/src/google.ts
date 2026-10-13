@@ -4,6 +4,11 @@ import { cert, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import type { ProductoDeLista } from "../../lib/catalogo/texto-lista";
 import { COLECCION_PRODUCTOS } from "../../lib/catalogo/tipos";
+import type { Fecha } from "../../lib/financiamiento/fechas";
+import {
+  type ClienteRcvConId,
+  COLECCION_CLIENTES_RCV,
+} from "../../lib/financiamiento/tipos";
 import {
   COLECCION_CONFIGURACION,
   DOC_HORARIO,
@@ -11,13 +16,20 @@ import {
   normalizarHorario,
 } from "../../lib/horario/tipos";
 import type { Intervalo } from "../../lib/horario/turnos";
+import {
+  COLECCION_SUSCRIPCIONES_PUSH,
+  type SuscripcionPush,
+} from "../../lib/notificaciones/tipos";
 import { consultarEuroBcv } from "../../lib/rcv/bcv";
+import { consultarEuroMercado, type TasasMercado } from "../../lib/rcv/mercado";
 import {
   COLECCION_PLANES_RCV,
   COLECCION_SOLICITUDES_RCV,
   type ConfigRcv,
   DOC_CONFIG_RCV,
   fuenteBsDe,
+  fuenteCopDe,
+  fuenteUsdDe,
   type PlanRcvConId,
   requisitosEfectivos,
   type SolicitudRcv,
@@ -27,8 +39,9 @@ import { config } from "./config";
 
 /**
  * Acceso a Google con la misma cuenta de servicio (`chatbot-lectura`, D024):
- * - Firestore (rol Datastore User, D030): lee catálogo, horario y póliza RCV; escribe solo
- *   `solicitudesRcv`.
+ * - Firestore (rol Datastore User, D030): lee catálogo, horario y póliza RCV; escribe
+ *   `solicitudesRcv`, los avisos ya mandados en `clientesRcv` (D033) y borra suscripciones push
+ *   vencidas (D035).
  * - Calendar (calendario compartido con la cuenta) para huecos, citas y recordatorios.
  */
 
@@ -99,6 +112,33 @@ async function tasaBcv(): Promise<number | null> {
   return bcv.tasa;
 }
 
+// ── Tasa de mercado del euro en $ y COP (D036): mismo esquema que la del BCV ──
+
+let mercado: { tasas: TasasMercado | null; cuando: number; ms: number } | null =
+  null;
+
+async function tasaMercado(): Promise<TasasMercado | null> {
+  if (mercado && Date.now() - mercado.cuando < mercado.ms) return mercado.tasas;
+  try {
+    mercado = {
+      tasas: await consultarEuroMercado(),
+      cuando: Date.now(),
+      ms: 30 * 60_000,
+    };
+  } catch (e) {
+    console.error(
+      "No se pudo consultar la tasa de mercado; queda la anterior",
+      e,
+    );
+    mercado = {
+      tasas: mercado?.tasas ?? null,
+      cuando: Date.now(),
+      ms: 5 * 60_000,
+    };
+  }
+  return mercado.tasas;
+}
+
 /** Transportes activos, tasas y requisitos (con los de arranque si faltan). */
 export const leerRcv = cacheada(async () => {
   const [planes, config] = await Promise.all([
@@ -106,11 +146,16 @@ export const leerRcv = cacheada(async () => {
     db.collection(COLECCION_CONFIGURACION).doc(DOC_CONFIG_RCV).get(),
   ]);
   const c = config.exists ? (config.data() as ConfigRcv) : null;
-  // Sin la del BCV, `tasasDe` usa la última que guardó el panel.
-  const bs = fuenteBsDe(c) === "bcv" ? await tasaBcv() : null;
+  // Sin la consultada, `tasasDe` usa la última que guardó el panel.
+  const usaMercado =
+    fuenteUsdDe(c) === "mercado" || fuenteCopDe(c) === "mercado";
+  const [bs, m] = await Promise.all([
+    fuenteBsDe(c) === "bcv" ? tasaBcv() : null,
+    usaMercado ? tasaMercado() : null,
+  ]);
   return {
     planes: planes.docs.map((d) => ({ ...d.data(), id: d.id }) as PlanRcvConId),
-    tasas: tasasDe(c, bs),
+    tasas: tasasDe(c, { bs, usd: m?.usd, cop: m?.cop }),
     requisitos: requisitosEfectivos(c),
   };
 });
@@ -119,6 +164,59 @@ export async function guardarSolicitudRcv(s: SolicitudRcv): Promise<void> {
   await db
     .collection(COLECCION_SOLICITUDES_RCV)
     .add({ ...s, creadoEn: FieldValue.serverTimestamp() });
+}
+
+// ── Vencimiento de pólizas (D033) ─────────────────────────────────────────
+
+/** Clientes con póliza que vence entre `desde` y `hasta` (incluidas). Índice automático. */
+export async function clientesRcvPorVencer(
+  desde: Fecha,
+  hasta: Fecha,
+): Promise<ClienteRcvConId[]> {
+  const snap = await db
+    .collection(COLECCION_CLIENTES_RCV)
+    .where("vence", ">=", desde)
+    .where("vence", "<=", hasta)
+    .get();
+  return snap.docs.map((d) => ({ ...d.data(), id: d.id }) as ClienteRcvConId);
+}
+
+/**
+ * Marca el aviso como enviado, solo si el vencimiento sigue siendo el mismo (si el dueño renovó
+ * mientras tanto, no se toca). Devuelve false si no se marcó.
+ */
+export async function marcarAvisoRcv(
+  id: string,
+  vence: Fecha,
+  campo: "recordatorio30" | "recordatorio3",
+): Promise<boolean> {
+  const ref = db.collection(COLECCION_CLIENTES_RCV).doc(id);
+  return db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    const datos = doc.data();
+    if (!datos || datos.vence !== vence || datos[campo] === true) return false;
+    // El aviso final implica que el del mes ya no hace falta.
+    tx.update(
+      ref,
+      campo === "recordatorio3"
+        ? { recordatorio3: true, recordatorio30: true }
+        : { recordatorio30: true },
+    );
+    return true;
+  });
+}
+
+// ── Suscripciones push del panel (D035) ───────────────────────────────────
+
+export async function suscripcionesPush(): Promise<
+  (SuscripcionPush & { id: string })[]
+> {
+  const snap = await db.collection(COLECCION_SUSCRIPCIONES_PUSH).get();
+  return snap.docs.map((d) => ({ ...(d.data() as SuscripcionPush), id: d.id }));
+}
+
+export async function borrarSuscripcionPush(id: string): Promise<void> {
+  await db.collection(COLECCION_SUSCRIPCIONES_PUSH).doc(id).delete();
 }
 
 // ── Token OAuth de la cuenta de servicio (JWT firmado a mano, sin dependencias) ──
@@ -233,19 +331,22 @@ export async function crearEvento(evento: {
   descripcion: string;
   ubicacion: string;
   privado: Record<string, string>;
-}): Promise<string> {
-  const creado = await calendar<{ id: string }>(`/calendars/${cal()}/events`, {
-    method: "POST",
-    body: JSON.stringify({
-      summary: evento.titulo,
-      description: evento.descripcion,
-      location: evento.ubicacion,
-      start: { dateTime: evento.inicio, timeZone: "America/Caracas" },
-      end: { dateTime: evento.fin, timeZone: "America/Caracas" },
-      extendedProperties: { private: evento.privado },
-    }),
-  });
-  return creado.id;
+}): Promise<{ id: string; enlace: string | null }> {
+  const creado = await calendar<{ id: string; htmlLink?: string }>(
+    `/calendars/${cal()}/events`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        summary: evento.titulo,
+        description: evento.descripcion,
+        location: evento.ubicacion,
+        start: { dateTime: evento.inicio, timeZone: "America/Caracas" },
+        end: { dateTime: evento.fin, timeZone: "America/Caracas" },
+        extendedProperties: { private: evento.privado },
+      }),
+    },
+  );
+  return { id: creado.id, enlace: creado.htmlLink ?? null };
 }
 
 /** Citas creadas por Gaby que empiezan entre `desde` y `hasta`. */

@@ -3,6 +3,7 @@
 import { LogOutIcon } from "lucide-react";
 import { useState } from "react";
 import { SelectorTema } from "@/components/panel/tema";
+import { BotonAvisos, BotonInstalar } from "@/components/pwa/boton-avisos";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -28,7 +29,8 @@ function Marca() {
 }
 
 /**
- * Cabecera del panel: marca, correo de quien entró, tema y "Cerrar sesión" (D013).
+ * Cabecera del panel: marca, correo de quien entró, instalar app, avisos de citas (D035), tema
+ * y "Cerrar sesión" (D013).
  * En móvil el correo baja a una segunda línea truncada para que nada desborde a 320 px.
  */
 export function Cabecera({
@@ -68,6 +70,8 @@ export function Cabecera({
           {correo}
         </p>
         <div className="order-2 ml-auto flex items-center gap-1 sm:order-3 sm:ml-0">
+          <BotonInstalar className={BOTON_SOBRE_TINTA} />
+          <BotonAvisos className={BOTON_SOBRE_TINTA} />
           <SelectorTema className={BOTON_SOBRE_TINTA} />
           <Button
             variant="ghost"

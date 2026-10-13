@@ -1,10 +1,10 @@
 import { parsearMonto } from "@/lib/catalogo/validacion";
 import {
-  CATEGORIAS_RCV,
+  CATEGORIAS_PLAN,
   type CamposPlanRcv,
   type CategoriaRcv,
   type FuenteBs,
-  type RequisitosRcv,
+  type FuenteMercado,
 } from "./tipos";
 
 /**
@@ -67,7 +67,8 @@ export function validarPlanRcv(f: FormularioPlanRcv): ResultadoPlanRcv {
       errores.precioEur = `No puede pasar de ${LIMITES_RCV.precioMax} €.`;
   }
 
-  const categorias = CATEGORIAS_RCV.filter((c) => f.categorias.includes(c));
+  // "extranjeras" ya no lleva planes (D034): si venía de antes, se descarta al guardar.
+  const categorias = CATEGORIAS_PLAN.filter((c) => f.categorias.includes(c));
   if (categorias.length === 0)
     errores.categorias = "Elige al menos un tipo de transporte.";
 
@@ -94,10 +95,16 @@ export interface TextosTasas {
 }
 
 export interface TasasValidadas {
-  usd: number;
-  /** `null` con la tasa del BCV: no se escribe a mano. */
+  /** `null` con una fuente automática: no se escribe a mano. */
+  usd: number | null;
   bs: number | null;
-  cop: number;
+  cop: number | null;
+}
+
+export interface FuentesTasas {
+  bs: FuenteBs;
+  usd: FuenteMercado;
+  cop: FuenteMercado;
 }
 
 export type ResultadoTasas =
@@ -112,40 +119,39 @@ export function parsearTasa(texto: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** Dólares y pesos siempre a mano; bolívares solo si `fuenteBs` es "manual". */
+const AYUDA_TASA: Record<keyof TextosTasas, string> = {
+  usd: "Escribe cuántos dólares vale 1 €, p. ej. 1,12.",
+  bs: "Escribe cuántos bolívares vale 1 €, sin puntos de miles, p. ej. 979,08.",
+  cop: "Escribe cuántos pesos vale 1 €, sin puntos de miles, p. ej. 4350.",
+};
+
+const MAXIMO_TASA: Record<keyof TextosTasas, number> = {
+  usd: LIMITES_RCV.tasaUsdMax,
+  bs: LIMITES_RCV.tasaBsMax,
+  cop: LIMITES_RCV.tasaCopMax,
+};
+
+/** Solo se validan las tasas en "manual"; las automáticas (BCV, mercado) quedan en `null`. */
 export function validarTasas(
   textos: TextosTasas,
-  fuenteBs: FuenteBs,
+  fuentes: FuentesTasas,
 ): ResultadoTasas {
   const errores: Partial<Record<keyof TextosTasas, string>> = {};
-  const u = parsearTasa(textos.usd);
-  if (u === null)
-    errores.usd = "Escribe cuántos dólares vale 1 €, p. ej. 1,12.";
-  else if (u > LIMITES_RCV.tasaUsdMax)
-    errores.usd = "Revisa la tasa: es muy alta.";
-  let b: number | null = null;
-  if (fuenteBs === "manual") {
-    b = parsearTasa(textos.bs);
-    if (b === null)
-      errores.bs =
-        "Escribe cuántos bolívares vale 1 €, sin puntos de miles, p. ej. 979,08.";
-    else if (b > LIMITES_RCV.tasaBsMax)
-      errores.bs = "Revisa la tasa: es muy alta.";
+  const valor: TasasValidadas = { usd: null, bs: null, cop: null };
+  for (const k of ["bs", "usd", "cop"] as const) {
+    if (fuentes[k] !== "manual") continue;
+    const n = parsearTasa(textos[k]);
+    if (n === null) errores[k] = AYUDA_TASA[k];
+    else if (n > MAXIMO_TASA[k]) errores[k] = "Revisa la tasa: es muy alta.";
+    else valor[k] = n;
   }
-  const c = parsearTasa(textos.cop);
-  if (c === null)
-    errores.cop =
-      "Escribe cuántos pesos vale 1 €, sin puntos de miles, p. ej. 4350.";
-  else if (c > LIMITES_RCV.tasaCopMax)
-    errores.cop = "Revisa la tasa: es muy alta.";
-  if (u === null || c === null || Object.keys(errores).length > 0)
-    return { ok: false, errores };
-  return { ok: true, valor: { usd: u, bs: b, cop: c } };
+  if (Object.keys(errores).length > 0) return { ok: false, errores };
+  return { ok: true, valor };
 }
 
 export type ResultadoRequisitos =
-  | { ok: true; valor: RequisitosRcv }
-  | { ok: false; errores: Partial<Record<CategoriaRcv, string>> };
+  | { ok: true; valor: string[] }
+  | { ok: false; error: string };
 
 /** Un requisito por línea; se quitan viñetas y líneas vacías. */
 export function lineasDeRequisitos(texto: string): string[] {
@@ -160,21 +166,20 @@ export function lineasDeRequisitos(texto: string): string[] {
     .filter(Boolean);
 }
 
-export function validarRequisitos(
-  textos: Record<CategoriaRcv, string>,
-): ResultadoRequisitos {
-  const errores: Partial<Record<CategoriaRcv, string>> = {};
-  const valor = {} as RequisitosRcv;
-  for (const c of CATEGORIAS_RCV) {
-    const lineas = lineasDeRequisitos(textos[c]);
-    if (lineas.length === 0) errores[c] = "Escribe al menos un requisito.";
-    else if (lineas.length > LIMITES_RCV.requisitosMax)
-      errores[c] = `Máximo ${LIMITES_RCV.requisitosMax} requisitos.`;
-    else if (lineas.some((l) => l.length > LIMITES_RCV.requisitoMax))
-      errores[c] =
-        `Cada requisito puede tener hasta ${LIMITES_RCV.requisitoMax} caracteres.`;
-    valor[c] = lineas;
-  }
-  if (Object.keys(errores).length > 0) return { ok: false, errores };
-  return { ok: true, valor };
+/** Una sola lista para todos los vehículos (D034). */
+export function validarRequisitos(texto: string): ResultadoRequisitos {
+  const lineas = lineasDeRequisitos(texto);
+  if (lineas.length === 0)
+    return { ok: false, error: "Escribe al menos un requisito." };
+  if (lineas.length > LIMITES_RCV.requisitosMax)
+    return {
+      ok: false,
+      error: `Máximo ${LIMITES_RCV.requisitosMax} requisitos.`,
+    };
+  if (lineas.some((l) => l.length > LIMITES_RCV.requisitoMax))
+    return {
+      ok: false,
+      error: `Cada requisito puede tener hasta ${LIMITES_RCV.requisitoMax} caracteres.`,
+    };
+  return { ok: true, valor: lineas };
 }

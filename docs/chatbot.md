@@ -214,15 +214,15 @@ junto a Evolution API (WhatsApp). Usa directamente `lib/catalogo/` (lista de equ
   WhatsApp (24 h y 2 h antes) se leen de ahí: si el dueño mueve o borra la cita en Calendar,
   el bot lo respeta.
 
-## Póliza RCV (D030, D031)
+## Póliza RCV (D030, D031, D034, D036)
 
 Se edita en el panel (`/rcv`). Modelo en `lib/rcv/tipos.ts`; el bot lo lee con caché de 60 s.
 
 | Dónde | Campos | Quién escribe |
 |---|---|---|
-| `planesRcv/{id}` | `clase`, `descripcion`, `precioEur` (number, o `null` = "Solicitar cotización"), `categorias` (`publico`/`privado`/`extranjeras`, al menos una), `financiamiento` (bool), `activo` (bool), `orden` (number), huella | Panel |
-| `configuracion/rcv` | `tasaUsd` (1 € = X $), `tasaBs` (1 € = X Bs.; con BCV, la última consultada como respaldo), `tasaCop` (1 € = X COP), `fuenteBs` (`"bcv"` o `"manual"`; sin el campo = manual), `requisitos` (`{ publico, privado, extranjeras }`: listas de texto), huella | Panel |
-| `solicitudesRcv/{id}` | `nombre`, `correo`, `telefono`, `whatsapp`, `categoria`, `planId`, `clase`, `descripcion`, `precioEur`, `precioUsd`, `precioBs`, `precioCop` (los del momento; `precioCop` puede faltar en las viejas), `financiamiento` (bool o `null`), `creadoEn` | Bot (Admin SDK) |
+| `planesRcv/{id}` | `clase`, `descripcion`, `precioEur` (number, o `null` = "Solicitar cotización"), `categorias` (`publico`/`privado`, al menos una; datos de antes pueden traer `extranjeras`, que se ignora), `financiamiento` (bool), `activo` (bool), `orden` (number), huella | Panel |
+| `configuracion/rcv` | `tasaUsd` (1 € = X $), `tasaBs` (1 € = X Bs.; con BCV, la última consultada como respaldo), `tasaCop` (1 € = X COP), `fuenteBs` (`"bcv"` o `"manual"`; sin el campo = manual), `fuenteUsd`/`fuenteCop` (`"mercado"` o `"manual"`; sin el campo = manual, D036), `requisitosGenerales` (lista de texto, la misma para todo vehículo, D034; `requisitos` por categoría es de antes y el panel lo borra al guardar), huella | Panel |
+| `solicitudesRcv/{id}` | `nombre`, `correo`, `telefono`, `whatsapp`, `categoria`, `planId`, `clase`, `descripcion`, `vehiculo` (solo placas extranjeras: el vehículo a cotizar), `precioEur`, `precioUsd`, `precioBs`, `precioCop` (los del momento; `precioCop` puede faltar en las viejas), `financiamiento` (bool o `null`), `creadoEn` | Bot (Admin SDK) |
 
 - **Precios:** el euro es fijo por transporte; dólares y bolívares = `precioEur × tasa`,
   redondeados a 2 decimales; pesos colombianos sin céntimos (`cotizar` de
@@ -231,13 +231,50 @@ Se edita en el panel (`/rcv`). Modelo en `lib/rcv/tipos.ts`; el bot lo lee con c
 - **Tasa BCV (D031):** con `fuenteBs: "bcv"` el bot consulta la tasa oficial del euro en
   DolarAPI (`https://ve.dolarapi.com/v1/euros/oficial`, campo `promedio`) con caché de 30 min.
   Si la API falla, usa la última buena o, si no tiene, `tasaBs` (el panel la refresca cada vez
-  que lo abren y el BCV publicó otra). Dólares y pesos siempre son manuales.
-- **Requisitos:** si `configuracion/rcv` no trae los de una categoría, el bot usa
-  `REQUISITOS_RCV_POR_DEFECTO`.
+  que lo abren y el BCV publicó otra).
+- **Tasa de mercado (D036):** con `fuenteUsd`/`fuenteCop: "mercado"` el bot toma 1 € en $ y COP
+  de ExchangeRate-API (`https://open.er-api.com/v6/latest/EUR`, `rates.USD`/`rates.COP`) o, si
+  falla, de `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json`,
+  con caché de 30 min. Si ambas fallan, usa `tasaUsd`/`tasaCop` (respaldo que refresca el panel).
+- **Requisitos (D034):** una sola lista para todos los vehículos. Si `configuracion/rcv` no
+  trae `requisitosGenerales`, el bot usa `REQUISITOS_RCV_POR_DEFECTO` (cédula, título o
+  carnet de circulación o certificado de origen, correo, teléfono y dirección).
+- **Placas extranjeras (D034):** no tiene planes ni precio fijo. El chat muestra los
+  requisitos, pide el vehículo (tipo, marca, modelo, año) y luego nombre, correo y teléfono.
+  La solicitud se guarda con `planId: "cotizacion-extranjera"`, precios `null` y `vehiculo`.
 - **Escritura del bot:** la cuenta `chatbot-lectura` pasa a **Cloud Datastore User**
   (`roles/datastore.user`) para poder crear `solicitudesRcv`. El código solo escribe ahí.
 - Seed: `bun run seed:emulador` y `bun run seed:produccion` cargan la tabla del cliente
   (`lib/rcv/planes-iniciales.ts`) y sus tasas implícitas (1 € = 1,1193 $ = 979,0788 Bs.).
+
+## Clientes con financiamiento y vencimiento de pólizas (D032, D033)
+
+Se editan en el panel (`/clientes`). Modelo en `lib/financiamiento/tipos.ts`. Fechas como texto
+`"AAAA-MM-DD"` (día de Caracas).
+
+| Dónde | Campos | Quién escribe |
+|---|---|---|
+| `clientesCelulares/{id}` | `nombre`, `cedula`, `telefono`, `equipo`, `notas`, `pagos` (`{ inicial, frecuencia: semanal/quincenal/mensual, cuotas: [{ numero, vence, monto, pagada, pagadaEl }] }`), huella | Panel |
+| `clientesRcv/{id}` | `nombre`, `cedula`, `telefono`, `correo`, `direccion`, `vehiculo`, `placa`, `notas`, `emision`/`vence` (`null` = aún sin emitir; `vence` = emisión + 1 año), `recordatorio30`/`recordatorio3` (bool), `pagos` (como arriba, o `null` = de contado), huella | Panel; el bot solo marca `recordatorio30`/`recordatorio3` |
+
+- **Recordatorios de vencimiento (D033):** cada hora, entre 9:00 y 19:00 de Caracas, el bot
+  busca los `clientesRcv` con `vence` en los próximos 30 días. Cuando faltan ≤ 30 días manda el
+  aviso del mes; cuando faltan ≤ 3 días, el final. Marca el campo **antes** de enviar (en una
+  transacción que comprueba que `vence` no cambió) y avisa a los asesores. Renovar en el panel
+  corre `vence` un año y pone los dos campos en `false`. Sale aunque Gaby esté apagada.
+
+## Avisos push al panel (D035)
+
+El panel es instalable (PWA: `app/manifest.ts`, `public/sw.js`). La campana de la cabecera
+guarda la suscripción Web Push del teléfono en `suscripcionesPush/{sha256(endpoint)}`
+(`endpoint`, `p256dh`, `auth`, `uid`, `dispositivo`, `creadaEn`). Cuando Gaby agenda una cita,
+el bot (`bot/src/avisos-push.ts`, librería `web-push`) manda un aviso a cada suscripción; al
+tocarlo se abre el evento en Google Calendar. Las que responden 404/410 se borran.
+
+Configuración: `bunx web-push generate-vapid-keys` → la pública en el panel
+(`NEXT_PUBLIC_VAPID_PUBLIC_KEY`) y en el bot (`VAPID_PUBLIC_KEY`), la privada solo en el bot
+(`VAPID_PRIVATE_KEY`) y `VAPID_SUBJECT=mailto:…`. En iPhone los avisos solo llegan con el panel
+agregado a la pantalla de inicio (iOS 16.4+).
 
 ### Por resolver (póliza RCV)
 

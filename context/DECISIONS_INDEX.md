@@ -29,3 +29,9 @@
 | D029 | decisions/04-chatbot.md | RCV por categoría; planes y solicitudes tras `Servicios` (web pendiente) |
 | D030 | decisions/04-chatbot.md | Póliza RCV en Firestore editable en `/rcv`; bot con Datastore User escribe `solicitudesRcv` |
 | D031 | decisions/04-chatbot.md | Tasa Bs. del BCV (DolarAPI) o manual; tasa COP manual |
+| D032 | decisions/06-financiamiento.md | Clientes con financiamiento (`clientesCelulares`, `clientesRcv`), cuotas embebidas |
+| D033 | decisions/06-financiamiento.md | Bot avisa vencimiento de póliza a 30 y 3 días; renovar reinicia avisos |
+| D034 | decisions/06-financiamiento.md | Requisitos RCV en una lista común; placas extranjeras = cotización sin planes |
+| D035 | decisions/06-financiamiento.md | Panel PWA + Web Push (VAPID) de citas nuevas |
+| D036 | decisions/06-financiamiento.md | Tasas $ y COP automáticas (ExchangeRate-API, respaldo jsDelivr) o manuales |
+| D037 | decisions/06-financiamiento.md | Modo demo `?demo`: clientes de ejemplo en memoria, sin tocar Firestore |

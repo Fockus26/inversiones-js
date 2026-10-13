@@ -35,4 +35,13 @@ export const config = {
   /** Frenos anti-baneo: máximo de respuestas por chat en 10 min y en total por hora. */
   maxPorChat10Min: Number(process.env.MAX_POR_CHAT_10MIN ?? 8),
   maxPorHora: Number(process.env.MAX_POR_HORA ?? 60),
+  /**
+   * Claves VAPID de los avisos push del panel (D035). La pública es la misma que
+   * NEXT_PUBLIC_VAPID_PUBLIC_KEY del panel. Sin ellas, el bot no manda avisos push.
+   */
+  vapidPublica: process.env.VAPID_PUBLIC_KEY?.trim() ?? "",
+  vapidPrivada: process.env.VAPID_PRIVATE_KEY?.trim() ?? "",
+  /** Contacto del remitente que exige Web Push (mailto: o https:). */
+  vapidContacto:
+    process.env.VAPID_SUBJECT?.trim() || "mailto:avisos@inversiones-js.local",
 };

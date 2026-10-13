@@ -81,21 +81,23 @@ service cloud.firestore {
     }
 
     // Tasas y requisitos se guardan por separado (merge): cada uno es opcional.
+    // D034: una sola lista `requisitosGenerales`; `requisitos` (por categoría) es de antes y el
+    // panel lo borra al guardar los requisitos.
     function configRcvValida(c) {
       return c.keys().hasOnly([
-          'tasaUsd', 'tasaBs', 'tasaCop', 'fuenteBs', 'requisitos', 'actualizadoEn', 'actualizadoPor'
+          'tasaUsd', 'tasaBs', 'tasaCop', 'fuenteBs', 'fuenteUsd', 'fuenteCop',
+          'requisitosGenerales', 'requisitos',
+          'actualizadoEn', 'actualizadoPor'
         ])
         && (!('tasaUsd' in c) || (c.tasaUsd is number && c.tasaUsd > 0 && c.tasaUsd <= 1000))
         && (!('tasaBs' in c) || (c.tasaBs is number && c.tasaBs > 0 && c.tasaBs <= 1000000000))
         && (!('tasaCop' in c) || (c.tasaCop is number && c.tasaCop > 0 && c.tasaCop <= 1000000))
         && (!('fuenteBs' in c) || c.fuenteBs in ['bcv', 'manual'])
-        && (!('requisitos' in c) || (
-          c.requisitos is map
-          && c.requisitos.keys().hasOnly(['publico', 'privado', 'extranjeras'])
-          && (!('publico' in c.requisitos) || listaRequisitos(c.requisitos.publico))
-          && (!('privado' in c.requisitos) || listaRequisitos(c.requisitos.privado))
-          && (!('extranjeras' in c.requisitos) || listaRequisitos(c.requisitos.extranjeras))
-        ));
+        // D036: dólares y pesos, de mercado (automática) o manual.
+        && (!('fuenteUsd' in c) || c.fuenteUsd in ['mercado', 'manual'])
+        && (!('fuenteCop' in c) || c.fuenteCop in ['mercado', 'manual'])
+        && (!('requisitosGenerales' in c) || listaRequisitos(c.requisitosGenerales))
+        && (!('requisitos' in c) || c.requisitos is map);
     }
 
     match /planesRcv/{id} {
@@ -118,6 +120,95 @@ service cloud.firestore {
     match /solicitudesRcv/{id} {
       allow read, delete: if esAdmin();
       allow create, update: if false;
+    }
+
+    // D032: clientes con financiamiento. Mismos límites que lib/financiamiento/validacion.ts.
+    function fecha(f) {
+      return f is string && f.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    function texto(t, min, max) {
+      return t is string && t.size() >= min && t.size() <= max;
+    }
+
+    // Las reglas no recorren listas: se limita el tamaño; el contenido lo arma el panel.
+    function planPagosValido(p) {
+      return p is map
+        && p.keys().hasOnly(['inicial', 'frecuencia', 'cuotas'])
+        && p.keys().hasAll(['inicial', 'frecuencia', 'cuotas'])
+        && p.inicial is number && p.inicial >= 0 && p.inicial <= 100000
+        && p.frecuencia in ['semanal', 'quincenal', 'mensual']
+        && p.cuotas is list && p.cuotas.size() >= 1 && p.cuotas.size() <= 60;
+    }
+
+    function datosPersonales(c) {
+      return texto(c.nombre, 1, 80)
+        && texto(c.cedula, 0, 20)
+        && texto(c.telefono, 1, 30)
+        && texto(c.notas, 0, 500);
+    }
+
+    function clienteCelularValido(c) {
+      return c.keys().hasOnly([
+          'nombre', 'cedula', 'telefono', 'equipo', 'notas', 'pagos',
+          'actualizadoEn', 'actualizadoPor'
+        ])
+        && c.keys().hasAll(['nombre', 'cedula', 'telefono', 'equipo', 'notas', 'pagos'])
+        && datosPersonales(c)
+        && texto(c.equipo, 1, 80)
+        && planPagosValido(c.pagos);
+    }
+
+    function clienteRcvValido(c) {
+      return c.keys().hasOnly([
+          'nombre', 'cedula', 'telefono', 'correo', 'direccion', 'vehiculo', 'placa', 'notas',
+          'emision', 'vence', 'recordatorio30', 'recordatorio3', 'pagos',
+          'actualizadoEn', 'actualizadoPor'
+        ])
+        && c.keys().hasAll([
+          'nombre', 'cedula', 'telefono', 'correo', 'direccion', 'vehiculo', 'placa', 'notas',
+          'emision', 'vence', 'recordatorio30', 'recordatorio3', 'pagos'
+        ])
+        && datosPersonales(c)
+        && texto(c.correo, 0, 120)
+        && texto(c.direccion, 0, 200)
+        && texto(c.vehiculo, 1, 120)
+        && texto(c.placa, 0, 12)
+        && ((c.emision == null && c.vence == null) || (fecha(c.emision) && fecha(c.vence)))
+        && c.recordatorio30 is bool
+        && c.recordatorio3 is bool
+        && (c.pagos == null || planPagosValido(c.pagos));
+    }
+
+    match /clientesCelulares/{id} {
+      allow read, delete: if esAdmin();
+      allow create, update: if esAdmin()
+        && clienteCelularValido(request.resource.data)
+        && conHuella(request.resource.data);
+    }
+
+    // El bot (Admin SDK) además marca recordatorio30/recordatorio3 al mandar los avisos (D033).
+    match /clientesRcv/{id} {
+      allow read, delete: if esAdmin();
+      allow create, update: if esAdmin()
+        && clienteRcvValido(request.resource.data)
+        && conHuella(request.resource.data);
+    }
+
+    // D035: suscripciones Web Push de los teléfonos del panel. El bot las lee (Admin SDK) para
+    // avisar de citas nuevas y borra las que el navegador dio de baja.
+    match /suscripcionesPush/{id} {
+      allow read, delete: if esAdmin();
+      allow create, update: if esAdmin()
+        && request.resource.data.keys().hasOnly(['endpoint', 'p256dh', 'auth', 'uid', 'dispositivo', 'creadaEn'])
+        && request.resource.data.keys().hasAll(['endpoint', 'p256dh', 'auth', 'uid', 'dispositivo', 'creadaEn'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.creadaEn == request.time
+        && texto(request.resource.data.endpoint, 1, 1000)
+        && request.resource.data.endpoint.matches('https://.+')
+        && texto(request.resource.data.p256dh, 1, 200)
+        && texto(request.resource.data.auth, 1, 100)
+        && texto(request.resource.data.dispositivo, 0, 120);
     }
 
     match /admins/{uid} {

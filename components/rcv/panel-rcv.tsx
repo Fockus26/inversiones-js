@@ -45,11 +45,13 @@ import { cotizar, numeroEs, textoCop } from "@/lib/rcv/cotizacion";
 import {
   actualizarPlanRcv,
   borrarPlanRcv,
-  guardarRespaldoBcv,
+  guardarRespaldos,
 } from "@/lib/rcv/repositorio";
 import {
   type ConfigRcv,
   fuenteBsDe,
+  fuenteCopDe,
+  fuenteUsdDe,
   NOMBRES_CATEGORIA,
   type PlanRcvConId,
   requisitosEfectivos,
@@ -64,6 +66,7 @@ import { Solicitudes } from "./solicitudes";
 import { Tasas } from "./tasas";
 import { useRcv } from "./use-rcv";
 import { useTasaBcv } from "./use-tasa-bcv";
+import { useTasaMercado } from "./use-tasa-mercado";
 
 /**
  * /rcv (D030): tasas del día, transportes de la póliza (crear, editar, ocultar, borrar),
@@ -137,9 +140,14 @@ function Contenido({
   const [borrando, setBorrando] = useState<PlanRcvConId | null>(null);
 
   const bcv = useTasaBcv();
-  const tasaBcv = bcv.tipo === "lista" ? bcv.tasa : null;
-  const tasas = tasasDe(config, tasaBcv);
-  useRespaldoBcv(config, tasaBcv);
+  const mercado = useTasaMercado();
+  const enVivo = {
+    bs: bcv.tipo === "lista" ? bcv.tasa : null,
+    usd: mercado.tipo === "lista" ? mercado.usd : null,
+    cop: mercado.tipo === "lista" ? mercado.cop : null,
+  };
+  const tasas = tasasDe(config, enVivo);
+  useRespaldos(config, enVivo);
   const ordenNuevo = planes.reduce((max, p) => Math.max(max, p.orden), 0) + 1;
   const ocultos = planes.filter((p) => !p.activo).length;
   const resumen = [
@@ -182,9 +190,17 @@ function Contenido({
 
       <Tasas
         // Con BCV, `tasaBs` es el respaldo que se actualiza solo: no debe borrar lo que se escribe.
-        key={`${config?.tasaUsd}-${config?.tasaCop}-${fuenteBsDe(config)}-${fuenteBsDe(config) === "manual" ? config?.tasaBs : ""}`}
+        key={[
+          fuenteBsDe(config),
+          fuenteUsdDe(config),
+          fuenteCopDe(config),
+          fuenteBsDe(config) === "manual" ? config?.tasaBs : "",
+          fuenteUsdDe(config) === "manual" ? config?.tasaUsd : "",
+          fuenteCopDe(config) === "manual" ? config?.tasaCop : "",
+        ].join("-")}
         config={config}
         bcv={bcv}
+        mercado={mercado}
       />
 
       <section aria-labelledby="titulo-transportes" className="grid gap-3">
@@ -246,19 +262,41 @@ function Contenido({
 }
 
 /**
- * Con la tasa BCV elegida, guarda la recién consultada como respaldo (`tasaBs`) si el BCV
- * publicó otra: así, si la API se cae, el bot sigue con la más reciente que vio el panel.
+ * Con fuentes automáticas, guarda las tasas recién consultadas como respaldo (`tasaBs`,
+ * `tasaUsd`, `tasaCop`) si cambiaron: así, si la API se cae, el bot sigue con la más reciente
+ * que vio el panel.
  */
-function useRespaldoBcv(config: ConfigRcv | null, tasaBcv: number | null) {
-  const enviada = useRef<number | null>(null);
+function useRespaldos(
+  config: ConfigRcv | null,
+  enVivo: { bs: number | null; usd: number | null; cop: number | null },
+) {
+  const enviadas = useRef<string>("");
+  const { bs, usd, cop } = enVivo;
   useEffect(() => {
-    if (fuenteBsDe(config) !== "bcv" || tasaBcv === null) return;
-    if (config?.tasaBs === tasaBcv || enviada.current === tasaBcv) return;
-    enviada.current = tasaBcv;
-    guardarRespaldoBcv(tasaBcv).catch((e) =>
-      console.error("[rcv] No se pudo guardar la tasa BCV de respaldo:", e),
+    if (!config) return;
+    const respaldos: Partial<Record<"tasaBs" | "tasaUsd" | "tasaCop", number>> =
+      {};
+    if (fuenteBsDe(config) === "bcv" && bs !== null && bs !== config.tasaBs)
+      respaldos.tasaBs = bs;
+    if (
+      fuenteUsdDe(config) === "mercado" &&
+      usd !== null &&
+      usd !== config.tasaUsd
+    )
+      respaldos.tasaUsd = usd;
+    if (
+      fuenteCopDe(config) === "mercado" &&
+      cop !== null &&
+      cop !== config.tasaCop
+    )
+      respaldos.tasaCop = cop;
+    const firma = JSON.stringify(respaldos);
+    if (firma === "{}" || enviadas.current === firma) return;
+    enviadas.current = firma;
+    guardarRespaldos(respaldos).catch((e) =>
+      console.error("[rcv] No se pudieron guardar las tasas de respaldo:", e),
     );
-  }, [config, tasaBcv]);
+  }, [config, bs, usd, cop]);
 }
 
 interface PropsFilas {
