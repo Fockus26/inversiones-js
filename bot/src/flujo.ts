@@ -32,6 +32,7 @@ export type Paso =
   | "telefono_lista"
   | "rcv_tipo"
   | "rcv_plan"
+  | "rcv_vehiculo"
   | "rcv_financiamiento"
   | "rcv_nombre"
   | "rcv_correo"
@@ -47,8 +48,10 @@ export interface DatosRcv {
   /** Planes mostrados (para traducir "2" → plan). */
   planes?: PlanMostrado[];
   plan?: PlanMostrado;
-  /** Requisitos de la categoría, leídos al mostrar la lista. */
+  /** Requisitos (los mismos para todo vehículo, D034), leídos al mostrar la lista. */
   requisitos?: string[];
+  /** Placas extranjeras: el vehículo como lo describe el cliente, para cotizar (D034). */
+  vehiculo?: string;
   financiamiento?: boolean;
   nombre?: string;
   correo?: string;
@@ -358,7 +361,7 @@ async function ofrecerPlanes(
   try {
     const datos = await s.rcv();
     planes = planesMostrados(datos, categoria);
-    requisitos = datos.requisitos[categoria];
+    requisitos = datos.requisitos;
   } catch (e) {
     console.error("No se pudieron leer los planes RCV", e);
   }
@@ -371,9 +374,6 @@ async function ofrecerPlanes(
       estado: nuevo("menu", s),
     };
   }
-  // Placas extranjeras es un solo plan: se muestra directo, sin lista.
-  if (planes.length === 1)
-    return elegirPlan(s, { categoria, requisitos }, planes[0]);
   const intro = T.elegir(
     T.RCV_LISTA,
     { categoria: NOMBRES_CATEGORIA[categoria].toLowerCase() },
@@ -386,6 +386,39 @@ async function ofrecerPlanes(
     ],
     estado: nuevo("rcv_plan", s, { rcv: { categoria, planes, requisitos } }),
   };
+}
+
+/**
+ * Placas extranjeras (D034): no hay precio fijo. Se explican los requisitos y se pide el
+ * vehículo para que el asesor cotice; después, los mismos datos que el resto.
+ */
+async function pedirVehiculoExtranjero(s: Servicios): Promise<Resultado> {
+  let requisitos: string[] = [];
+  try {
+    requisitos = (await s.rcv()).requisitos;
+  } catch (e) {
+    console.error("No se pudieron leer los requisitos RCV", e);
+  }
+  const lista =
+    requisitos.length > 0
+      ? `\n\n📋 Requisitos:\n${requisitos.map((r) => `• ${r}`).join("\n")}`
+      : "";
+  return {
+    respuestas: [
+      `${T.elegir(T.RCV_EXTRANJERAS, {}, s.azar)}${lista}`,
+      T.elegir(T.RCV_PIDE_VEHICULO, {}, s.azar),
+    ],
+    estado: nuevo("rcv_vehiculo", s, {
+      rcv: { categoria: "extranjeras", requisitos },
+    }),
+  };
+}
+
+/** Descripción libre del vehículo: al menos 3 letras/números, hasta 120 caracteres. */
+export function vehiculoValido(texto: string): string | null {
+  const limpio = texto.trim().replace(/\s+/g, " ");
+  if (limpio.length > 120) return null;
+  return (limpio.match(/[\p{L}\d]/gu) ?? []).length >= 3 ? limpio : null;
 }
 
 function elegirPlan(
@@ -407,13 +440,30 @@ function elegirPlan(
   };
 }
 
+/** Lo que se guarda y se avisa: el plan elegido o, en placas extranjeras, el vehículo a cotizar. */
+function planDeSolicitud(rcv: DatosRcv): PlanMostrado | null {
+  if (rcv.plan) return rcv.plan;
+  if (rcv.categoria === "extranjeras" && rcv.vehiculo)
+    return {
+      id: ID_COTIZACION_EXTRANJERA,
+      clase: "PLACAS EXTRANJERAS",
+      descripcion: "SOLICITAR COTIZACIÓN",
+      precios: null,
+      financiamiento: false,
+    };
+  return null;
+}
+
+export const ID_COTIZACION_EXTRANJERA = "cotizacion-extranjera";
+
 async function cerrarRcv(
   s: Servicios,
   contacto: Contacto,
   rcv: DatosRcv,
   telefono: string,
 ): Promise<Resultado> {
-  const { plan, nombre, correo } = rcv;
+  const { nombre, correo } = rcv;
+  const plan = planDeSolicitud(rcv);
   if (!plan || !nombre || !correo) {
     return {
       respuestas: [menu(s, contacto, false)],
@@ -429,6 +479,7 @@ async function cerrarRcv(
     planId: plan.id,
     clase: plan.clase,
     descripcion: plan.descripcion,
+    ...(rcv.vehiculo ? { vehiculo: rcv.vehiculo } : {}),
     precioEur: plan.precios?.eur ?? null,
     precioUsd: plan.precios?.usd ?? null,
     precioBs: plan.precios?.bs ?? null,
@@ -445,12 +496,18 @@ async function cerrarRcv(
     rcv.financiamiento === undefined
       ? ""
       : `\nFinanciamiento: ${rcv.financiamiento ? "Sí" : "No"}`;
+  const detalle = rcv.vehiculo
+    ? `Vehículo: ${rcv.vehiculo}\nPrecio: por cotizar`
+    : `Plan: ${plan.clase} — ${plan.descripcion}\nPrecio: ${textoPrecio(plan.precios)}`;
   await s.avisarAsesor(
-    `🚗 Póliza RCV\nTipo: ${NOMBRES_CATEGORIA[rcv.categoria]}\nPlan: ${plan.clase} — ${plan.descripcion}\nPrecio: ${textoPrecio(plan.precios)}${financiamiento}\nNombre: ${nombre}\nCorreo: ${correo}\nTeléfono: ${telefono}\nWhatsApp: +${contacto.telefono}`,
+    `🚗 Póliza RCV\nTipo: ${NOMBRES_CATEGORIA[rcv.categoria]}\n${detalle}${financiamiento}\nNombre: ${nombre}\nCorreo: ${correo}\nTeléfono: ${telefono}\nWhatsApp: +${contacto.telefono}`,
   );
+  const confirmada = rcv.vehiculo
+    ? T.RCV_COTIZACION_CONFIRMADA
+    : T.RCV_CONFIRMADA;
   return {
     respuestas: [
-      `${T.elegir(T.RCV_CONFIRMADA, { nombre: primerNombre(nombre) }, s.azar)}\n\n${T.elegir(T.MENU_DE_NUEVO, {}, s.azar)} Escribe *MENU* para ver las opciones.`,
+      `${T.elegir(confirmada, { nombre: primerNombre(nombre) }, s.azar)}\n\n${T.elegir(T.MENU_DE_NUEVO, {}, s.azar)} Escribe *MENU* para ver las opciones.`,
     ],
     estado: nuevo("menu", s),
   };
@@ -564,7 +621,24 @@ export async function procesar(
           estado: nuevo("rcv_tipo", s),
         };
       }
+      if (categoria === "extranjeras") return pedirVehiculoExtranjero(s);
       return ofrecerPlanes(s, contacto, categoria);
+    }
+
+    case "rcv_vehiculo": {
+      const rcv = estado.rcv;
+      if (!rcv) break;
+      const vehiculo = vehiculoValido(texto);
+      if (!vehiculo) {
+        return {
+          respuestas: [T.elegir(T.RCV_VEHICULO_INVALIDO, {}, s.azar)],
+          estado: nuevo("rcv_vehiculo", s, { rcv }),
+        };
+      }
+      return {
+        respuestas: [T.elegir(T.RCV_PIDE_NOMBRE, {}, s.azar)],
+        estado: nuevo("rcv_nombre", s, { rcv: { ...rcv, vehiculo } }),
+      };
     }
 
     case "rcv_plan": {

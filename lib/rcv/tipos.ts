@@ -3,8 +3,8 @@
  * campo rompe al bot (ver docs/chatbot.md). Sin Firebase: lo importan el panel y `bot/`.
  *
  * - `planesRcv/{id}`: un documento por transporte, con su precio fijo en euros.
- * - `configuracion/rcv`: tasas del día (€ → $, € → Bs. y € → COP) y requisitos por tipo de
- *   transporte. La de bolívares puede ser la oficial del BCV (se consulta sola) o manual.
+ * - `configuracion/rcv`: tasas del día (€ → $, € → Bs. y € → COP) y requisitos (una sola lista
+ *   para todos los vehículos, D034). La de bolívares puede ser la del BCV (se consulta sola) o manual.
  * - `solicitudesRcv/{id}`: datos que deja el cliente en el chat. Solo las escribe el bot.
  */
 
@@ -22,6 +22,16 @@ export const NOMBRES_CATEGORIA: Record<CategoriaRcv, string> = {
   extranjeras: "Placas extranjeras",
 };
 
+/**
+ * Categorías con transportes de precio fijo (D034). Placas extranjeras no tiene planes: el
+ * chat pide el tipo de vehículo y se cotiza aparte.
+ */
+export const CATEGORIAS_PLAN = [
+  "publico",
+  "privado",
+] as const satisfies readonly CategoriaRcv[];
+export type CategoriaPlan = (typeof CATEGORIAS_PLAN)[number];
+
 export interface PlanRcv {
   /** Tipo de vehículo, p. ej. "MOTO", "TAXI". */
   clase: string;
@@ -29,7 +39,7 @@ export interface PlanRcv {
   descripcion: string;
   /** Precio fijo en euros. `null` = sin precio fijo: se solicita cotización. */
   precioEur: number | null;
-  /** En qué opciones del chat aparece (al menos una). */
+  /** En qué opciones del chat aparece (al menos una). Datos de antes de D034 pueden traer "extranjeras": se ignora. */
   categorias: CategoriaRcv[];
   /** Si es transporte público, el chat pregunta si quiere financiamiento. */
   financiamiento: boolean;
@@ -64,17 +74,28 @@ export interface TasasRcv {
 export const FUENTES_BS = ["bcv", "manual"] as const;
 export type FuenteBs = (typeof FUENTES_BS)[number];
 
-export type RequisitosRcv = Record<CategoriaRcv, string[]>;
+/** Dólares y pesos (D036): la tasa de mercado (se consulta sola) o la que se escriba. */
+export const FUENTES_MERCADO = ["mercado", "manual"] as const;
+export type FuenteMercado = (typeof FUENTES_MERCADO)[number];
 
 /** `configuracion/rcv`. Los campos pueden faltar si el cliente aún no los guardó. */
 export interface ConfigRcv {
+  /** Con `fuenteUsd: "mercado"` es la última de mercado que se guardó: respaldo (D036). */
   tasaUsd?: number;
   /** Con `fuenteBs: "bcv"` es la última tasa BCV que se guardó: respaldo si la API no responde. */
   tasaBs?: number;
+  /** Con `fuenteCop: "mercado"`, respaldo como `tasaUsd`. */
   tasaCop?: number;
   /** Sin el campo = "manual" (configuraciones de antes de que existiera). */
   fuenteBs?: FuenteBs;
-  requisitos?: Partial<RequisitosRcv>;
+  /** Sin el campo = "manual". */
+  fuenteUsd?: FuenteMercado;
+  /** Sin el campo = "manual". */
+  fuenteCop?: FuenteMercado;
+  /** Requisitos de la póliza, iguales para todo vehículo (D034). */
+  requisitosGenerales?: string[];
+  /** Antes de D034: requisitos por categoría. Ya no se usa; el panel lo borra al guardar. */
+  requisitos?: unknown;
   actualizadoEn?: Date | null;
   actualizadoPor?: string | null;
 }
@@ -90,6 +111,8 @@ export interface SolicitudRcv {
   planId: string;
   clase: string;
   descripcion: string;
+  /** Placas extranjeras (D034): el vehículo como lo describió el cliente, para cotizar. */
+  vehiculo?: string;
   precioEur: number | null;
   precioUsd: number | null;
   precioBs: number | null;
@@ -104,36 +127,19 @@ export interface SolicitudRcvConId extends SolicitudRcv {
   id: string;
 }
 
-/** Requisitos de arranque: el bot los usa mientras `configuracion/rcv` no traiga los suyos. */
-export const REQUISITOS_RCV_POR_DEFECTO: RequisitosRcv = {
-  privado: [
-    "Copia de la cédula del propietario",
-    "Copia del certificado de circulación (título) del vehículo",
-    "Copia de la licencia de conducir",
-  ],
-  publico: [
-    "Copia de la cédula del propietario",
-    "Copia del certificado de circulación (título) del vehículo",
-    "Copia de la licencia de conducir de quinto grado",
-    "Copia del permiso de prestación de servicio público (INTT) o constancia de la línea",
-  ],
-  extranjeras: [
-    "Copia del pasaporte o documento de identidad del propietario",
-    "Copia del documento de propiedad del vehículo del país de origen",
-    "Copia del permiso de ingreso temporal del vehículo al país",
-  ],
-};
+/** Requisitos de arranque (D034): el bot los usa mientras `configuracion/rcv` no traiga los suyos. */
+export const REQUISITOS_RCV_POR_DEFECTO: readonly string[] = [
+  "Fotos de la cédula de identidad",
+  "Foto del título o carnet de circulación o certificado de origen",
+  "Correo electrónico",
+  "Teléfono",
+  "Dirección",
+];
 
-/** Requisitos guardados, o los de arranque para la categoría que no tenga ninguno. */
-export function requisitosEfectivos(config: ConfigRcv | null): RequisitosRcv {
-  const r = config?.requisitos ?? {};
-  const de = (c: CategoriaRcv) =>
-    r[c] && r[c].length > 0 ? r[c] : REQUISITOS_RCV_POR_DEFECTO[c];
-  return {
-    publico: de("publico"),
-    privado: de("privado"),
-    extranjeras: de("extranjeras"),
-  };
+/** Requisitos guardados, o los de arranque si no hay ninguno. */
+export function requisitosEfectivos(config: ConfigRcv | null): string[] {
+  const r = config?.requisitosGenerales;
+  return Array.isArray(r) && r.length > 0 ? r : [...REQUISITOS_RCV_POR_DEFECTO];
 }
 
 const positivo = (n: unknown): n is number =>
@@ -143,19 +149,42 @@ export function fuenteBsDe(config: ConfigRcv | null): FuenteBs {
   return config?.fuenteBs === "bcv" ? "bcv" : "manual";
 }
 
+export function fuenteUsdDe(config: ConfigRcv | null): FuenteMercado {
+  return config?.fuenteUsd === "mercado" ? "mercado" : "manual";
+}
+
+export function fuenteCopDe(config: ConfigRcv | null): FuenteMercado {
+  return config?.fuenteCop === "mercado" ? "mercado" : "manual";
+}
+
+/** Tasas consultadas hace poco (null = no hay o la API no respondió). */
+export interface TasasEnVivo {
+  bs?: number | null;
+  usd?: number | null;
+  cop?: number | null;
+}
+
 /**
  * Tasas con las que se cotiza, o `null` si falta la de dólares o la de bolívares (el chat
- * muestra solo euros). Con `fuenteBs: "bcv"`, `bcv` (la tasa consultada hace poco) manda sobre
- * la guardada; si la API no respondió, se usa la última guardada.
+ * muestra solo euros). Con una fuente automática (`bcv` o `mercado`), la tasa consultada hace
+ * poco manda sobre la guardada; si la API no respondió, se usa la última guardada.
  */
 export function tasasDe(
   config: ConfigRcv | null,
-  bcv: number | null = null,
+  enVivo: TasasEnVivo = {},
 ): TasasRcv | null {
-  const usd = config?.tasaUsd;
+  const usd =
+    fuenteUsdDe(config) === "mercado" && positivo(enVivo.usd)
+      ? enVivo.usd
+      : config?.tasaUsd;
   const bs =
-    fuenteBsDe(config) === "bcv" && positivo(bcv) ? bcv : config?.tasaBs;
-  const cop = config?.tasaCop;
+    fuenteBsDe(config) === "bcv" && positivo(enVivo.bs)
+      ? enVivo.bs
+      : config?.tasaBs;
+  const cop =
+    fuenteCopDe(config) === "mercado" && positivo(enVivo.cop)
+      ? enVivo.cop
+      : config?.tasaCop;
   if (!positivo(usd) || !positivo(bs)) return null;
   return { usd, bs, cop: positivo(cop) ? cop : null };
 }

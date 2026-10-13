@@ -15,6 +15,7 @@ import {
 } from "@firebase/rules-unit-testing";
 import {
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   serverTimestamp,
@@ -29,6 +30,7 @@ import {
   COLECCION_MARCAS,
   COLECCION_PRODUCTOS,
 } from "@/lib/catalogo/tipos";
+import { generarCuotas } from "@/lib/financiamiento/cuotas";
 
 const PROYECTO = "demo-reglas-w1";
 const ADMIN = "uid-admin";
@@ -381,6 +383,7 @@ describe("póliza RCV (D030)", () => {
     await assertSucceeds(
       setDoc(ref, { tasaUsd: 1.12, tasaBs: 979.08, ...huella(ADMIN) }),
     );
+    // Antes de D034: requisitos por categoría. Siguen permitidos mientras existan.
     await assertSucceeds(
       setDoc(
         ref,
@@ -388,6 +391,25 @@ describe("póliza RCV (D030)", () => {
           requisitos: { publico: ["a"], privado: ["b"], extranjeras: ["c"] },
           ...huella(ADMIN),
         },
+        { merge: true },
+      ),
+    );
+    // D034: una sola lista; al guardarla se borra la de antes.
+    await assertSucceeds(
+      setDoc(
+        ref,
+        {
+          requisitosGenerales: ["Cédula", "Título"],
+          requisitos: deleteField(),
+          ...huella(ADMIN),
+        },
+        { merge: true },
+      ),
+    );
+    await assertFails(
+      setDoc(
+        ref,
+        { requisitosGenerales: [], ...huella(ADMIN) },
         { merge: true },
       ),
     );
@@ -401,8 +423,21 @@ describe("póliza RCV (D030)", () => {
     await assertFails(setDoc(ref, { tasaUsd: 0, ...huella(ADMIN) }));
     await assertFails(setDoc(ref, { tasaCop: 0, ...huella(ADMIN) }));
     await assertFails(setDoc(ref, { fuenteBs: "otra", ...huella(ADMIN) }));
+    await assertSucceeds(
+      setDoc(
+        ref,
+        { fuenteUsd: "mercado", fuenteCop: "manual", ...huella(ADMIN) },
+        { merge: true },
+      ),
+    );
     await assertFails(
-      setDoc(ref, { requisitos: { publico: [] }, ...huella(ADMIN) }),
+      setDoc(ref, { fuenteUsd: "google", ...huella(ADMIN) }, { merge: true }),
+    );
+    await assertFails(
+      setDoc(ref, {
+        requisitosGenerales: Array(21).fill("x"),
+        ...huella(ADMIN),
+      }),
     );
     await assertFails(setDoc(ref, { otra: 1, ...huella(ADMIN) }));
     await assertFails(deleteDoc(ref));
@@ -424,5 +459,143 @@ describe("póliza RCV (D030)", () => {
     );
     await assertFails(deleteDoc(doc(dbOtro(), "solicitudesRcv", "s1")));
     await assertSucceeds(deleteDoc(doc(dbAdmin(), "solicitudesRcv", "s1")));
+  });
+});
+
+describe("clientes con financiamiento (D032)", () => {
+  const pagos = () => ({
+    inicial: 60,
+    frecuencia: "quincenal",
+    cuotas: generarCuotas(25, 6, "quincenal", "2026-10-28"),
+  });
+  const celular = (extra: Record<string, unknown> = {}) => ({
+    nombre: "María Pérez",
+    cedula: "V-1",
+    telefono: "0414-1234567",
+    equipo: "HONOR 600",
+    notas: "",
+    pagos: pagos(),
+    ...extra,
+  });
+  const rcv = (extra: Record<string, unknown> = {}) => ({
+    nombre: "José Rodríguez",
+    cedula: "",
+    telefono: "0412-7654321",
+    correo: "",
+    direccion: "",
+    vehiculo: "TAXI",
+    placa: "AB123CD",
+    notas: "",
+    emision: "2026-01-15",
+    vence: "2027-01-15",
+    recordatorio30: false,
+    recordatorio3: false,
+    pagos: null,
+    ...extra,
+  });
+
+  test("admin crea, marca cuotas y borra; sin acceso ni lee", async () => {
+    const ref = doc(dbAdmin(), "clientesCelulares", "c1");
+    await assertSucceeds(setDoc(ref, { ...celular(), ...huella(ADMIN) }));
+    const cuotas = pagos().cuotas.map((c, i) =>
+      i === 0 ? { ...c, pagada: true, pagadaEl: "2026-10-28" } : c,
+    );
+    await assertSucceeds(
+      updateDoc(ref, { "pagos.cuotas": cuotas, ...huella(ADMIN) }),
+    );
+    await assertFails(getDoc(doc(dbOtro(), "clientesCelulares", "c1")));
+    await assertFails(
+      setDoc(doc(dbOtro(), "clientesCelulares", "c2"), {
+        ...celular(),
+        ...huella(OTRO),
+      }),
+    );
+    await assertFails(updateDoc(ref, { "pagos.cuotas": cuotas }));
+    await assertSucceeds(deleteDoc(ref));
+  });
+
+  test("cliente de celular inválido falla", async () => {
+    const col = (id: string) => doc(dbAdmin(), "clientesCelulares", id);
+    for (const [id, malo] of [
+      ["a", celular({ nombre: "" })],
+      ["b", celular({ equipo: "" })],
+      ["c", celular({ extra: 1 })],
+      ["d", celular({ pagos: { ...pagos(), frecuencia: "diaria" } })],
+      ["e", celular({ pagos: { ...pagos(), cuotas: [] } })],
+      ["f", celular({ pagos: { ...pagos(), inicial: -1 } })],
+      ["g", celular({ pagos: null })],
+    ] as const)
+      await assertFails(setDoc(col(id), { ...malo, ...huella(ADMIN) }));
+  });
+
+  test("póliza: con o sin emisión, de contado o financiada", async () => {
+    const col = (id: string) => doc(dbAdmin(), "clientesRcv", id);
+    await assertSucceeds(setDoc(col("a"), { ...rcv(), ...huella(ADMIN) }));
+    await assertSucceeds(
+      setDoc(col("b"), {
+        ...rcv({ emision: null, vence: null }),
+        ...huella(ADMIN),
+      }),
+    );
+    await assertSucceeds(
+      setDoc(col("c"), { ...rcv({ pagos: pagos() }), ...huella(ADMIN) }),
+    );
+    // Renovar: nuevas fechas y avisos a cero.
+    await assertSucceeds(
+      updateDoc(col("a"), {
+        emision: "2027-01-15",
+        vence: "2028-01-15",
+        recordatorio30: false,
+        recordatorio3: false,
+        ...huella(ADMIN),
+      }),
+    );
+    for (const [id, malo] of [
+      ["d", rcv({ emision: "15/01/2026" })],
+      ["e", rcv({ vence: null })],
+      ["f", rcv({ recordatorio30: "si" })],
+      ["g", rcv({ vehiculo: "" })],
+      ["h", rcv({ placa: "X".repeat(13) })],
+    ] as const)
+      await assertFails(setDoc(col(id), { ...malo, ...huella(ADMIN) }));
+    await assertFails(getDoc(doc(dbOtro(), "clientesRcv", "a")));
+  });
+});
+
+describe("suscripciones push (D035)", () => {
+  const sub = (uid: string, extra: Record<string, unknown> = {}) => ({
+    endpoint: "https://fcm.googleapis.com/fcm/send/abc",
+    p256dh: "clave",
+    auth: "secreto",
+    uid,
+    dispositivo: "Chrome en Android",
+    creadaEn: serverTimestamp(),
+    ...extra,
+  });
+
+  test("el admin guarda la suya y la borra; nadie más", async () => {
+    const ref = doc(dbAdmin(), "suscripcionesPush", "s1");
+    await assertSucceeds(setDoc(ref, sub(ADMIN)));
+    await assertSucceeds(getDoc(ref));
+    await assertFails(
+      setDoc(doc(dbAdmin(), "suscripcionesPush", "s2"), sub(OTRO)),
+    );
+    await assertFails(
+      setDoc(
+        doc(dbAdmin(), "suscripcionesPush", "s3"),
+        sub(ADMIN, { endpoint: "http://x" }),
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(dbAdmin(), "suscripcionesPush", "s4"),
+        sub(ADMIN, { extra: 1 }),
+      ),
+    );
+    await assertFails(
+      setDoc(doc(dbOtro(), "suscripcionesPush", "s5"), sub(OTRO)),
+    );
+    await assertFails(getDoc(doc(dbOtro(), "suscripcionesPush", "s1")));
+    await assertSucceeds(deleteDoc(ref));
   });
 });

@@ -4,12 +4,7 @@ import {
   planesDe,
   textoPrecio,
 } from "../../lib/rcv/cotizacion";
-import type {
-  CategoriaRcv,
-  PlanRcvConId,
-  RequisitosRcv,
-  TasasRcv,
-} from "../../lib/rcv/tipos";
+import type { CategoriaRcv, PlanRcvConId, TasasRcv } from "../../lib/rcv/tipos";
 
 /**
  * Póliza RCV en el chat (D029, D030). Transportes, tasas y requisitos se editan en el panel
@@ -21,7 +16,8 @@ export interface DatosRcvFirestore {
   planes: PlanRcvConId[];
   /** `null` si el cliente aún no guardó tasas: el chat muestra solo euros. */
   tasas: TasasRcv | null;
-  requisitos: RequisitosRcv;
+  /** Los mismos para todo vehículo (D034). */
+  requisitos: string[];
 }
 
 /** Plan tal como se le mostró al cliente, con el precio del momento. */

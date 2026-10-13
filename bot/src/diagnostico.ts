@@ -65,7 +65,7 @@ await paso(
   "Calendar (escritura)",
   async () => {
     const inicio = new Date(Date.now() + 365 * 86_400_000);
-    const id = await crearEvento({
+    const { id } = await crearEvento({
       inicio: inicio.toISOString(),
       fin: new Date(inicio.getTime() + 60_000).toISOString(),
       titulo: "Prueba de Gaby (se borra sola)",

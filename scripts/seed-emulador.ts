@@ -1,5 +1,6 @@
 /**
- * Carga el catálogo del 29/09 y dos cuentas de prueba en los EMULADORES locales.
+ * Carga el catálogo del 29/09, la póliza RCV, clientes con financiamiento de prueba (D032) y dos
+ * cuentas de prueba en los EMULADORES locales.
  * Requiere `bun run emulators` corriendo. Re-ejecutable (upsert por id).
  *
  *   bun run seed:emulador
@@ -16,6 +17,15 @@ import {
   COLECCION_PRODUCTOS,
   MARCAS_INICIALES,
 } from "@/lib/catalogo/tipos";
+import {
+  clientesCelularesDePrueba,
+  clientesRcvDePrueba,
+} from "@/lib/financiamiento/datos-demo";
+import { hoyCaracas } from "@/lib/financiamiento/fechas";
+import {
+  COLECCION_CLIENTES_CELULARES,
+  COLECCION_CLIENTES_RCV,
+} from "@/lib/financiamiento/tipos";
 import { COLECCION_CONFIGURACION } from "@/lib/horario/tipos";
 import {
   PLANES_RCV_INICIALES,
@@ -25,6 +35,7 @@ import {
   COLECCION_PLANES_RCV,
   COLECCION_SOLICITUDES_RCV,
   DOC_CONFIG_RCV,
+  REQUISITOS_RCV_POR_DEFECTO,
 } from "@/lib/rcv/tipos";
 
 /** Cuentas que SOLO existen en el emulador (proyecto demo-*). */
@@ -100,8 +111,45 @@ for (const { id, ...plan } of PLANES_RCV_INICIALES) {
 lote.set(db.collection(COLECCION_CONFIGURACION).doc(DOC_CONFIG_RCV), {
   tasaUsd: TASAS_RCV_INICIALES.usd,
   tasaBs: TASAS_RCV_INICIALES.bs,
+  requisitosGenerales: [...REQUISITOS_RCV_POR_DEFECTO],
   actualizadoEn: FieldValue.serverTimestamp(),
   actualizadoPor: "seed",
+});
+// Clientes con financiamiento en distintas situaciones (al día, atrasados, por vencer…).
+const hoy = hoyCaracas();
+const celulares = clientesCelularesDePrueba(hoy);
+const clientesRcv = clientesRcvDePrueba(hoy);
+for (const { id, ...cliente } of celulares) {
+  lote.set(db.collection(COLECCION_CLIENTES_CELULARES).doc(id), {
+    ...cliente,
+    actualizadoEn: FieldValue.serverTimestamp(),
+    actualizadoPor: "seed",
+  });
+}
+for (const { id, ...cliente } of clientesRcv) {
+  lote.set(db.collection(COLECCION_CLIENTES_RCV).doc(id), {
+    ...cliente,
+    actualizadoEn: FieldValue.serverTimestamp(),
+    actualizadoPor: "seed",
+  });
+}
+// Solicitud de placas extranjeras (D034): sin precio, con el vehículo a cotizar.
+lote.set(db.collection(COLECCION_SOLICITUDES_RCV).doc("ejemplo-extranjera"), {
+  nombre: "Andrés Ruiz",
+  correo: "andres@ejemplo.com",
+  telefono: "573001234567",
+  whatsapp: "573001234567",
+  categoria: "extranjeras",
+  planId: "cotizacion-extranjera",
+  clase: "PLACAS EXTRANJERAS",
+  descripcion: "SOLICITAR COTIZACIÓN",
+  vehiculo: "camioneta Toyota Hilux 2018",
+  precioEur: null,
+  precioUsd: null,
+  precioBs: null,
+  precioCop: null,
+  financiamiento: null,
+  creadoEn: FieldValue.serverTimestamp(),
 });
 // Una solicitud de ejemplo para ver la lista en el panel.
 lote.set(db.collection(COLECCION_SOLICITUDES_RCV).doc("ejemplo"), {
@@ -122,6 +170,6 @@ lote.set(db.collection(COLECCION_SOLICITUDES_RCV).doc("ejemplo"), {
 await lote.commit();
 
 console.log(
-  `✓ ${MARCAS_INICIALES.length} marcas, ${CATALOGO_INICIAL.length} productos, ${PLANES_RCV_INICIALES.length} transportes RCV y 2 cuentas en ${projectId} (admin: ${CUENTAS_EMULADOR.admin.email})`,
+  `✓ ${MARCAS_INICIALES.length} marcas, ${CATALOGO_INICIAL.length} productos, ${PLANES_RCV_INICIALES.length} transportes RCV, ${celulares.length} + ${clientesRcv.length} clientes con financiamiento y 2 cuentas en ${projectId} (admin: ${CUENTAS_EMULADOR.admin.email})`,
 );
 process.exit(0);

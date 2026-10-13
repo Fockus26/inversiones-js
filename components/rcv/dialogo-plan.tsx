@@ -24,7 +24,7 @@ import { parsearEntero } from "@/lib/catalogo/validacion";
 import { cotizar, textoPrecio } from "@/lib/rcv/cotizacion";
 import { actualizarPlanRcv, crearPlanRcv } from "@/lib/rcv/repositorio";
 import {
-  CATEGORIAS_RCV,
+  CATEGORIAS_PLAN,
   type CategoriaRcv,
   NOMBRES_CATEGORIA,
   type PlanRcvConId,
@@ -260,7 +260,7 @@ function Formulario({
           <legend className="mb-1.5 text-sm font-medium">
             ¿En qué opciones del chat aparece?
           </legend>
-          {CATEGORIAS_RCV.map((c, i) => (
+          {CATEGORIAS_PLAN.map((c, i) => (
             <label
               key={c}
               className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 text-sm"
@@ -276,6 +276,10 @@ function Formulario({
               {NOMBRES_CATEGORIA[c]}
             </label>
           ))}
+          <p className="text-xs text-muted-foreground">
+            Placas extranjeras no lleva transportes: el chat pide el vehículo y
+            se cotiza aparte.
+          </p>
           {errorCategorias && (
             <p
               id={`${idDe("categorias")}-error`}

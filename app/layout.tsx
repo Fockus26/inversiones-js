@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { RegistroServiceWorker } from "@/components/pwa/registro-sw";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -18,6 +19,14 @@ export const metadata: Metadata = {
   title: { default: "Panel · Inversiones JS", template: "%s · Inversiones JS" },
   description: "Panel administrativo del catálogo de Inversiones JS.",
   robots: { index: false, follow: false },
+  applicationName: "Inversiones JS",
+  // Instalada en iPhone: sin barra del navegador y con la barra de estado en tinta.
+  appleWebApp: {
+    capable: true,
+    title: "Inversiones JS",
+    statusBarStyle: "black",
+  },
+  icons: { apple: "/icono/180" },
 };
 
 // Con el teclado del teléfono abierto, Chrome en Android achica también el viewport de layout:
@@ -27,6 +36,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   interactiveWidget: "resizes-content",
+  // Barra del sistema del color de la cabecera (D035).
+  themeColor: "#1c1f26",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -39,6 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
+          <RegistroServiceWorker />
           <Toaster richColors position="top-center" />
         </ThemeProvider>
       </body>

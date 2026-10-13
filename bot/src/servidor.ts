@@ -1,3 +1,4 @@
+import { avisosPushActivos } from "./avisos-push";
 import { config } from "./config";
 import { type Comando, Cupos, comandoDe } from "./control";
 import {
@@ -16,6 +17,7 @@ import { type Contacto, type Entrada, procesar } from "./flujo";
 import { correoCuentaServicio } from "./google";
 import { iniciarRecordatorios } from "./recordatorios";
 import { servicios } from "./servicios";
+import { iniciarVencimientos } from "./vencimientos";
 
 /**
  * Servidor de Gaby. Evolution API manda cada mensaje entrante a POST /webhook/<token>;
@@ -227,7 +229,8 @@ const servidor = Bun.serve({
 });
 
 iniciarRecordatorios();
+iniciarVencimientos();
 leerPropio();
 console.log(
-  `Gaby escuchando en :${servidor.port} · instancia ${config.instancia} · cuenta ${correoCuentaServicio} · asesores: ${config.asesores.length} · ${gabyActiva() ? "ENCENDIDA" : "APAGADA (gaby on para encender)"}`,
+  `Gaby escuchando en :${servidor.port} · instancia ${config.instancia} · cuenta ${correoCuentaServicio} · asesores: ${config.asesores.length} · avisos push ${avisosPushActivos ? "sí" : "no"} · ${gabyActiva() ? "ENCENDIDA" : "APAGADA (gaby on para encender)"}`,
 );

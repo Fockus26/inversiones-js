@@ -4,6 +4,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   type FirestoreError,
   limit,
@@ -24,8 +25,8 @@ import {
   type ConfigRcv,
   DOC_CONFIG_RCV,
   type FuenteBs,
+  type FuenteMercado,
   type PlanRcvConId,
-  type RequisitosRcv,
   type SolicitudRcvConId,
 } from "./tipos";
 
@@ -116,38 +117,50 @@ const refConfig = () =>
   doc(firestore(), COLECCION_CONFIGURACION, DOC_CONFIG_RCV);
 
 /**
- * `bs`: la manual, o con BCV la consultada en ese momento (queda de respaldo para el bot). Si es
- * `null` (BCV sin respuesta) no se toca la guardada.
+ * Cada tasa es la manual o, con fuente automática, la consultada en ese momento (queda de
+ * respaldo para el bot). Si es `null` (API sin respuesta) no se toca la guardada.
  */
 export async function guardarTasas(tasas: {
-  usd: number;
+  usd: number | null;
   bs: number | null;
-  cop: number;
+  cop: number | null;
   fuenteBs: FuenteBs;
+  fuenteUsd: FuenteMercado;
+  fuenteCop: FuenteMercado;
 }): Promise<void> {
   await setDoc(
     refConfig(),
     {
-      tasaUsd: tasas.usd,
-      tasaCop: tasas.cop,
       fuenteBs: tasas.fuenteBs,
+      fuenteUsd: tasas.fuenteUsd,
+      fuenteCop: tasas.fuenteCop,
+      ...(tasas.usd === null ? {} : { tasaUsd: tasas.usd }),
       ...(tasas.bs === null ? {} : { tasaBs: tasas.bs }),
+      ...(tasas.cop === null ? {} : { tasaCop: tasas.cop }),
       ...huella(),
     },
     { merge: true },
   );
 }
 
-/** Con la tasa BCV elegida, actualiza el respaldo `tasaBs` cuando el BCV publica otra. */
-export async function guardarRespaldoBcv(tasaBs: number): Promise<void> {
-  await setDoc(refConfig(), { tasaBs, ...huella() }, { merge: true });
+/**
+ * Con fuentes automáticas, actualiza los respaldos (`tasaBs`, `tasaUsd`, `tasaCop`) cuando la
+ * API publica otro valor: así el bot cotiza con el más reciente aunque la API se caiga.
+ */
+export async function guardarRespaldos(
+  respaldos: Partial<Record<"tasaBs" | "tasaUsd" | "tasaCop", number>>,
+): Promise<void> {
+  await setDoc(refConfig(), { ...respaldos, ...huella() }, { merge: true });
 }
 
-export async function guardarRequisitos(
-  requisitos: RequisitosRcv,
-): Promise<void> {
-  // merge conserva las tasas; las tres listas van completas (un array se reemplaza entero).
-  await setDoc(refConfig(), { requisitos, ...huella() }, { merge: true });
+/** Una lista para todos los vehículos (D034); borra la de por categoría de antes. */
+export async function guardarRequisitos(requisitos: string[]): Promise<void> {
+  // merge conserva las tasas; la lista va completa (un array se reemplaza entero).
+  await setDoc(
+    refConfig(),
+    { requisitosGenerales: requisitos, requisitos: deleteField(), ...huella() },
+    { merge: true },
+  );
 }
 
 /** Últimas solicitudes (más nuevas primero). `orderBy` de un campo: índice automático. */

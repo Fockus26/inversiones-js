@@ -6,11 +6,13 @@ import {
   MessageCircleIcon,
   PhoneIcon,
   Trash2Icon,
+  UserPlusIcon,
 } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { Aviso } from "@/components/catalogo/catalogo-productos";
 import { FOCO, haceCuanto } from "@/components/catalogo/formato";
+import { DialogoClienteRcv } from "@/components/clientes/clientes-rcv";
 import {
   ENTRADA,
   escalonado,
@@ -48,6 +50,9 @@ export function Solicitudes({
   const titulo = useId();
   const [borrando, setBorrando] = useState<SolicitudRcvConId | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [registrando, setRegistrando] = useState<SolicitudRcvConId | null>(
+    null,
+  );
 
   async function borrar() {
     if (!borrando) return;
@@ -133,6 +138,12 @@ export function Solicitudes({
               <p>
                 <strong>{s.clase}</strong> — {s.descripcion}
               </p>
+              {s.vehiculo && (
+                <p className="break-words">
+                  <span className="text-muted-foreground">Vehículo: </span>
+                  {s.vehiculo}
+                </p>
+              )}
               <p className="tabular-nums text-muted-foreground">
                 {textoPrecio(
                   s.precioEur === null
@@ -167,10 +178,28 @@ export function Solicitudes({
                   />
                 )}
               </ul>
+              <Button
+                variant="outline"
+                className={cn("h-11 justify-self-start px-3", FOCO)}
+                onClick={() => setRegistrando(s)}
+                aria-label={`Registrar a ${s.nombre} como cliente de póliza`}
+              >
+                <UserPlusIcon aria-hidden="true" />
+                <span aria-hidden="true">Registrar cliente</span>
+              </Button>
             </li>
           ))}
         </ul>
       )}
+
+      <DialogoClienteRcv
+        abierto={registrando !== null}
+        alCambiarAbierto={(abierto) => {
+          if (!abierto) setRegistrando(null);
+        }}
+        cliente={null}
+        inicial={registrando ? inicialDe(registrando) : undefined}
+      />
 
       <AlertDialog
         open={borrando !== null}
@@ -204,6 +233,20 @@ export function Solicitudes({
       </AlertDialog>
     </section>
   );
+}
+
+/** Datos de la solicitud del chat para arrancar la ficha del cliente (D032). */
+function inicialDe(s: SolicitudRcvConId) {
+  const vehiculo = s.vehiculo
+    ? `${s.clase} — ${s.vehiculo}`
+    : `${s.clase} — ${s.descripcion}`;
+  return {
+    nombre: s.nombre,
+    telefono: s.telefono,
+    correo: s.correo,
+    vehiculo: vehiculo.slice(0, 120),
+    financiado: s.financiamiento === true,
+  };
 }
 
 function Contacto({

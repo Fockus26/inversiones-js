@@ -28,7 +28,7 @@ import type { DatosRcvFirestore } from "../src/rcv";
 const datosRcv: DatosRcvFirestore = {
   planes: PLANES_RCV_INICIALES,
   tasas: TASAS_RCV_INICIALES,
-  requisitos: REQUISITOS,
+  requisitos: [...REQUISITOS],
 };
 
 import * as T from "../src/textos";
@@ -237,12 +237,12 @@ describe("flujo", () => {
     expect(estado?.paso).toBe("menu");
   });
 
-  test("planes RCV: privado 1–4, público 1–6 y 8, extranjeras solo 7", () => {
+  test("planes RCV: privado 1–4, público 1–6 y 8, extranjeras ninguno (D034)", () => {
     const nros = (c: CategoriaRcv) =>
       planesDe(PLANES_RCV_INICIALES, c).map((p) => p.orden);
     expect(nros("privado")).toEqual([1, 2, 3, 4]);
     expect(nros("publico")).toEqual([1, 2, 3, 4, 5, 6, 8]);
-    expect(nros("extranjeras")).toEqual([7]);
+    expect(nros("extranjeras")).toEqual([]);
     // Las tasas iniciales reproducen la tabla del cliente.
     expect(textoPrecio(cotizar(15, TASAS_RCV_INICIALES))).toBe(
       "15,00 € · 16,79$ · Bs. 14.686,18",
@@ -275,7 +275,7 @@ describe("flujo", () => {
     expect(lista).toContain("0414-7221091");
     const ficha = respuestas[3][0];
     expect(ficha).toContain("45,00 € · 50,37$ · Bs. 44.058,55");
-    expect(ficha).toContain(REQUISITOS.privado[0]);
+    expect(ficha).toContain(REQUISITOS[0]);
     expect(respuestas[3][1]).toContain("nombre");
     expect(respuestas[4][0]).toContain("María");
     expect(respuestas[6][0]).toContain("asesor");
@@ -315,7 +315,7 @@ describe("flujo", () => {
     ]);
     expect(respuestas[2][0]).toContain("7. MINIBUSES URBANOS Y SUBURBANOS");
     expect(respuestas[3][0]).toContain("131,00 €");
-    expect(respuestas[3][0]).toContain(REQUISITOS.publico[3]);
+    expect(respuestas[3][0]).toContain(REQUISITOS[4]);
     expect(respuestas[3][1]).toContain("financiar");
     expect(solicitudes[0].financiamiento).toBe(true);
     expect(solicitudes[0].telefono).toBe("04145551234");
@@ -326,13 +326,58 @@ describe("flujo", () => {
     expect(taxi.estado?.paso).toBe("rcv_nombre");
   });
 
-  test("placas extranjeras → cotización y requisitos sin lista", async () => {
-    const { s } = falsos();
+  test("placas extranjeras (D034): requisitos, pide el vehículo y guarda para cotizar", async () => {
+    const { s, solicitudes, avisos } = falsos();
+    const { respuestas, estado } = await conversar(s, [
+      "hola",
+      "3",
+      "3",
+      "?",
+      "camioneta Toyota Hilux 2018",
+      "Pedro Gómez",
+      "pedro@correo.com",
+      "este",
+    ]);
+    expect(respuestas[2][0]).toContain("placas extranjeras");
+    expect(respuestas[2][0]).toContain(REQUISITOS[1]);
+    expect(respuestas[2][0]).not.toContain("€");
+    expect(respuestas[2][1]).toContain("vehículo");
+    expect(respuestas[3][0]).toBe(T.RCV_VEHICULO_INVALIDO[0]);
+    expect(respuestas[4][0]).toBe(T.RCV_PIDE_NOMBRE[0]);
+    expect(respuestas[7][0]).toContain("cotización");
+    expect(solicitudes).toEqual([
+      {
+        nombre: "Pedro Gómez",
+        correo: "pedro@correo.com",
+        telefono: "584121234567",
+        whatsapp: "584121234567",
+        categoria: "extranjeras",
+        planId: "cotizacion-extranjera",
+        clase: "PLACAS EXTRANJERAS",
+        descripcion: "SOLICITAR COTIZACIÓN",
+        vehiculo: "camioneta Toyota Hilux 2018",
+        precioEur: null,
+        precioUsd: null,
+        precioBs: null,
+        precioCop: null,
+        financiamiento: null,
+      },
+    ]);
+    expect(avisos[0]).toContain("Placas extranjeras");
+    expect(avisos[0]).toContain("Vehículo: camioneta Toyota Hilux 2018");
+    expect(avisos[0]).toContain("por cotizar");
+    expect(estado?.paso).toBe("menu");
+  });
+
+  test("placas extranjeras sigue aunque no se puedan leer los requisitos", async () => {
+    const { s } = falsos({
+      rcv: async () => {
+        throw new Error("sin Firestore");
+      },
+    });
     const { respuestas, estado } = await conversar(s, ["hola", "3", "3"]);
-    expect(respuestas[2][0]).toContain("Solicitar cotización");
-    expect(respuestas[2][0]).toContain(REQUISITOS.extranjeras[0]);
-    expect(estado?.paso).toBe("rcv_nombre");
-    expect(estado?.rcv?.plan?.id).toBe("placas-extranjeras");
+    expect(respuestas[2][0]).not.toContain("Requisitos");
+    expect(estado?.paso).toBe("rcv_vehiculo");
   });
 
   test("sin tasas el chat muestra solo euros; oculto no aparece", async () => {

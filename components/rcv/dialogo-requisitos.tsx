@@ -15,12 +15,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { guardarRequisitos } from "@/lib/rcv/repositorio";
-import {
-  CATEGORIAS_RCV,
-  type CategoriaRcv,
-  NOMBRES_CATEGORIA,
-  type RequisitosRcv,
-} from "@/lib/rcv/tipos";
 import { validarRequisitos } from "@/lib/rcv/validacion";
 import { cn } from "@/lib/utils";
 
@@ -28,10 +22,13 @@ interface Props {
   abierto: boolean;
   alCambiarAbierto: (abierto: boolean) => void;
   /** Los que usa hoy el chat. */
-  requisitos: RequisitosRcv;
+  requisitos: string[];
 }
 
-/** Requisitos por tipo de transporte: uno por línea. El chat los muestra al elegir vehículo. */
+/**
+ * Requisitos de la póliza, uno por línea. Son los mismos para todo vehículo (D034): el chat
+ * los muestra al elegir vehículo y al pedir cotización de placas extranjeras.
+ */
 export function DialogoRequisitos(props: Props) {
   return (
     <Dialog open={props.abierto} onOpenChange={props.alCambiarAbierto}>
@@ -43,16 +40,13 @@ export function DialogoRequisitos(props: Props) {
 }
 
 function Formulario({ requisitos, alCambiarAbierto }: Props) {
-  const prefijo = useId();
-  const [textos, setTextos] = useState<Record<CategoriaRcv, string>>(() => ({
-    publico: requisitos.publico.join("\n"),
-    privado: requisitos.privado.join("\n"),
-    extranjeras: requisitos.extranjeras.join("\n"),
-  }));
+  const id = useId();
+  const [texto, setTexto] = useState(() => requisitos.join("\n"));
   const [intentado, setIntentado] = useState(false);
   const [guardando, setGuardando] = useState(false);
-  const resultado = validarRequisitos(textos);
-  const errores = intentado && !resultado.ok ? resultado.errores : {};
+  const resultado = validarRequisitos(texto);
+  const error = intentado && !resultado.ok ? resultado.error : undefined;
+  const lineas = resultado.ok ? resultado.valor.length : 0;
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -77,40 +71,36 @@ function Formulario({ requisitos, alCambiarAbierto }: Props) {
         <DialogHeader>
           <DialogTitle>Requisitos</DialogTitle>
           <DialogDescription>
-            Uno por línea. El chat los muestra junto al precio cuando el cliente
-            elige su vehículo.
+            Uno por línea. Son los mismos para cualquier vehículo: el chat los
+            muestra junto al precio, y también a quien pide cotización con
+            placas extranjeras.
           </DialogDescription>
         </DialogHeader>
-        {CATEGORIAS_RCV.map((c) => {
-          const id = `${prefijo}-${c}`;
-          const error = errores[c];
-          return (
-            <div key={c} className="grid gap-1.5">
-              <label htmlFor={id} className="text-sm font-medium">
-                {NOMBRES_CATEGORIA[c]}
-              </label>
-              <textarea
-                id={id}
-                value={textos[c]}
-                onChange={(e) =>
-                  setTextos((t) => ({ ...t, [c]: e.target.value }))
-                }
-                rows={4}
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? `${id}-error` : undefined}
-                className={cn(
-                  "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring aria-invalid:border-destructive md:text-sm dark:bg-input/30",
-                  FOCO,
-                )}
-              />
-              {error && (
-                <p id={`${id}-error`} className="text-xs text-destructive">
-                  {error}
-                </p>
-              )}
-            </div>
-          );
-        })}
+        <div className="grid gap-1.5">
+          <label htmlFor={id} className="text-sm font-medium">
+            Requisitos para todos los vehículos
+          </label>
+          <textarea
+            id={id}
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            rows={7}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={`${id}-ayuda${error ? ` ${id}-error` : ""}`}
+            className={cn(
+              "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring aria-invalid:border-destructive md:text-sm dark:bg-input/30",
+              FOCO,
+            )}
+          />
+          <p id={`${id}-ayuda`} className="text-xs text-muted-foreground">
+            {lineas === 1 ? "1 requisito" : `${lineas} requisitos`}
+          </p>
+          {error && (
+            <p id={`${id}-error`} className="text-xs text-destructive">
+              {error}
+            </p>
+          )}
+        </div>
       </div>
       <DialogFooter className="m-0 flex-row justify-end">
         <DialogClose

@@ -2,7 +2,8 @@ import type { PlanRcv, TasasRcv } from "./tipos";
 
 /**
  * Tabla que pasó el cliente (12/10/2026), para el seed. Privado: 1–4. Público: 1–6 y 8.
- * Placas extranjeras (7): opción aparte, sin precio fijo. Después se edita desde el panel.
+ * Placas extranjeras no es un plan (D034): el chat pide el vehículo y se cotiza aparte.
+ * Después se edita desde el panel.
  */
 export const PLANES_RCV_INICIALES: (Omit<
   PlanRcv,
@@ -67,16 +68,6 @@ export const PLANES_RCV_INICIALES: (Omit<
     descripcion: "PLAN BÁSICO TAXI POR PUESTOS",
     precioEur: 114,
     categorias: ["publico"],
-    financiamiento: false,
-    activo: true,
-  },
-  {
-    id: "placas-extranjeras",
-    orden: 7,
-    clase: "PLACAS EXTRANJERAS",
-    descripcion: "SOLICITAR COTIZACIÓN",
-    precioEur: null,
-    categorias: ["extranjeras"],
     financiamiento: false,
     activo: true,
   },

@@ -3,6 +3,7 @@ import {
   type Turno,
   turnosDisponibles,
 } from "../../lib/horario/turnos";
+import { notificarPanel } from "./avisos-push";
 import { avisarAsesores } from "./evolution";
 import type { Contacto, DatosCita, Servicios } from "./flujo";
 import {
@@ -37,7 +38,7 @@ async function agendar(
   const nombre = contacto.nombre.trim() || "Cliente";
   const telefono = contacto.telefono ? `+${contacto.telefono}` : contacto.jid;
   const dentroDe24h = inicio.getTime() - Date.now() < DIA_MS;
-  await crearEvento({
+  const evento = await crearEvento({
     inicio: turno.inicio,
     fin: turno.fin,
     titulo: `Cita agencia de loterías — ${nombre} (${telefono})`,
@@ -57,6 +58,13 @@ async function agendar(
       r24: dentroDe24h ? "1" : "0",
       r2: "0",
     },
+  });
+  // Aviso push a los teléfonos del panel (D035). Sin await: la respuesta al cliente no espera.
+  void notificarPanel({
+    titulo: "📅 Nueva cita agendada",
+    cuerpo: `${nombre} · ${etiquetaTurno(inicio)}`,
+    url: evento.enlace ?? "/",
+    etiqueta: `cita-${evento.id}`,
   });
   return true;
 }

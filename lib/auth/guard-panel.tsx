@@ -3,11 +3,13 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { ENTRADA } from "@/components/panel/animacion";
+import { AvisoDemo } from "@/components/panel/aviso-demo";
 import { Cabecera, CabeceraEsqueleto } from "@/components/panel/cabecera";
 import { Navegacion } from "@/components/panel/navegacion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSesion } from "@/lib/auth/sesion";
 import { AVISO_SIN_ACCESO, urlLoginConSiguiente } from "@/lib/auth/siguiente";
+import { modoDemo } from "@/lib/financiamiento/demo";
 
 /**
  * Guard de cliente del panel (D011). Mientras no sabemos si es admin, esqueleto; si no hay
@@ -17,6 +19,11 @@ export function GuardPanel({ children }: { children: React.ReactNode }) {
   const { estado, usuario, motivoSalida, salir } = useSesion();
   const router = useRouter();
   const ruta = usePathname();
+
+  // Anota `?demo` en la pestaña antes de que un redirect al login pierda el parámetro (D037).
+  useEffect(() => {
+    modoDemo();
+  }, []);
 
   useEffect(() => {
     if (estado === "sin-acceso") {
@@ -38,6 +45,7 @@ export function GuardPanel({ children }: { children: React.ReactNode }) {
         id="contenido"
         className="mx-auto w-full max-w-6xl flex-1 px-4 py-6"
       >
+        <AvisoDemo />
         <Navegacion />
         {/* key: cada sección entra con su animación al cambiar de pestaña. */}
         <div key={ruta} className={ENTRADA}>
