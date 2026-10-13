@@ -42,7 +42,7 @@ Detalle de tamaños y archivos: `reference/BRAND-ASSETS.md` del kit.
 
 | Correo | Lo manda | Destinatario | Estado |
 |---|---|---|---|
-| Restablecer contraseña | Firebase Auth (`sendPasswordResetEmail` en `app/login/formulario-login.tsx`) | admin del panel | pendiente de diseño (hoy sale la plantilla por defecto de Firebase) |
+| Restablecer contraseña | Firebase Auth (`sendPasswordResetEmail` en `app/login/formulario-login.tsx`) | admin del panel | diseñado: `docs/correos/restablecer-contrasena.html` (HANDOFF §5); falta pegarlo en la consola de Firebase |
 
 La app no manda otros correos: las altas de admin dan una contraseña temporal por
 `admin:crear` (D022) y el bot habla por WhatsApp. La plantilla se edita en la consola de

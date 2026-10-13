@@ -9,7 +9,8 @@ Tokens en `app/globals.css` (claro y `.dark`). Usa las clases de Tailwind de los
 | Secundario | `#1c1f26` tinta | barra lateral/cabecera, texto fuerte |
 | Acento | `#0f766e` verde azulado | anillo de foco, enlaces, estado "guardado", cantidad > 0 |
 | Destructivo | `#c0262d` | eliminar, errores, "agotado" |
-| Selección (`::selection`) | PENDIENTE (claro y oscuro) | fondo y texto del texto seleccionado; contraste ≥ 4.5:1 verificado |
+| Selección (`::selection`) | claro `#fec922` / texto `#1c1f26` (10.6:1) · oscuro `#f4f4f1` / texto `#14161b` (16.9:1) | tokens `--selection` y `--selection-foreground`; distinta del foco y de los enlaces |
+| Scrollbar | pulgar `#8a877c` / riel `#f1f0ea` · oscuro `#6b707c` / `#1c1f26` (≥ 3:1) | tokens `--scrollbar-*`; nunca oculta |
 
 **Contraste:** el amarillo sobre fondo claro mide ~1.5:1. **Nunca** como color de texto, de
 ícono suelto ni de borde de foco sobre claro. Sobre la tinta (`#1c1f26`) sí (≈11:1).
