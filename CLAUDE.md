@@ -44,6 +44,15 @@ bun run emulators:test     # tests de reglas en tests/rules contra el emulador
 bun run build
 ```
 
+**Servidor de desarrollo:** lo levanta César. Excepciones: los agentes de QA (`wave-qa`,
+`functional-qa`) siempre, y los workers si César lo autoriza para una tanda (cada uno en su
+puerto, en segundo plano). Build, typecheck, lint y tests sí se corren sin preguntar.
+
+**QA contra base local:** `bun run qa:local -- --port <p>` levanta los **emuladores de
+Firebase** (proyecto `demo-inversiones-js`, necesita Java), carga `seed-emulador`, crea las
+cuentas de `.env.test.local` (`ADMIN_…` con `admins/{uid}`, `EMAIL_TEST` sin acceso) y
+arranca el servidor apuntando a los emuladores. Nunca contra el proyecto real.
+
 Playwright, si se usa, se corre con `node`, no con `bun` (en Windows se cuelga).
 Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/dist/docs/`.
 
@@ -72,3 +81,13 @@ Cuando César corrija algo que hiciste siguiendo el kit, te pida lo mismo por se
 haga a mano un paso que el kit podría hacer, o el kit no diga qué hacer: fila en
 `context/KIT_FEEDBACK.md` (o +1 en "Veces" si ya está). Sin preguntar y sin anunciarlo
 más que en una línea. Cuando pida "el informe para el kit", sigue el formato de ese archivo.
+
+## Puertas de calidad
+
+| Skill / agente | Cuándo |
+|---|---|
+| `a11y` | Siempre que se toque UI, antes de pedir revisión |
+| `git-flow` | Al abrir y al cerrar cada unidad |
+| `orchestrate` | Llega una lista, o una fase se hace en olas (una ola por sesión) |
+| `wave-qa` | Lo lanza `orchestrate` con la ola mergeada, antes de cerrarla (usa `qa:local`) |
+| `design-qa` / `functional-qa` | Al cerrar una página / un flujo completo |
