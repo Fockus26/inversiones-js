@@ -1,4 +1,6 @@
-# D025 — Marcas editables en la colección `marcas` (id = nombre)
+# D025 · Marcas · Marcas editables en `marcas/{nombre}`; renombrar en lote · Implementado
+
+**Título original:** Marcas editables en la colección `marcas` (id = nombre)
 
 Las marcas dejan de ser una lista fija en código (`MARCAS`) y en `firestore.rules`: viven en
 `marcas/{nombre}` (`{ nombre, actualizadoEn, actualizadoPor }`) y el cliente las agrega,
@@ -22,12 +24,3 @@ renombra y borra desde el botón «Marcas» de /productos.
 
 Alternativas descartadas: id automático + `marcaId` en productos (rompe el contrato con el
 chatbot y obliga a un join); dejar la lista en las reglas (cada marca nueva exigiría deploy).
-
-# D026 — Select propio (Base UI) en vez del `<select>` del navegador
-
-El campo Marca usa `components/catalogo/selector-marca.tsx`, sobre `Select` de
-`@base-ui/react` (el mismo primitivo que usaría el `select` de shadcn base-nova; el registro de
-shadcn no estaba accesible). Botón con rol `combobox` nombrado por su `<Label htmlFor>`,
-opciones de 44 px, ✓ en la elegida, teclado (flechas, Enter, Escape, escribir para saltar) y
-lista con scroll. Vive en `components/catalogo/`, no en `components/ui/`, porque no es el
-archivo generado por shadcn.

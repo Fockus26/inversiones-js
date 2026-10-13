@@ -8,6 +8,8 @@ cliente lee la misma colección de Firestore, así que lo que se guarda aquí es
 chatbot responde.
 
 **Tipo:** dashboard · **Cliente:** Inversiones JS · **Modo git:** ver `context/GIT_STATE.md`
+**Kit:** web-agent-kit, versión en `.kit-version` (se actualiza con `prompts/ACTUALIZAR-KIT.md` del kit) ·
+**Despliegue:** Vercel `inversiones-js` · preview por PR, producción al mergear a `main`
 
 ## Qué leer
 
@@ -16,6 +18,7 @@ chatbot responde.
 | Si la tarea… | Lee además |
 |---|---|
 | toca UI | `context/DESIGN_RULES.md` (colores y reglas de contraste) |
+| toca despliegue, assets o correos | `context/PROJECT_CONTEXT.md` |
 | toca datos, auth o reglas | `lib/catalogo/tipos.ts` + `firestore.rules` + `context/decisions/` (grep) |
 | toca lo que lee el chatbot | `docs/chatbot.md` |
 | llega con un prompt de orquestador | **solo** lo que el prompt cite |
@@ -41,6 +44,15 @@ bun run emulators:test     # tests de reglas en tests/rules contra el emulador
 bun run build
 ```
 
+**Servidor de desarrollo:** lo levanta César. Excepciones: los agentes de QA (`wave-qa`,
+`functional-qa`) siempre, y los workers si César lo autoriza para una tanda (cada uno en su
+puerto, en segundo plano). Build, typecheck, lint y tests sí se corren sin preguntar.
+
+**QA contra base local:** `bun run qa:local -- --port <p>` levanta los **emuladores de
+Firebase** (proyecto `demo-inversiones-js`, necesita Java), carga `seed-emulador`, crea las
+cuentas de `.env.test.local` (`ADMIN_…` con `admins/{uid}`, `EMAIL_TEST` sin acceso) y
+arranca el servidor apuntando a los emuladores. Nunca contra el proyecto real.
+
 Playwright, si se usa, se corre con `node`, no con `bun` (en Windows se cuelga).
 Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/dist/docs/`.
 
@@ -51,3 +63,31 @@ Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/di
 - El modelo de datos (`lib/catalogo/tipos.ts`) es un contrato con el chatbot: cambiar o
   renombrar un campo exige actualizar `docs/chatbot.md` y anotarlo como decisión.
 - Nunca commitear `.env*` (salvo `.env.example`) ni claves de cuenta de servicio.
+
+## Git y worktrees
+
+- Modo `pr`: en tu rama se commitea y empuja sin pedir permiso; **nunca** push a `main`,
+  nunca `gh pr merge`, nunca auto-merge. Nada destructivo (`reset --hard`, `push --force`).
+- **Sin versión:** el proyecto no lleva `version` ni `CHANGELOG.md` ni changesets (D038).
+- Lo local (gitignored): `CURRENT_PHASE`, `CONTENT_CHECKLIST`, `PHASE_LOG/`, `plans/`, `.env*`.
+  Los slots del pool de worktrees (`orchestrate`, `..\inversiones-js-wt\wtN`) traen los
+  `.env*` copiados, pero **no** `context/` local: se lee en la carpeta principal
+  (`C:\Users\Admin\Documents\Work\inversiones-js`). Si un subagente en un slot no puede
+  escribir ahí, lo devuelve en su informe y el orquestador lo copia.
+
+## Feedback para el kit
+
+Cuando César corrija algo que hiciste siguiendo el kit, te pida lo mismo por segunda vez,
+haga a mano un paso que el kit podría hacer, o el kit no diga qué hacer: fila en
+`context/KIT_FEEDBACK.md` (o +1 en "Veces" si ya está). Sin preguntar y sin anunciarlo
+más que en una línea. Cuando pida "el informe para el kit", sigue el formato de ese archivo.
+
+## Puertas de calidad
+
+| Skill / agente | Cuándo |
+|---|---|
+| `a11y` | Siempre que se toque UI, antes de pedir revisión |
+| `git-flow` | Al abrir y al cerrar cada unidad |
+| `orchestrate` | Llega una lista, o una fase se hace en olas (una ola por sesión) |
+| `wave-qa` | Lo lanza `orchestrate` con la ola mergeada, antes de cerrarla (usa `qa:local`) |
+| `design-qa` / `functional-qa` | Al cerrar una página / un flujo completo |

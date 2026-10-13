@@ -1,6 +1,6 @@
 /**
  * Service worker del panel (D035). Avisos push y una sola página en caché: la de sin conexión
- * (D038). No guarda el panel en caché (los datos vienen en vivo de Firestore y una versión
+ * (D039). No guarda el panel en caché (los datos vienen en vivo de Firestore y una versión
  * vieja del panel haría más daño que bien); si una navegación falla por red, sirve esa página.
  *
  * El bot manda un JSON { titulo, cuerpo, url, etiqueta } (lib/notificaciones/tipos.ts).
