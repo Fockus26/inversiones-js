@@ -51,7 +51,7 @@ export function Cabecera({
   }
 
   return (
-    <header className="bg-sidebar text-sidebar-foreground">
+    <header className="bg-sidebar text-sidebar-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500">
       <a
         href="#contenido"
         className="sr-only rounded-md bg-sidebar-primary px-3 py-2 text-sidebar-primary-foreground focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50"

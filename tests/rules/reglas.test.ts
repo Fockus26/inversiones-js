@@ -391,7 +391,16 @@ describe("póliza RCV (D030)", () => {
         { merge: true },
       ),
     );
+    await assertSucceeds(
+      setDoc(
+        ref,
+        { tasaCop: 4350, fuenteBs: "bcv", ...huella(ADMIN) },
+        { merge: true },
+      ),
+    );
     await assertFails(setDoc(ref, { tasaUsd: 0, ...huella(ADMIN) }));
+    await assertFails(setDoc(ref, { tasaCop: 0, ...huella(ADMIN) }));
+    await assertFails(setDoc(ref, { fuenteBs: "otra", ...huella(ADMIN) }));
     await assertFails(
       setDoc(ref, { requisitos: { publico: [] }, ...huella(ADMIN) }),
     );

@@ -11,10 +11,15 @@ import {
   PlusIcon,
   Trash2Icon,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Aviso } from "@/components/catalogo/catalogo-productos";
 import { FOCO } from "@/components/catalogo/formato";
+import {
+  ENTRADA,
+  escalonado,
+  TARJETA_VIVA,
+} from "@/components/panel/animacion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,11 +41,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cotizar, numeroEs } from "@/lib/rcv/cotizacion";
-import { actualizarPlanRcv, borrarPlanRcv } from "@/lib/rcv/repositorio";
+import { cotizar, numeroEs, textoCop } from "@/lib/rcv/cotizacion";
 import {
-  CATEGORIAS_RCV,
+  actualizarPlanRcv,
+  borrarPlanRcv,
+  guardarRespaldoBcv,
+} from "@/lib/rcv/repositorio";
+import {
   type ConfigRcv,
+  fuenteBsDe,
   NOMBRES_CATEGORIA,
   type PlanRcvConId,
   requisitosEfectivos,
@@ -54,6 +63,7 @@ import { DialogoRequisitos } from "./dialogo-requisitos";
 import { Solicitudes } from "./solicitudes";
 import { Tasas } from "./tasas";
 import { useRcv } from "./use-rcv";
+import { useTasaBcv } from "./use-tasa-bcv";
 
 /**
  * /rcv (D030): tasas del día, transportes de la póliza (crear, editar, ocultar, borrar),
@@ -126,10 +136,10 @@ function Contenido({
   const [requisitosAbierto, setRequisitosAbierto] = useState(false);
   const [borrando, setBorrando] = useState<PlanRcvConId | null>(null);
 
-  const tasas = tasasDe(config);
-  const provisionales = !CATEGORIAS_RCV.every(
-    (c) => (config?.requisitos?.[c]?.length ?? 0) > 0,
-  );
+  const bcv = useTasaBcv();
+  const tasaBcv = bcv.tipo === "lista" ? bcv.tasa : null;
+  const tasas = tasasDe(config, tasaBcv);
+  useRespaldoBcv(config, tasaBcv);
   const ordenNuevo = planes.reduce((max, p) => Math.max(max, p.orden), 0) + 1;
   const ocultos = planes.filter((p) => !p.activo).length;
   const resumen = [
@@ -170,20 +180,11 @@ function Contenido({
         }
       />
 
-      {provisionales && (
-        <p className="flex items-start gap-2 rounded-xl border border-dashed p-3 text-sm [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0">
-          <CircleAlertIcon aria-hidden="true" />
-          <span>
-            Los requisitos que muestra el chat son provisionales. Cámbialos en{" "}
-            <strong>Requisitos</strong> por los reales.
-          </span>
-        </p>
-      )}
-
       <Tasas
-        key={`${tasas?.usd}-${tasas?.bs}`}
-        tasas={tasas}
-        actualizadoEn={config?.actualizadoEn}
+        // Con BCV, `tasaBs` es el respaldo que se actualiza solo: no debe borrar lo que se escribe.
+        key={`${config?.tasaUsd}-${config?.tasaCop}-${fuenteBsDe(config)}-${fuenteBsDe(config) === "manual" ? config?.tasaBs : ""}`}
+        config={config}
+        bcv={bcv}
       />
 
       <section aria-labelledby="titulo-transportes" className="grid gap-3">
@@ -238,11 +239,26 @@ function Contenido({
         abierto={requisitosAbierto}
         alCambiarAbierto={setRequisitosAbierto}
         requisitos={requisitosEfectivos(config)}
-        provisionales={provisionales}
       />
       <DialogoBorrarPlan plan={borrando} alCerrar={() => setBorrando(null)} />
     </div>
   );
+}
+
+/**
+ * Con la tasa BCV elegida, guarda la recién consultada como respaldo (`tasaBs`) si el BCV
+ * publicó otra: así, si la API se cae, el bot sigue con la más reciente que vio el panel.
+ */
+function useRespaldoBcv(config: ConfigRcv | null, tasaBcv: number | null) {
+  const enviada = useRef<number | null>(null);
+  useEffect(() => {
+    if (fuenteBsDe(config) !== "bcv" || tasaBcv === null) return;
+    if (config?.tasaBs === tasaBcv || enviada.current === tasaBcv) return;
+    enviada.current = tasaBcv;
+    guardarRespaldoBcv(tasaBcv).catch((e) =>
+      console.error("[rcv] No se pudo guardar la tasa BCV de respaldo:", e),
+    );
+  }, [config, tasaBcv]);
 }
 
 interface PropsFilas {
@@ -304,27 +320,31 @@ function Acciones({
   );
 }
 
-/** "15,00 €", "16,79$", "Bs. 14.686,18" o "—"/"Cotización". */
+/** "15,00 €", "16,79$", "Bs. 14.686,18", "65.256 COP" o "—"/"Cotización". */
 function montos(p: PlanRcvConId, tasas: TasasRcv | null) {
   const c = cotizar(p.precioEur, tasas);
-  if (!c) return { eur: "Cotización", usd: "—", bs: "—" };
+  if (!c) return { eur: "Cotización", usd: "—", bs: "—", cop: "—" };
   return {
     eur: `${numeroEs(c.eur)} €`,
     usd: c.usd === null ? "—" : `${numeroEs(c.usd)}$`,
     bs: c.bs === null ? "—" : `Bs. ${numeroEs(c.bs)}`,
+    cop: c.cop == null ? "—" : textoCop(c.cop),
   };
 }
 
 function Tarjetas({ planes, tasas, alEditar, alBorrar }: PropsFilas) {
   return (
     <ul className="grid gap-3 md:grid-cols-2 lg:hidden">
-      {planes.map((p) => {
+      {planes.map((p, i) => {
         const m = montos(p, tasas);
         return (
           <li
             key={p.id}
+            style={escalonado(i)}
             className={cn(
               "grid content-start gap-3 rounded-xl border bg-card p-4 text-card-foreground",
+              ENTRADA,
+              TARJETA_VIVA,
               !p.activo && "border-dashed",
             )}
           >
@@ -343,6 +363,7 @@ function Tarjetas({ planes, tasas, alEditar, alBorrar }: PropsFilas) {
               <strong>{m.eur}</strong>
               {m.usd !== "—" && ` · ${m.usd}`}
               {m.bs !== "—" && ` · ${m.bs}`}
+              {m.cop !== "—" && ` · ${m.cop}`}
             </p>
             <Etiquetas p={p} />
             <div className="flex justify-end">
@@ -366,6 +387,7 @@ function Tabla({ planes, tasas, alEditar, alBorrar }: PropsFilas) {
           <col className="w-28" />
           <col className="w-28" />
           <col className="w-36" />
+          <col className="w-32" />
           <col className="w-52" />
           <col className="w-36" />
         </colgroup>
@@ -376,6 +398,7 @@ function Tabla({ planes, tasas, alEditar, alBorrar }: PropsFilas) {
             <TableHead className="text-right">Euros</TableHead>
             <TableHead className="text-right">Dólares</TableHead>
             <TableHead className="text-right">Bolívares</TableHead>
+            <TableHead className="text-right">Pesos</TableHead>
             <TableHead>Aparece en</TableHead>
             <TableHead>
               <span className="sr-only">Acciones</span>
@@ -383,10 +406,10 @@ function Tabla({ planes, tasas, alEditar, alBorrar }: PropsFilas) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {planes.map((p) => {
+          {planes.map((p, i) => {
             const m = montos(p, tasas);
             return (
-              <TableRow key={p.id}>
+              <TableRow key={p.id} style={escalonado(i)} className={ENTRADA}>
                 <TableCell className="text-center tabular-nums">
                   {p.orden}
                 </TableCell>
@@ -404,6 +427,9 @@ function Tabla({ planes, tasas, alEditar, alBorrar }: PropsFilas) {
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {m.bs}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {m.cop}
                 </TableCell>
                 <TableCell className="whitespace-normal">
                   <Etiquetas p={p} />

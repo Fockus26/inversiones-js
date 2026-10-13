@@ -123,8 +123,13 @@ export function FormularioLogin() {
 
   const idError = `${id}-error`;
 
+  // Mientras Firebase recupera la sesión guardada no se sabe si ya entró: mostrar el formulario
+  // ahí lo hace parpadear antes de saltar al panel. Si ya es admin, solo se redirige.
+  if (!enviando && (estado === "cargando" || estado === "admin"))
+    return <ComprobandoSesion />;
+
   return (
-    <Card>
+    <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300">
       <CardHeader>
         <CardTitle>
           <h1 className="text-xl font-semibold">Inicia sesión</h1>
@@ -227,6 +232,21 @@ export function FormularioLogin() {
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+function ComprobandoSesion() {
+  return (
+    <div
+      aria-busy="true"
+      className="flex h-96 flex-col items-center justify-center gap-3 rounded-xl border bg-card text-sm text-muted-foreground motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500"
+    >
+      <Loader2Icon
+        aria-hidden="true"
+        className="size-6 text-accent-foreground motion-safe:animate-spin"
+      />
+      <output>Comprobando tu sesión…</output>
+    </div>
   );
 }
 

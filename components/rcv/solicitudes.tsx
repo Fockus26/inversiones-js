@@ -12,6 +12,11 @@ import { toast } from "sonner";
 import { Aviso } from "@/components/catalogo/catalogo-productos";
 import { FOCO, haceCuanto } from "@/components/catalogo/formato";
 import {
+  ENTRADA,
+  escalonado,
+  TARJETA_VIVA,
+} from "@/components/panel/animacion";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -77,10 +82,15 @@ export function Solicitudes({
         />
       ) : (
         <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {solicitudes.map((s) => (
+          {solicitudes.map((s, i) => (
             <li
               key={s.id}
-              className="grid content-start gap-2 rounded-xl border bg-card p-4 text-sm text-card-foreground"
+              style={escalonado(i)}
+              className={cn(
+                "grid content-start gap-2 rounded-xl border bg-card p-4 text-sm text-card-foreground",
+                ENTRADA,
+                TARJETA_VIVA,
+              )}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -127,7 +137,12 @@ export function Solicitudes({
                 {textoPrecio(
                   s.precioEur === null
                     ? null
-                    : { eur: s.precioEur, usd: s.precioUsd, bs: s.precioBs },
+                    : {
+                        eur: s.precioEur,
+                        usd: s.precioUsd,
+                        bs: s.precioBs,
+                        cop: s.precioCop,
+                      },
                 )}
               </p>
               <ul className="grid gap-0.5">

@@ -292,6 +292,7 @@ describe("flujo", () => {
         precioEur: 45,
         precioUsd: 50.37,
         precioBs: 44058.55,
+        precioCop: null,
         financiamiento: null,
       },
     ]);

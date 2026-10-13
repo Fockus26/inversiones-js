@@ -3,7 +3,8 @@
  * campo rompe al bot (ver docs/chatbot.md). Sin Firebase: lo importan el panel y `bot/`.
  *
  * - `planesRcv/{id}`: un documento por transporte, con su precio fijo en euros.
- * - `configuracion/rcv`: tasas del día (€ → $ y € → Bs.) y requisitos por tipo de transporte.
+ * - `configuracion/rcv`: tasas del día (€ → $, € → Bs. y € → COP) y requisitos por tipo de
+ *   transporte. La de bolívares puede ser la oficial del BCV (se consulta sola) o manual.
  * - `solicitudesRcv/{id}`: datos que deja el cliente en el chat. Solo las escribe el bot.
  */
 
@@ -49,20 +50,30 @@ export type CamposPlanRcv = Omit<
   "orden" | "actualizadoEn" | "actualizadoPor"
 >;
 
-/** Cuánto vale 1 € en cada moneda. Las pone el cliente desde el panel. */
+/** Cuánto vale 1 € en cada moneda. Dólares y pesos los pone el cliente; bolívares, BCV o manual. */
 export interface TasasRcv {
   /** 1 € = `usd` $. */
   usd: number;
   /** 1 € = `bs` Bs. */
   bs: number;
+  /** 1 € = `cop` pesos colombianos. `null` si aún no se guardó: el chat no muestra pesos. */
+  cop: number | null;
 }
+
+/** De dónde sale la tasa de bolívares: la oficial del BCV (consultada sola) o la que se escriba. */
+export const FUENTES_BS = ["bcv", "manual"] as const;
+export type FuenteBs = (typeof FUENTES_BS)[number];
 
 export type RequisitosRcv = Record<CategoriaRcv, string[]>;
 
 /** `configuracion/rcv`. Los campos pueden faltar si el cliente aún no los guardó. */
 export interface ConfigRcv {
   tasaUsd?: number;
+  /** Con `fuenteBs: "bcv"` es la última tasa BCV que se guardó: respaldo si la API no responde. */
   tasaBs?: number;
+  tasaCop?: number;
+  /** Sin el campo = "manual" (configuraciones de antes de que existiera). */
+  fuenteBs?: FuenteBs;
   requisitos?: Partial<RequisitosRcv>;
   actualizadoEn?: Date | null;
   actualizadoPor?: string | null;
@@ -82,6 +93,8 @@ export interface SolicitudRcv {
   precioEur: number | null;
   precioUsd: number | null;
   precioBs: number | null;
+  /** Puede faltar en solicitudes de antes de que existiera la tasa de pesos. */
+  precioCop?: number | null;
   /** `null` si al plan no se le ofrece financiamiento. */
   financiamiento: boolean | null;
   creadoEn?: Date | null;
@@ -91,10 +104,7 @@ export interface SolicitudRcvConId extends SolicitudRcv {
   id: string;
 }
 
-/**
- * POR RESOLVER: requisitos provisionales (inventados para armar el flujo). El cliente los
- * reemplaza desde el panel; el bot los usa mientras `configuracion/rcv` no traiga los suyos.
- */
+/** Requisitos de arranque: el bot los usa mientras `configuracion/rcv` no traiga los suyos. */
 export const REQUISITOS_RCV_POR_DEFECTO: RequisitosRcv = {
   privado: [
     "Copia de la cédula del propietario",
@@ -114,7 +124,7 @@ export const REQUISITOS_RCV_POR_DEFECTO: RequisitosRcv = {
   ],
 };
 
-/** Requisitos guardados, o los provisionales para la categoría que no tenga ninguno. */
+/** Requisitos guardados, o los de arranque para la categoría que no tenga ninguno. */
 export function requisitosEfectivos(config: ConfigRcv | null): RequisitosRcv {
   const r = config?.requisitos ?? {};
   const de = (c: CategoriaRcv) =>
@@ -126,11 +136,26 @@ export function requisitosEfectivos(config: ConfigRcv | null): RequisitosRcv {
   };
 }
 
-/** Tasas guardadas, o `null` si falta alguna (el chat muestra solo euros). */
-export function tasasDe(config: ConfigRcv | null): TasasRcv | null {
+const positivo = (n: unknown): n is number =>
+  typeof n === "number" && Number.isFinite(n) && n > 0;
+
+export function fuenteBsDe(config: ConfigRcv | null): FuenteBs {
+  return config?.fuenteBs === "bcv" ? "bcv" : "manual";
+}
+
+/**
+ * Tasas con las que se cotiza, o `null` si falta la de dólares o la de bolívares (el chat
+ * muestra solo euros). Con `fuenteBs: "bcv"`, `bcv` (la tasa consultada hace poco) manda sobre
+ * la guardada; si la API no respondió, se usa la última guardada.
+ */
+export function tasasDe(
+  config: ConfigRcv | null,
+  bcv: number | null = null,
+): TasasRcv | null {
   const usd = config?.tasaUsd;
-  const bs = config?.tasaBs;
-  return typeof usd === "number" && usd > 0 && typeof bs === "number" && bs > 0
-    ? { usd, bs }
-    : null;
+  const bs =
+    fuenteBsDe(config) === "bcv" && positivo(bcv) ? bcv : config?.tasaBs;
+  const cop = config?.tasaCop;
+  if (!positivo(usd) || !positivo(bs)) return null;
+  return { usd, bs, cop: positivo(cop) ? cop : null };
 }

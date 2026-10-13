@@ -92,5 +92,9 @@ export const PLANES_RCV_INICIALES: (Omit<
   },
 ];
 
-/** Tasas implícitas en esa tabla (15 € = 16,79 $ = Bs. 14.686,18). */
-export const TASAS_RCV_INICIALES: TasasRcv = { usd: 1.1193, bs: 979.0788 };
+/** Tasas implícitas en esa tabla (15 € = 16,79 $ = Bs. 14.686,18). Pesos: los pone el cliente. */
+export const TASAS_RCV_INICIALES: TasasRcv = {
+  usd: 1.1193,
+  bs: 979.0788,
+  cop: null,
+};

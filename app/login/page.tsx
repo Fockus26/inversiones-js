@@ -10,7 +10,7 @@ export default function LoginPage() {
     // Teléfono: arriba, para que «Entrar» quede por encima del teclado; desde sm, centrado.
     <main className="flex flex-1 items-start justify-center bg-background px-4 py-8 sm:items-center sm:py-10">
       <div className="w-full max-w-sm">
-        <div className="mb-6 flex justify-center">
+        <div className="mb-6 flex justify-center motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-3 motion-safe:duration-500 motion-safe:ease-out">
           <span className="flex items-center gap-2 rounded-xl bg-sidebar px-4 py-2.5 text-lg font-semibold tracking-tight text-sidebar-foreground">
             <span
               aria-hidden="true"

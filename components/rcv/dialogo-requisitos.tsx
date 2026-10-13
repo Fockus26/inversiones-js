@@ -27,10 +27,8 @@ import { cn } from "@/lib/utils";
 interface Props {
   abierto: boolean;
   alCambiarAbierto: (abierto: boolean) => void;
-  /** Los que usa hoy el chat (guardados o provisionales). */
+  /** Los que usa hoy el chat. */
   requisitos: RequisitosRcv;
-  /** true si aún son los provisionales del sistema. */
-  provisionales: boolean;
 }
 
 /** Requisitos por tipo de transporte: uno por línea. El chat los muestra al elegir vehículo. */
@@ -44,7 +42,7 @@ export function DialogoRequisitos(props: Props) {
   );
 }
 
-function Formulario({ requisitos, provisionales, alCambiarAbierto }: Props) {
+function Formulario({ requisitos, alCambiarAbierto }: Props) {
   const prefijo = useId();
   const [textos, setTextos] = useState<Record<CategoriaRcv, string>>(() => ({
     publico: requisitos.publico.join("\n"),
@@ -81,8 +79,6 @@ function Formulario({ requisitos, provisionales, alCambiarAbierto }: Props) {
           <DialogDescription>
             Uno por línea. El chat los muestra junto al precio cuando el cliente
             elige su vehículo.
-            {provisionales &&
-              " Los de ahora son provisionales: reemplázalos por los reales."}
           </DialogDescription>
         </DialogHeader>
         {CATEGORIAS_RCV.map((c) => {

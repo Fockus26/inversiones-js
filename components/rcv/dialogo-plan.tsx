@@ -229,8 +229,8 @@ function Formulario({
             {plan?.actualizadoEn
               ? `Actualizado ${haceCuanto(plan.actualizadoEn)}. `
               : ""}
-            El precio se fija en euros; dólares y bolívares salen de las tasas
-            del día.
+            El precio se fija en euros; dólares, bolívares y pesos salen de las
+            tasas del día.
           </DialogDescription>
         </DialogHeader>
 
