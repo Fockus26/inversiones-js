@@ -214,21 +214,26 @@ junto a Evolution API (WhatsApp). Usa directamente `lib/catalogo/` (lista de equ
   WhatsApp (24 h y 2 h antes) se leen de ahí: si el dueño mueve o borra la cita en Calendar,
   el bot lo respeta.
 
-## Póliza RCV (D030)
+## Póliza RCV (D030, D031)
 
 Se edita en el panel (`/rcv`). Modelo en `lib/rcv/tipos.ts`; el bot lo lee con caché de 60 s.
 
 | Dónde | Campos | Quién escribe |
 |---|---|---|
 | `planesRcv/{id}` | `clase`, `descripcion`, `precioEur` (number, o `null` = "Solicitar cotización"), `categorias` (`publico`/`privado`/`extranjeras`, al menos una), `financiamiento` (bool), `activo` (bool), `orden` (number), huella | Panel |
-| `configuracion/rcv` | `tasaUsd` (1 € = X $), `tasaBs` (1 € = X Bs.), `requisitos` (`{ publico, privado, extranjeras }`: listas de texto), huella | Panel |
-| `solicitudesRcv/{id}` | `nombre`, `correo`, `telefono`, `whatsapp`, `categoria`, `planId`, `clase`, `descripcion`, `precioEur`, `precioUsd`, `precioBs` (los del momento), `financiamiento` (bool o `null`), `creadoEn` | Bot (Admin SDK) |
+| `configuracion/rcv` | `tasaUsd` (1 € = X $), `tasaBs` (1 € = X Bs.; con BCV, la última consultada como respaldo), `tasaCop` (1 € = X COP), `fuenteBs` (`"bcv"` o `"manual"`; sin el campo = manual), `requisitos` (`{ publico, privado, extranjeras }`: listas de texto), huella | Panel |
+| `solicitudesRcv/{id}` | `nombre`, `correo`, `telefono`, `whatsapp`, `categoria`, `planId`, `clase`, `descripcion`, `precioEur`, `precioUsd`, `precioBs`, `precioCop` (los del momento; `precioCop` puede faltar en las viejas), `financiamiento` (bool o `null`), `creadoEn` | Bot (Admin SDK) |
 
 - **Precios:** el euro es fijo por transporte; dólares y bolívares = `precioEur × tasa`,
-  redondeados a 2 decimales (`cotizar` de `lib/rcv/cotizacion.ts`). Sin tasas guardadas, el
-  chat muestra solo euros.
+  redondeados a 2 decimales; pesos colombianos sin céntimos (`cotizar` de
+  `lib/rcv/cotizacion.ts`). Sin tasas de $ y Bs. el chat muestra solo euros; sin `tasaCop`,
+  solo omite los pesos.
+- **Tasa BCV (D031):** con `fuenteBs: "bcv"` el bot consulta la tasa oficial del euro en
+  DolarAPI (`https://ve.dolarapi.com/v1/euros/oficial`, campo `promedio`) con caché de 30 min.
+  Si la API falla, usa la última buena o, si no tiene, `tasaBs` (el panel la refresca cada vez
+  que lo abren y el BCV publicó otra). Dólares y pesos siempre son manuales.
 - **Requisitos:** si `configuracion/rcv` no trae los de una categoría, el bot usa
-  `REQUISITOS_RCV_POR_DEFECTO` (provisionales) y el panel avisa que lo son.
+  `REQUISITOS_RCV_POR_DEFECTO`.
 - **Escritura del bot:** la cuenta `chatbot-lectura` pasa a **Cloud Datastore User**
   (`roles/datastore.user`) para poder crear `solicitudesRcv`. El código solo escribe ahí.
 - Seed: `bun run seed:emulador` y `bun run seed:produccion` cargan la tabla del cliente
@@ -236,9 +241,5 @@ Se edita en el panel (`/rcv`). Modelo en `lib/rcv/tipos.ts`; el bot lo lee con c
 
 ### Por resolver (póliza RCV)
 
-- **Requisitos reales:** los provisionales están **inventados**. El cliente los cambia desde
-  el panel (botón **Requisitos**); mientras tanto el panel muestra un aviso.
-- **Pesos colombianos (COP):** la tabla original los traía; el panel solo maneja tasas de $ y
-  Bs. Si se quieren de vuelta, es una tasa más en `configuracion/rcv`.
 - **Financiamiento de minibuses:** el bot solo registra si lo quiere; faltan las condiciones
   (inicial, cuotas) si se quieren mostrar en el chat.

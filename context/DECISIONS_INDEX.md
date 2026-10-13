@@ -28,3 +28,4 @@
 | D028 | decisions/04-chatbot.md | `gaby on/off`, pausa por chat al escribir a mano, topes de envío |
 | D029 | decisions/04-chatbot.md | RCV por categoría; planes y solicitudes tras `Servicios` (web pendiente) |
 | D030 | decisions/04-chatbot.md | Póliza RCV en Firestore editable en `/rcv`; bot con Datastore User escribe `solicitudesRcv` |
+| D031 | decisions/04-chatbot.md | Tasa Bs. del BCV (DolarAPI) o manual; tasa COP manual |

@@ -82,9 +82,13 @@ service cloud.firestore {
 
     // Tasas y requisitos se guardan por separado (merge): cada uno es opcional.
     function configRcvValida(c) {
-      return c.keys().hasOnly(['tasaUsd', 'tasaBs', 'requisitos', 'actualizadoEn', 'actualizadoPor'])
+      return c.keys().hasOnly([
+          'tasaUsd', 'tasaBs', 'tasaCop', 'fuenteBs', 'requisitos', 'actualizadoEn', 'actualizadoPor'
+        ])
         && (!('tasaUsd' in c) || (c.tasaUsd is number && c.tasaUsd > 0 && c.tasaUsd <= 1000))
         && (!('tasaBs' in c) || (c.tasaBs is number && c.tasaBs > 0 && c.tasaBs <= 1000000000))
+        && (!('tasaCop' in c) || (c.tasaCop is number && c.tasaCop > 0 && c.tasaCop <= 1000000))
+        && (!('fuenteBs' in c) || c.fuenteBs in ['bcv', 'manual'])
         && (!('requisitos' in c) || (
           c.requisitos is map
           && c.requisitos.keys().hasOnly(['publico', 'privado', 'extranjeras'])

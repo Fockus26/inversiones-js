@@ -3,8 +3,8 @@ import {
   CATEGORIAS_RCV,
   type CamposPlanRcv,
   type CategoriaRcv,
+  type FuenteBs,
   type RequisitosRcv,
-  type TasasRcv,
 } from "./tipos";
 
 /**
@@ -18,6 +18,7 @@ export const LIMITES_RCV = {
   precioMax: 100_000,
   tasaUsdMax: 1_000,
   tasaBsMax: 1_000_000_000,
+  tasaCopMax: 1_000_000,
   requisitosMax: 20,
   requisitoMax: 200,
 } as const;
@@ -85,9 +86,23 @@ export function validarPlanRcv(f: FormularioPlanRcv): ResultadoPlanRcv {
   };
 }
 
+/** Lo que se escribe en el formulario de tasas. */
+export interface TextosTasas {
+  usd: string;
+  bs: string;
+  cop: string;
+}
+
+export interface TasasValidadas {
+  usd: number;
+  /** `null` con la tasa del BCV: no se escribe a mano. */
+  bs: number | null;
+  cop: number;
+}
+
 export type ResultadoTasas =
-  | { ok: true; valor: TasasRcv }
-  | { ok: false; errores: Partial<Record<keyof TasasRcv, string>> };
+  | { ok: true; valor: TasasValidadas }
+  | { ok: false; errores: Partial<Record<keyof TextosTasas, string>> };
 
 /** Acepta "1,1193", "979,08" o "979.08"; rechaza separadores de miles para no adivinar. */
 export function parsearTasa(texto: string): number | null {
@@ -97,22 +112,35 @@ export function parsearTasa(texto: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export function validarTasas(usd: string, bs: string): ResultadoTasas {
-  const errores: Partial<Record<keyof TasasRcv, string>> = {};
-  const u = parsearTasa(usd);
+/** Dólares y pesos siempre a mano; bolívares solo si `fuenteBs` es "manual". */
+export function validarTasas(
+  textos: TextosTasas,
+  fuenteBs: FuenteBs,
+): ResultadoTasas {
+  const errores: Partial<Record<keyof TextosTasas, string>> = {};
+  const u = parsearTasa(textos.usd);
   if (u === null)
     errores.usd = "Escribe cuántos dólares vale 1 €, p. ej. 1,12.";
   else if (u > LIMITES_RCV.tasaUsdMax)
     errores.usd = "Revisa la tasa: es muy alta.";
-  const b = parsearTasa(bs);
-  if (b === null)
-    errores.bs =
-      "Escribe cuántos bolívares vale 1 €, sin puntos de miles, p. ej. 979,08.";
-  else if (b > LIMITES_RCV.tasaBsMax)
-    errores.bs = "Revisa la tasa: es muy alta.";
-  if (u === null || b === null || Object.keys(errores).length > 0)
+  let b: number | null = null;
+  if (fuenteBs === "manual") {
+    b = parsearTasa(textos.bs);
+    if (b === null)
+      errores.bs =
+        "Escribe cuántos bolívares vale 1 €, sin puntos de miles, p. ej. 979,08.";
+    else if (b > LIMITES_RCV.tasaBsMax)
+      errores.bs = "Revisa la tasa: es muy alta.";
+  }
+  const c = parsearTasa(textos.cop);
+  if (c === null)
+    errores.cop =
+      "Escribe cuántos pesos vale 1 €, sin puntos de miles, p. ej. 4350.";
+  else if (c > LIMITES_RCV.tasaCopMax)
+    errores.cop = "Revisa la tasa: es muy alta.";
+  if (u === null || c === null || Object.keys(errores).length > 0)
     return { ok: false, errores };
-  return { ok: true, valor: { usd: u, bs: b } };
+  return { ok: true, valor: { usd: u, bs: b, cop: c } };
 }
 
 export type ResultadoRequisitos =

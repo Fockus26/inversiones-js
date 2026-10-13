@@ -14,6 +14,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import {
+  ENTRADA,
+  escalonado,
+  TARJETA_VIVA,
+} from "@/components/panel/animacion";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,7 +143,12 @@ export function Aviso({
   accion?: React.ReactNode;
 }) {
   return (
-    <div className="grid justify-items-center gap-3 rounded-xl border border-dashed p-8 text-center [&>svg]:size-8 [&>svg]:text-muted-foreground">
+    <div
+      className={cn(
+        "grid justify-items-center gap-3 rounded-xl border border-dashed p-8 text-center [&>svg]:size-8 [&>svg]:text-muted-foreground",
+        ENTRADA,
+      )}
+    >
       {icono}
       <h2 className="text-lg font-medium">{titulo}</h2>
       <p className="max-w-prose text-sm text-muted-foreground">{texto}</p>
@@ -329,7 +339,7 @@ function Lista({
           <section
             key={g.marca}
             aria-labelledby={`marca-${g.marca}`}
-            className="grid gap-3"
+            className={cn("grid gap-3", ENTRADA)}
           >
             <h2
               id={`marca-${g.marca}`}
@@ -476,11 +486,14 @@ function Acciones({
 function Tarjetas({ productos, alEditar, alBorrar }: PropsFilas) {
   return (
     <ul className="grid gap-3 md:grid-cols-2 lg:hidden">
-      {productos.map((p) => (
+      {productos.map((p, i) => (
         <li
           key={p.id}
+          style={escalonado(i)}
           className={cn(
             "grid gap-3 rounded-xl border bg-card p-4 text-card-foreground",
+            ENTRADA,
+            TARJETA_VIVA,
             !p.activo && "border-dashed",
           )}
         >
@@ -545,8 +558,8 @@ function Tabla({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {productos.map((p) => (
-            <TableRow key={p.id}>
+          {productos.map((p, i) => (
+            <TableRow key={p.id} style={escalonado(i)} className={ENTRADA}>
               <TableCell className="font-medium whitespace-normal">
                 {p.nombre}{" "}
                 {p.variante && (

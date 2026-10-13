@@ -23,10 +23,10 @@ import {
   COLECCION_SOLICITUDES_RCV,
   type ConfigRcv,
   DOC_CONFIG_RCV,
+  type FuenteBs,
   type PlanRcvConId,
   type RequisitosRcv,
   type SolicitudRcvConId,
-  type TasasRcv,
 } from "./tipos";
 
 /**
@@ -115,12 +115,32 @@ export function escucharConfigRcv(
 const refConfig = () =>
   doc(firestore(), COLECCION_CONFIGURACION, DOC_CONFIG_RCV);
 
-export async function guardarTasas(tasas: TasasRcv): Promise<void> {
+/**
+ * `bs`: la manual, o con BCV la consultada en ese momento (queda de respaldo para el bot). Si es
+ * `null` (BCV sin respuesta) no se toca la guardada.
+ */
+export async function guardarTasas(tasas: {
+  usd: number;
+  bs: number | null;
+  cop: number;
+  fuenteBs: FuenteBs;
+}): Promise<void> {
   await setDoc(
     refConfig(),
-    { tasaUsd: tasas.usd, tasaBs: tasas.bs, ...huella() },
+    {
+      tasaUsd: tasas.usd,
+      tasaCop: tasas.cop,
+      fuenteBs: tasas.fuenteBs,
+      ...(tasas.bs === null ? {} : { tasaBs: tasas.bs }),
+      ...huella(),
+    },
     { merge: true },
   );
+}
+
+/** Con la tasa BCV elegida, actualiza el respaldo `tasaBs` cuando el BCV publica otra. */
+export async function guardarRespaldoBcv(tasaBs: number): Promise<void> {
+  await setDoc(refConfig(), { tasaBs, ...huella() }, { merge: true });
 }
 
 export async function guardarRequisitos(

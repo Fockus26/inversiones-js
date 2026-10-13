@@ -11,11 +11,13 @@ import {
   normalizarHorario,
 } from "../../lib/horario/tipos";
 import type { Intervalo } from "../../lib/horario/turnos";
+import { consultarEuroBcv } from "../../lib/rcv/bcv";
 import {
   COLECCION_PLANES_RCV,
   COLECCION_SOLICITUDES_RCV,
   type ConfigRcv,
   DOC_CONFIG_RCV,
+  fuenteBsDe,
   type PlanRcvConId,
   requisitosEfectivos,
   type SolicitudRcv,
@@ -81,16 +83,34 @@ export const leerHorario = cacheada(async (): Promise<HorarioAtencion> => {
   return normalizarHorario(doc.exists ? doc.data() : null);
 });
 
-/** Transportes activos, tasas y requisitos (con los provisionales si faltan). */
+// ── Tasa BCV del euro (D031): 30 min de caché; si falla, la última buena y reintento en 5 min ──
+
+let bcv: { tasa: number | null; cuando: number; ms: number } | null = null;
+
+async function tasaBcv(): Promise<number | null> {
+  if (bcv && Date.now() - bcv.cuando < bcv.ms) return bcv.tasa;
+  try {
+    const { tasa } = await consultarEuroBcv();
+    bcv = { tasa, cuando: Date.now(), ms: 30 * 60_000 };
+  } catch (e) {
+    console.error("No se pudo consultar la tasa BCV; queda la anterior", e);
+    bcv = { tasa: bcv?.tasa ?? null, cuando: Date.now(), ms: 5 * 60_000 };
+  }
+  return bcv.tasa;
+}
+
+/** Transportes activos, tasas y requisitos (con los de arranque si faltan). */
 export const leerRcv = cacheada(async () => {
   const [planes, config] = await Promise.all([
     db.collection(COLECCION_PLANES_RCV).where("activo", "==", true).get(),
     db.collection(COLECCION_CONFIGURACION).doc(DOC_CONFIG_RCV).get(),
   ]);
   const c = config.exists ? (config.data() as ConfigRcv) : null;
+  // Sin la del BCV, `tasasDe` usa la última que guardó el panel.
+  const bs = fuenteBsDe(c) === "bcv" ? await tasaBcv() : null;
   return {
     planes: planes.docs.map((d) => ({ ...d.data(), id: d.id }) as PlanRcvConId),
-    tasas: tasasDe(c),
+    tasas: tasasDe(c, bs),
     requisitos: requisitosEfectivos(c),
   };
 });

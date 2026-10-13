@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { leerRespuestaBcv } from "@/lib/rcv/bcv";
 import { cotizar, planesDe, textoPrecio } from "@/lib/rcv/cotizacion";
 import {
   PLANES_RCV_INICIALES,
@@ -78,18 +79,54 @@ describe("tasas", () => {
     expect(parsearTasa("0")).toBeNull();
   });
   test("validarTasas", () => {
-    expect(validarTasas("1,12", "979")).toEqual({
+    expect(
+      validarTasas({ usd: "1,12", bs: "979", cop: "4350" }, "manual"),
+    ).toEqual({
       ok: true,
-      valor: { usd: 1.12, bs: 979 },
+      valor: { usd: 1.12, bs: 979, cop: 4350 },
     });
-    expect(validarTasas("", "x").ok).toBe(false);
+    expect(validarTasas({ usd: "", bs: "x", cop: "1" }, "manual").ok).toBe(
+      false,
+    );
+    const sinCop = validarTasas({ usd: "1", bs: "1", cop: "" }, "manual");
+    expect(sinCop.ok).toBe(false);
+    if (!sinCop.ok) expect(Object.keys(sinCop.errores)).toEqual(["cop"]);
   });
-  test("tasasDe exige las dos", () => {
+  test("validarTasas con BCV ignora los bolívares escritos", () => {
+    expect(validarTasas({ usd: "1,1", bs: "x", cop: "4350" }, "bcv")).toEqual({
+      ok: true,
+      valor: { usd: 1.1, bs: null, cop: 4350 },
+    });
+  });
+  test("tasasDe exige dólares y bolívares; pesos opcionales", () => {
     expect(tasasDe({ tasaUsd: 1.1 })).toBeNull();
     expect(tasasDe({ tasaUsd: 1.1, tasaBs: 900 })).toEqual({
       usd: 1.1,
       bs: 900,
+      cop: null,
     });
+    expect(tasasDe({ tasaUsd: 1.1, tasaBs: 900, tasaCop: 4350 })?.cop).toBe(
+      4350,
+    );
+  });
+  test("tasasDe con BCV usa la consultada y, si falta, la guardada", () => {
+    const config = { tasaUsd: 1.1, tasaBs: 900, fuenteBs: "bcv" as const };
+    expect(tasasDe(config, 950)?.bs).toBe(950);
+    expect(tasasDe(config, null)?.bs).toBe(900);
+    // En manual, la del BCV no cuenta.
+    expect(tasasDe({ ...config, fuenteBs: "manual" }, 950)?.bs).toBe(900);
+  });
+  test("leerRespuestaBcv", () => {
+    expect(
+      leerRespuestaBcv({
+        fuente: "oficial",
+        promedio: 662.2453,
+        fechaActualizacion: "2026-10-13T00:00:00.000Z",
+      }),
+    ).toEqual({ tasa: 662.2453, fecha: "2026-10-13T00:00:00.000Z" });
+    expect(leerRespuestaBcv({ promedio: null, venta: 650 })?.tasa).toBe(650);
+    expect(leerRespuestaBcv({ promedio: 0 })).toBeNull();
+    expect(leerRespuestaBcv(null)).toBeNull();
   });
 });
 
@@ -101,6 +138,11 @@ describe("cotización", () => {
     expect(precios[0]).toBe("15,00 € · 16,79$ · Bs. 14.686,18");
     expect(precios[5]).toBe("114,00 € · 127,60$ · Bs. 111.614,98");
     expect(precios[6]).toBe("Solicitar cotización");
+  });
+  test("con tasa de pesos los muestra sin céntimos", () => {
+    expect(
+      textoPrecio(cotizar(15, { ...TASAS_RCV_INICIALES, cop: 4350.4 })),
+    ).toBe("15,00 € · 16,79$ · Bs. 14.686,18 · 65.256 COP");
   });
   test("planesDe filtra activos y ordena", () => {
     const planes = PLANES_RCV_INICIALES.map((p) =>

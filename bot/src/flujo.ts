@@ -432,6 +432,7 @@ async function cerrarRcv(
     precioEur: plan.precios?.eur ?? null,
     precioUsd: plan.precios?.usd ?? null,
     precioBs: plan.precios?.bs ?? null,
+    precioCop: plan.precios?.cop ?? null,
     financiamiento: rcv.financiamiento ?? null,
   };
   try {
