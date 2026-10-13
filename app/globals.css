@@ -97,6 +97,14 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #2f333d;
   --sidebar-ring: #fec922;
+
+  /* Selección y barra de desplazamiento (HANDOFF §2 y §2b). Ni teal ni amarillo en el
+   * pulgar: no se confunde con foco, selección ni enlaces. Pulgar/riel ≥ 3:1. */
+  --selection: #fec922;
+  --selection-foreground: #1c1f26;
+  --scrollbar-track: #f1f0ea;
+  --scrollbar-thumb: #8a877c;
+  --scrollbar-thumb-hover: #5b5f6a;
 }
 
 .dark {
@@ -132,6 +140,13 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #23262e;
   --sidebar-ring: #fec922;
+
+  /* En oscuro el foco es amarillo: la selección es un relleno claro invertido (16.9:1). */
+  --selection: #f4f4f1;
+  --selection-foreground: #14161b;
+  --scrollbar-track: #1c1f26;
+  --scrollbar-thumb: #6b707c;
+  --scrollbar-thumb-hover: #a6a9b2;
 }
 
 @layer base {
@@ -144,4 +159,30 @@
   html {
     @apply font-sans;
   }
+}
+
+::selection {
+  background-color: var(--selection);
+  color: var(--selection-foreground);
+}
+
+/* Firefox y Chrome ≥ 121 usan `scrollbar-color`; Safari, los pseudo-elementos. En el teléfono
+ * el sistema dibuja su barra superpuesta y no aplica nada de esto. */
+html {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 3px solid var(--scrollbar-track);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }

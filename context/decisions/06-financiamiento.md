@@ -90,3 +90,16 @@ sesión de admin; Celulares y Póliza RCV muestran los datos reales.
 
 **Por qué:** cero riesgo de mezclar datos de prueba con los reales y no hace falta otro proyecto
 de Firebase para enseñar la función.
+
+# D038 — El service worker guarda en caché solo la página sin conexión
+
+**Contexto:** el panel es una PWA (D035) y, sin red, el navegador mostraba su propio error.
+La adenda de diseño pide una pantalla "Sin conexión" de la marca.
+
+**Decisión:** `public/sin-conexion.html` es una página autocontenida (sin fuentes, CSS ni JS
+externos; sigue el tema del sistema). `public/sw.js` la guarda al instalarse (`sin-conexion-v1`)
+y, solo para navegaciones, va siempre a la red y la sirve si el `fetch` falla. Se recarga sola
+al volver la conexión. Nada más del panel entra en caché.
+
+**Por qué:** mantiene lo decidido en D035 (nunca una versión vieja del panel ni de los datos)
+y da una pantalla útil sin red. Cambiar la página exige subir `CACHE` a `-v2`.
