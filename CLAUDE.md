@@ -51,3 +51,14 @@ Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/di
 - El modelo de datos (`lib/catalogo/tipos.ts`) es un contrato con el chatbot: cambiar o
   renombrar un campo exige actualizar `docs/chatbot.md` y anotarlo como decisión.
 - Nunca commitear `.env*` (salvo `.env.example`) ni claves de cuenta de servicio.
+
+## Git y worktrees
+
+- Modo `pr`: en tu rama se commitea y empuja sin pedir permiso; **nunca** push a `main`,
+  nunca `gh pr merge`, nunca auto-merge. Nada destructivo (`reset --hard`, `push --force`).
+- **Sin versión:** el proyecto no lleva `version` ni `CHANGELOG.md` ni changesets (D038).
+- Lo local (gitignored): `CURRENT_PHASE`, `CONTENT_CHECKLIST`, `PHASE_LOG/`, `plans/`, `.env*`.
+  Los slots del pool de worktrees (`orchestrate`, `..\inversiones-js-wt\wtN`) traen los
+  `.env*` copiados, pero **no** `context/` local: se lee en la carpeta principal
+  (`C:\Users\Admin\Documents\Work\inversiones-js`). Si un subagente en un slot no puede
+  escribir ahí, lo devuelve en su informe y el orquestador lo copia.

@@ -35,3 +35,4 @@
 | D035 | decisions/06-financiamiento.md | Panel PWA + Web Push (VAPID) de citas nuevas |
 | D036 | decisions/06-financiamiento.md | Tasas $ y COP automáticas (ExchangeRate-API, respaldo jsDelivr) o manuales |
 | D037 | decisions/06-financiamiento.md | Modo demo `?demo`: clientes de ejemplo en memoria, sin tocar Firestore |
+| D038 | decisions/01-base.md | Sin versión ni Changesets; pool fijo de worktrees |
