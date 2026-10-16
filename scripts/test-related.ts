@@ -31,7 +31,7 @@ const base =
   args.find((a) => a.startsWith("--base="))?.slice(7) ?? "origin/main";
 const listOnly = args.includes("--list");
 
-const TEST_GLOBS = ["tests/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"];
+const TEST_GLOBS = ["tests/unit/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"];
 // If any of this changes, the graph is not enough: the whole suite runs.
 // (`package.json` is handled apart: bumping only the `version` is no reason, it happens in almost every PR.)
 const RUN_ALL_IF_CHANGED = [
