@@ -42,12 +42,19 @@ Detalle de tamaños y archivos: `reference/BRAND-ASSETS.md` del kit.
 
 | Correo | Lo manda | Destinatario | Estado |
 |---|---|---|---|
-| Restablecer contraseña | Firebase Auth (`sendPasswordResetEmail` en `app/login/formulario-login.tsx`) | admin del panel | diseñado: `docs/correos/restablecer-contrasena.html` (HANDOFF §5); falta pegarlo en la consola de Firebase |
+| Restablecer contraseña | Firebase Auth (`sendPasswordResetEmail` en `app/login/formulario-login.tsx`) | admin del panel | PENDIENTE: diseñado (`docs/correos/restablecer-contrasena.html`, HANDOFF §5) pero la consola de Firebase tiene bloqueada la edición de plantillas del proyecto; sigue saliendo la de Firebase |
 
 La app no manda otros correos: las altas de admin dan una contraseña temporal por
 `admin:crear` (D022) y el bot habla por WhatsApp. La plantilla se edita en la consola de
 Firebase (Authentication › Templates: remitente, asunto, cuerpo HTML limitado y idioma `es`);
 el emulador no la aplica, solo deja el enlace en su UI.
+
+**Bloqueo de plantillas (2026-10-16):** la consola muestra "Por el momento, no se pueden actualizar
+las plantillas de correo electrónico de este proyecto". Solo lo quita Asistencia de Firebase; un
+SMTP propio (Brevo) cambia el envío pero no desbloquea el editor. Caminos: (1) pedir el
+desbloqueo a soporte y pegar la plantilla; (2) envío propio desde el panel con
+`generatePasswordResetLink` + API de Brevo (necesita dominio verificado, `BREVO_API_KEY` y la
+cuenta de servicio en Vercel). Detalle en `context/plans/pendientes.md`.
 
 Remitente: PENDIENTE (`noreply@<proyecto>.firebaseapp.com` por defecto) · Dominio verificado
 (SPF/DKIM): no aplica hasta tener dominio propio. Detalle: `reference/EMAIL-TEMPLATES.md` del kit
