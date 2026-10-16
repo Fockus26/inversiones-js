@@ -8,7 +8,7 @@ cliente lee la misma colección de Firestore, así que lo que se guarda aquí es
 chatbot responde.
 
 **Tipo:** dashboard · **Cliente:** Inversiones JS · **Modo git:** ver `context/GIT_STATE.md`
-**Kit:** web-agent-kit, versión en `.kit-version` (se actualiza con `prompts/ACTUALIZAR-KIT.md` del kit) ·
+**Kit:** web-agent-kit, versión en `.kit-version` (se actualiza con `/kit-update`) ·
 **Despliegue:** Vercel `inversiones-js` · preview por PR, producción al mergear a `main`
 
 ## Qué leer
@@ -80,7 +80,7 @@ Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/di
 Cuando César corrija algo que hiciste siguiendo el kit, te pida lo mismo por segunda vez,
 haga a mano un paso que el kit podría hacer, o el kit no diga qué hacer: fila en
 `context/KIT_FEEDBACK.md` (o +1 en "Veces" si ya está). Sin preguntar y sin anunciarlo
-más que en una línea. Cuando pida "el informe para el kit", sigue el formato de ese archivo.
+más que en una línea. Se envía al kit con `/kit-feedback`.
 
 ## Puertas de calidad
 
