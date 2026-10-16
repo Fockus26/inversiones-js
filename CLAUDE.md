@@ -69,7 +69,8 @@ Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/di
 - Modo `pr`: en tu rama se commitea y empuja sin pedir permiso; **nunca** push a `main`,
   nunca `gh pr merge`, nunca auto-merge. Nada destructivo (`reset --hard`, `push --force`).
 - **Sin versión:** el proyecto no lleva `version` ni `CHANGELOG.md` ni changesets (D038).
-- Lo local (gitignored): `CURRENT_PHASE`, `CONTENT_CHECKLIST`, `PHASE_LOG/`, `plans/`, `.env*` — respaldo: `bun run context:backup`.
+- Lo local (gitignored): `CURRENT_PHASE`, `CONTENT_CHECKLIST`, `PHASE_LOG/`, `plans/` — respaldo: `bun run context:backup`.
+  `.env.local` se baja de Vercel, nunca se edita a mano (`vercel env pull`; `reference/DEPLOY.md` §2c del kit).
   Los slots del pool de worktrees (`orchestrate`, `..\inversiones-js-wt\wtN`) traen los
   `.env*` copiados, pero **no** `context/` local: se lee en la carpeta principal
   (`C:\Users\Admin\Documents\Work\inversiones-js`). Si un subagente en un slot no puede
