@@ -20,3 +20,10 @@ el apple touch icon ya existía.
      transaccional de Brevo, respuesta siempre igual (no revela si el correo existe) y límite de
      intentos. Requiere dominio verificado en Brevo, `BREVO_API_KEY` y cuenta de servicio en Vercel.
   Mientras tanto: probar si al menos deja cambiar el idioma de la plantilla a español.
+
+# Ideas para después (2026-10-19)
+
+- **Flujo de Gaby en el panel:** primero una vista de solo lectura del flujo del bot (menús, pasos
+  y textos reales de `bot/src/textos.ts`). Después, poder editarlo desde el panel. Para no
+  reescribir el bot entonces, conviene extraer el flujo a datos declarativos en `lib/` que
+  compartan el bot y el panel. No empezar sin el OK de César.
