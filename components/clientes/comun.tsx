@@ -39,6 +39,7 @@ import type {
   COLECCION_CLIENTES_RCV,
 } from "@/lib/financiamiento/tipos";
 import { firebaseAuth } from "@/lib/firebase/client";
+import { mensajeDeError } from "@/lib/mensaje-error";
 import { cn } from "@/lib/utils";
 
 /** Piezas compartidas por /clientes/celulares y /clientes/rcv (D032). */
@@ -412,7 +413,7 @@ export function DialogoBorrarCliente({
       alCerrar();
     } catch (e) {
       toast.error("No se pudo borrar", {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeDeError(e),
       });
     } finally {
       setOcupado(false);

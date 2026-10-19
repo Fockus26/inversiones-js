@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { actualizarProducto, borrarProducto } from "@/lib/catalogo/repositorio";
 import type { ProductoConId } from "@/lib/catalogo/tipos";
+import { mensajeDeError } from "@/lib/mensaje-error";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -49,7 +50,7 @@ export function DialogoBorrar({ producto, alCerrar }: Props) {
     } catch (e) {
       toast.error(
         accion === "borrar" ? "No se pudo borrar" : "No se pudo ocultar",
-        { description: e instanceof Error ? e.message : undefined },
+        { description: mensajeDeError(e) },
       );
     } finally {
       setOcupado(false);

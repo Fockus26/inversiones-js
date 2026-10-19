@@ -29,6 +29,7 @@ import type {
   CampoPagos,
   FormularioPagos,
 } from "@/lib/financiamiento/validacion";
+import { mensajeDeError } from "@/lib/mensaje-error";
 import { cn } from "@/lib/utils";
 import { BadgePagos, Campo, type Coleccion } from "./comun";
 
@@ -97,7 +98,7 @@ function ListaCuotas({
       );
     } catch (e) {
       toast.error("No se pudo guardar la cuota", {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeDeError(e),
       });
     } finally {
       setGuardando(null);

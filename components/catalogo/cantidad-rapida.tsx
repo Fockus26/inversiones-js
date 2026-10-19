@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { actualizarProducto } from "@/lib/catalogo/repositorio";
 import { LIMITES, validarCantidad } from "@/lib/catalogo/validacion";
+import { mensajeDeError } from "@/lib/mensaje-error";
 import { cn } from "@/lib/utils";
 
 /** Espera tras el último toque antes de guardar; salir del campo guarda en el acto. */
@@ -85,7 +86,7 @@ export function CantidadRapida({
         setTexto(String(anterior));
         setEstado("error");
         toast.error(`No se guardó la cantidad de ${nombre}`, {
-          description: e instanceof Error ? e.message : undefined,
+          description: mensajeDeError(e),
         });
       }
     },

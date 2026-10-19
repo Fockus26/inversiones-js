@@ -40,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { mensajeDeError } from "@/lib/mensaje-error";
 import { cotizar, numeroEs, textoCop } from "@/lib/rcv/cotizacion";
 import {
   actualizarPlanRcv,
@@ -513,7 +514,7 @@ function DialogoBorrarPlan({
       toast.error(
         accion === "borrar" ? "No se pudo borrar" : "No se pudo ocultar",
         {
-          description: e instanceof Error ? e.message : undefined,
+          description: mensajeDeError(e),
         },
       );
     } finally {

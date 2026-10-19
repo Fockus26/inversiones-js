@@ -75,6 +75,7 @@ import {
   LIMITES_CLIENTE,
   validarClienteRcv,
 } from "@/lib/financiamiento/validacion";
+import { mensajeDeError } from "@/lib/mensaje-error";
 import { cn } from "@/lib/utils";
 import {
   AreaTexto,
@@ -488,7 +489,7 @@ function DialogoRenovar({
       alCerrar();
     } catch (e) {
       toast.error("No se pudo renovar", {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeDeError(e),
       });
     } finally {
       setOcupado(false);

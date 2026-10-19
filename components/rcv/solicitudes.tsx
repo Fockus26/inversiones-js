@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { mensajeDeError } from "@/lib/mensaje-error";
 import { textoPrecio } from "@/lib/rcv/cotizacion";
 import { borrarSolicitudRcv } from "@/lib/rcv/repositorio";
 import { NOMBRES_CATEGORIA, type SolicitudRcvConId } from "@/lib/rcv/tipos";
@@ -63,7 +64,7 @@ export function Solicitudes({
       setBorrando(null);
     } catch (e) {
       toast.error("No se pudo borrar", {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeDeError(e),
       });
     } finally {
       setOcupado(false);
