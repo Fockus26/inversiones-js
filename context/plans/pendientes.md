@@ -11,7 +11,7 @@ Hechos en PR #12: pantallas 404 / 500 / sin conexión, `::selection`, scrollbar,
 el apple touch icon ya existía.
 
 - **PENDIENTE — Correo de restablecer contraseña con la marca.** Plantilla lista en
-  `docs/correos/restablecer-contrasena.html` (asunto y preheader en el comentario del archivo).
+  `docs/correos/password-reset.html` (asunto y preheader en el comentario del archivo).
   Bloqueado: la consola de Firebase no deja editar plantillas en este proyecto (2026-10-16).
   Siguiente paso, a elegir por César:
   1. Escribir a Asistencia de Firebase (https://firebase.google.com/support/troubleshooter/contact)
