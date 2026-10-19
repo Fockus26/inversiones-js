@@ -143,4 +143,4 @@ En negrita, el botón principal (amarillo). El 500 sin código muestra el mismo 
 | `/icono/180` (apple touch icon) | 180 × 180 | PNG opaco | 3.0 KB |
 | `/opengraph-image` (`app/opengraph-image.tsx`) | 1200 × 630 | PNG, Geist 800/400 | 36.8 KB |
 | `public/sin-conexion.html` | fluido, 320 → 1440 | HTML autocontenido | 3.7 KB |
-| `docs/correos/restablecer-contrasena.html` | 600 px, fluido a 360 | HTML con estilos en línea | 3.7 KB (Gmail corta a 102 KB) |
+| `docs/correos/password-reset.html` | 600 px, fluido a 360 | HTML con estilos en línea | 3.7 KB (Gmail corta a 102 KB) |
