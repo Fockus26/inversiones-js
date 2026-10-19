@@ -15,7 +15,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Aviso } from "@/components/catalogo/catalogo-productos";
-import { FOCO, formatearMonto } from "@/components/catalogo/formato";
+import { formatearMonto } from "@/components/catalogo/formato";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,7 +140,6 @@ function Subnavegacion() {
                   actual
                     ? "border-success text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground",
-                  FOCO,
                 )}
               >
                 {nombre}
@@ -241,7 +240,7 @@ export function Buscador({
         placeholder={etiqueta}
         value={valor}
         onChange={(e) => alCambiar(e.target.value)}
-        className={cn("h-11 pl-9", FOCO)}
+        className={cn("h-11 pl-9")}
         autoComplete="off"
       />
     </div>
@@ -373,7 +372,6 @@ export function Contacto({ telefono }: { telefono: string }) {
   const wa = whatsappDe(telefono);
   const clase = cn(
     "inline-flex min-h-11 items-center rounded-md text-success underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring",
-    FOCO,
   );
   return (
     <p className="flex flex-wrap items-center gap-x-3 text-sm">
@@ -435,12 +433,12 @@ export function DialogoBorrarCliente({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className={cn("h-11", FOCO)} disabled={ocupado}>
+          <AlertDialogCancel className={cn("h-11")} disabled={ocupado}>
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
-            className={cn("h-11 dark:bg-destructive/10", FOCO)}
+            className={cn("h-11")}
             disabled={ocupado}
             onClick={borrar}
           >
@@ -476,7 +474,7 @@ export function Campo({
         id={id}
         aria-invalid={error ? true : undefined}
         aria-describedby={describe || undefined}
-        className={cn("h-11", FOCO)}
+        className={cn("h-11")}
         autoComplete="off"
         {...input}
       />
@@ -514,7 +512,6 @@ export function AreaTexto({
         aria-describedby={error ? `${id}-error` : undefined}
         className={cn(
           "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring aria-invalid:border-destructive md:text-sm dark:bg-input/30",
-          FOCO,
         )}
         {...area}
       />

@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { actualizarProducto, borrarProducto } from "@/lib/catalogo/repositorio";
 import type { ProductoConId } from "@/lib/catalogo/tipos";
 import { cn } from "@/lib/utils";
-import { FOCO } from "./formato";
 
 interface Props {
   producto: ProductoConId | null;
@@ -77,13 +76,13 @@ export function DialogoBorrar({ producto, alCerrar }: Props) {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:flex-wrap">
-          <AlertDialogCancel className={cn("h-11", FOCO)} disabled={ocupado}>
+          <AlertDialogCancel className={cn("h-11")} disabled={ocupado}>
             Cancelar
           </AlertDialogCancel>
           {producto?.activo && (
             <Button
               variant="outline"
-              className={cn("h-11", FOCO)}
+              className={cn("h-11")}
               disabled={ocupado}
               onClick={() => ejecutar("ocultar")}
             >
@@ -92,7 +91,7 @@ export function DialogoBorrar({ producto, alCerrar }: Props) {
           )}
           <AlertDialogAction
             variant="destructive"
-            className={cn("h-11 dark:bg-destructive/10", FOCO)}
+            className={cn("h-11")}
             disabled={ocupado}
             onClick={() => ejecutar("borrar")}
           >

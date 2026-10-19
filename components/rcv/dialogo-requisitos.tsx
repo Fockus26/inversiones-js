@@ -3,7 +3,7 @@
 import { LoaderCircleIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
-import { DIALOGO_CON_PIE_FIJO, FOCO } from "@/components/catalogo/formato";
+import { DIALOGO_CON_PIE_FIJO } from "@/components/catalogo/formato";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -89,7 +89,6 @@ function Formulario({ requisitos, alCambiarAbierto }: Props) {
             aria-describedby={`${id}-ayuda${error ? ` ${id}-error` : ""}`}
             className={cn(
               "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring aria-invalid:border-destructive md:text-sm dark:bg-input/30",
-              FOCO,
             )}
           />
           <p id={`${id}-ayuda`} className="text-xs text-muted-foreground">
@@ -104,11 +103,11 @@ function Formulario({ requisitos, alCambiarAbierto }: Props) {
       </div>
       <DialogFooter className="m-0 flex-row justify-end">
         <DialogClose
-          render={<Button variant="outline" className={cn("h-11", FOCO)} />}
+          render={<Button variant="outline" className={cn("h-11")} />}
         >
           Cancelar
         </DialogClose>
-        <Button type="submit" className={cn("h-11", FOCO)} disabled={guardando}>
+        <Button type="submit" className={cn("h-11")} disabled={guardando}>
           {guardando && (
             <LoaderCircleIcon
               className="motion-safe:animate-spin"

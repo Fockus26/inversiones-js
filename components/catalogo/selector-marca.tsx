@@ -4,7 +4,6 @@ import { Select } from "@base-ui/react/select";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
 import type { Marca } from "@/lib/catalogo/tipos";
 import { cn } from "@/lib/utils";
-import { FOCO } from "./formato";
 
 interface Props {
   /** Va al botón: así `<Label htmlFor>` lo nombra y el formulario puede darle foco. */
@@ -51,7 +50,6 @@ export function SelectorMarca({
         aria-describedby={describedBy}
         className={cn(
           "flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 text-left text-base outline-none transition-colors hover:bg-muted/50 aria-invalid:border-destructive data-popup-open:border-ring md:text-sm dark:bg-input/30",
-          FOCO,
         )}
       >
         <Select.Value

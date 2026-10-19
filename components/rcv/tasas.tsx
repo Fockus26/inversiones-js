@@ -3,7 +3,7 @@
 import { LoaderCircleIcon, RefreshCwIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
-import { FOCO, haceCuanto } from "@/components/catalogo/formato";
+import { haceCuanto } from "@/components/catalogo/formato";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -151,7 +151,7 @@ export function Tasas({
           placeholder={ejemplo}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${prefijo}-${id}-error` : undefined}
-          className={cn("h-11", FOCO)}
+          className={cn("h-11")}
           autoComplete="off"
         />
         {error && (
@@ -282,7 +282,7 @@ export function Tasas({
           )}
           <Button
             type="submit"
-            className={cn("h-11", FOCO)}
+            className={cn("h-11")}
             disabled={guardando || (!cambiado && resultado.ok)}
           >
             {guardando && (
@@ -408,7 +408,7 @@ function EstadoAutomatica({
         <Button
           type="button"
           variant="outline"
-          className={cn("h-11", FOCO)}
+          className={cn("h-11")}
           onClick={reintentar}
         >
           <RefreshCwIcon aria-hidden="true" />

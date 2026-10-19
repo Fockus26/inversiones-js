@@ -14,7 +14,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Aviso } from "@/components/catalogo/catalogo-productos";
-import { FOCO } from "@/components/catalogo/formato";
 import {
   ENTRADA,
   escalonado,
@@ -171,14 +170,14 @@ function Contenido({
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
             <Button
               variant="outline"
-              className={cn("h-11 px-4", FOCO)}
+              className={cn("h-11 px-4")}
               onClick={() => setRequisitosAbierto(true)}
             >
               <ClipboardListIcon aria-hidden="true" />
               Requisitos
             </Button>
             <Button
-              className={cn("h-11 px-4", FOCO)}
+              className={cn("h-11 px-4")}
               onClick={() => abrirEditar(null)}
             >
               <PlusIcon aria-hidden="true" />
@@ -339,7 +338,7 @@ function Acciones({
     <div className="flex items-center gap-1">
       <Button
         variant="outline"
-        className={cn("h-11 px-3", FOCO)}
+        className={cn("h-11 px-3")}
         onClick={() => alEditar(p)}
         aria-label={`Editar ${p.clase}: ${p.descripcion}`}
       >
@@ -348,7 +347,7 @@ function Acciones({
       </Button>
       <Button
         variant="ghost"
-        className={cn("size-11 text-destructive hover:text-destructive", FOCO)}
+        className={cn("size-11 text-destructive hover:text-destructive")}
         onClick={() => alBorrar(p)}
         aria-label={`Borrar ${p.clase}: ${p.descripcion}`}
       >
@@ -541,13 +540,13 @@ function DialogoBorrarPlan({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:flex-wrap">
-          <AlertDialogCancel className={cn("h-11", FOCO)} disabled={ocupado}>
+          <AlertDialogCancel className={cn("h-11")} disabled={ocupado}>
             Cancelar
           </AlertDialogCancel>
           {plan?.activo && (
             <Button
               variant="outline"
-              className={cn("h-11", FOCO)}
+              className={cn("h-11")}
               disabled={ocupado}
               onClick={() => ejecutar("ocultar")}
             >
@@ -556,7 +555,7 @@ function DialogoBorrarPlan({
           )}
           <AlertDialogAction
             variant="destructive"
-            className={cn("h-11 dark:bg-destructive/10", FOCO)}
+            className={cn("h-11")}
             disabled={ocupado}
             onClick={() => ejecutar("borrar")}
           >

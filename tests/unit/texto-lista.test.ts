@@ -117,22 +117,20 @@ describe("textoListaDePrecios", () => {
     expect(texto).toContain("Magic 8 Lite 8/256");
   });
 
-  test("agotados: por defecto se marcan con (agotado)", () => {
+  test("agotados: marcar los deja con (agotado)", () => {
     const productos = conStock.map((p) =>
       p.nombre === "A06" ? { ...p, cantidad: 0 } : p,
     );
-    const texto = textoListaDePrecios(productos, FECHA);
+    const texto = textoListaDePrecios(productos, FECHA, { agotados: "marcar" });
     expect(texto).toContain("A06 4/64 (agotado)\nInic 40$.   6 quincenas 20$");
     expect(texto.match(/\(agotado\)/g)).toHaveLength(1);
   });
 
-  test("agotados: 'ocultar' los quita y una marca vacía desaparece", () => {
+  test("agotados: por defecto se ocultan y una marca vacía desaparece", () => {
     const productos = conStock.map((p) =>
       p.nombre === "A06" || p.marca === "INFINIX" ? { ...p, cantidad: 0 } : p,
     );
-    const texto = textoListaDePrecios(productos, FECHA, {
-      agotados: "ocultar",
-    });
+    const texto = textoListaDePrecios(productos, FECHA);
     expect(texto).not.toContain("A06");
     expect(texto).not.toContain("INFINIX");
     expect(texto).not.toContain("agotado");

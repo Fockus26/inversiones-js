@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { actualizarProducto } from "@/lib/catalogo/repositorio";
 import { LIMITES, validarCantidad } from "@/lib/catalogo/validacion";
 import { cn } from "@/lib/utils";
-import { FOCO } from "./formato";
 
 /** Espera tras el último toque antes de guardar; salir del campo guarda en el acto. */
 const ESPERA_MS = 800;
@@ -151,10 +150,7 @@ export function CantidadRapida({
         <Button
           type="button"
           variant="outline"
-          className={cn(
-            compacta ? "size-9 pointer-coarse:size-11" : "size-11",
-            FOCO,
-          )}
+          className={cn(compacta ? "size-9 pointer-coarse:size-11" : "size-11")}
           aria-label="Restar 1"
           disabled={base <= 0}
           onClick={() => paso(-1)}
@@ -213,10 +209,7 @@ export function CantidadRapida({
         <Button
           type="button"
           variant="outline"
-          className={cn(
-            compacta ? "size-9 pointer-coarse:size-11" : "size-11",
-            FOCO,
-          )}
+          className={cn(compacta ? "size-9 pointer-coarse:size-11" : "size-11")}
           aria-label="Sumar 1"
           disabled={base >= LIMITES.cantidadMax}
           onClick={() => paso(1)}

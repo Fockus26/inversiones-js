@@ -39,7 +39,7 @@ export type ProductoDeLista = Pick<
 export interface OpcionesTextoLista {
   /**
    * Qué hacer con los productos con `cantidad == 0` (D021):
-   * `"marcar"` (por defecto) los deja con el sufijo ` (agotado)`; `"ocultar"` los quita.
+   * `"ocultar"` (por defecto, D041) los quita; `"marcar"` los deja con el sufijo ` (agotado)`.
    */
   agotados?: "ocultar" | "marcar";
   /**
@@ -84,7 +84,7 @@ export function lineasDeProducto(
   opciones: Pick<OpcionesTextoLista, "agotados"> = {},
 ): [string, string] {
   const agotado =
-    p.cantidad <= 0 && (opciones.agotados ?? "marcar") === "marcar";
+    p.cantidad <= 0 && (opciones.agotados ?? "ocultar") === "marcar";
   const titulo = [p.nombre.trim(), p.variante.trim()].filter(Boolean).join(" ");
   const quincenas = p.numeroCuotas === 1 ? "quincena" : "quincenas";
   return [
@@ -95,7 +95,7 @@ export function lineasDeProducto(
 
 /**
  * Lista completa: título, y un bloque por marca (en orden alfabético, `compararMarcas`; marcas
- * sin productos se omiten) con sus productos ordenados por `orden`. Omite siempre `activo == false`.
+ * sin productos se omiten) con sus productos ordenados por `orden`. Omite siempre `activo == false` y, salvo `agotados: "marcar"`, los de `cantidad == 0`.
  * Separadores como en la lista del cliente: una línea en blanco entre productos, dos entre marcas.
  */
 export function textoListaDePrecios(
@@ -103,7 +103,7 @@ export function textoListaDePrecios(
   fecha: Date,
   opciones: OpcionesTextoLista = {},
 ): string {
-  const agotados = opciones.agotados ?? "marcar";
+  const agotados = opciones.agotados ?? "ocultar";
   const visibles = productos.filter(
     (p) => p.activo && (agotados === "marcar" || p.cantidad > 0),
   );

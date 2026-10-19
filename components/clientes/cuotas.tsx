@@ -5,7 +5,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   DIALOGO_CON_PIE_FIJO,
-  FOCO,
   formatearMonto,
 } from "@/components/catalogo/formato";
 import { Button } from "@/components/ui/button";
@@ -198,7 +197,7 @@ function ListaCuotas({
       </div>
       <DialogFooter className="m-0 flex-row justify-end">
         <DialogClose
-          render={<Button variant="outline" className={cn("h-11", FOCO)} />}
+          render={<Button variant="outline" className={cn("h-11")} />}
         >
           Listo
         </DialogClose>

@@ -31,7 +31,7 @@ import {
 } from "@/lib/catalogo/repositorio";
 import type { Marca } from "@/lib/catalogo/tipos";
 import { cn } from "@/lib/utils";
-import { DIALOGO_CON_PIE_FIJO, FOCO } from "./formato";
+import { DIALOGO_CON_PIE_FIJO } from "./formato";
 
 interface Props {
   abierto: boolean;
@@ -175,11 +175,11 @@ function Contenido({ marcas, conteo }: Props) {
               autoCapitalize="characters"
               aria-invalid={errorNueva ? true : undefined}
               aria-describedby={errorNueva ? `${idNueva}-error` : undefined}
-              className={cn("h-11 uppercase placeholder:normal-case", FOCO)}
+              className={cn("h-11 uppercase placeholder:normal-case")}
             />
             <Button
               type="submit"
-              className={cn("h-11 px-4", FOCO)}
+              className={cn("h-11 px-4")}
               disabled={ocupado}
             >
               <PlusIcon aria-hidden="true" />
@@ -231,7 +231,7 @@ function Contenido({ marcas, conteo }: Props) {
                     <div className="flex flex-wrap justify-end gap-2">
                       <Button
                         variant="outline"
-                        className={cn("h-11", FOCO)}
+                        className={cn("h-11")}
                         disabled={ocupado}
                         onClick={() => setBorrando(null)}
                       >
@@ -240,7 +240,7 @@ function Contenido({ marcas, conteo }: Props) {
                       {n === 0 && (
                         <Button
                           variant="destructive"
-                          className={cn("h-11 dark:bg-destructive/10", FOCO)}
+                          className={cn("h-11")}
                           disabled={ocupado}
                           onClick={() => borrar(m)}
                         >
@@ -276,7 +276,7 @@ function Contenido({ marcas, conteo }: Props) {
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
-                        className={cn("size-11", FOCO)}
+                        className={cn("size-11")}
                         disabled={ocupado}
                         onClick={() => {
                           setBorrando(null);
@@ -290,7 +290,6 @@ function Contenido({ marcas, conteo }: Props) {
                         variant="ghost"
                         className={cn(
                           "size-11 text-destructive hover:text-destructive",
-                          FOCO,
                         )}
                         disabled={ocupado}
                         onClick={() => {
@@ -305,7 +304,7 @@ function Contenido({ marcas, conteo }: Props) {
                   ) : (
                     <Button
                       variant="outline"
-                      className={cn("h-11 px-3", FOCO)}
+                      className={cn("h-11 px-3")}
                       disabled={ocupado}
                       onClick={() => registrar(m)}
                       aria-label={`Registrar ${m}`}
@@ -323,7 +322,7 @@ function Contenido({ marcas, conteo }: Props) {
 
       <DialogFooter className="m-0">
         <DialogClose
-          render={<Button variant="outline" className={cn("h-11", FOCO)} />}
+          render={<Button variant="outline" className={cn("h-11")} />}
         >
           Cerrar
         </DialogClose>
@@ -389,11 +388,11 @@ function FilaEditando({
             autoFocus
             aria-invalid={error ? true : undefined}
             aria-describedby={descritoPor || undefined}
-            className={cn("h-11 uppercase", FOCO)}
+            className={cn("h-11 uppercase")}
           />
           <Button
             type="submit"
-            className={cn("size-11", FOCO)}
+            className={cn("size-11")}
             disabled={ocupado}
             aria-label="Guardar"
           >
@@ -409,7 +408,7 @@ function FilaEditando({
           <Button
             type="button"
             variant="outline"
-            className={cn("size-11", FOCO)}
+            className={cn("size-11")}
             disabled={ocupado}
             onClick={alCancelar}
             aria-label="Cancelar"
