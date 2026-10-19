@@ -18,8 +18,9 @@ function Marca() {
         aria-hidden="true"
         className="h-6 w-1.5 rounded-full bg-sidebar-primary"
       />
+      {/* En móvil solo el sello "JS"; el nombre completo sigue para lectores de pantalla. */}
       <span>
-        Inversiones{" "}
+        <span className="max-sm:sr-only">Inversiones </span>
         <span className="rounded-md bg-sidebar-primary px-1.5 py-0.5 text-sidebar-primary-foreground">
           JS
         </span>
