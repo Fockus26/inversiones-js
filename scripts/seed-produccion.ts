@@ -10,11 +10,9 @@
  *   bun run seed:produccion --prod                     # proyecto real (GOOGLE_APPLICATION_CREDENTIALS)
  *   bun run seed:produccion --emulador --proyecto=demo-x   # ensayo contra los emuladores
  *
- * Opcional: `--proyecto=<id>` (ver scripts/crear-admin.ts), `--forzar`.
+ * Opcional: `--proyecto=<id>` (ver scripts/conectar-admin.ts), `--forzar`.
  * Para desarrollo diario usa `bun run seed:emulador`, que además crea cuentas de prueba.
  */
-import { readFileSync } from "node:fs";
-import { applicationDefault, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { CATALOGO_INICIAL } from "@/lib/catalogo/catalogo-inicial";
 import {
@@ -28,23 +26,16 @@ import {
   TASAS_RCV_INICIALES,
 } from "@/lib/rcv/planes-iniciales";
 import { COLECCION_PLANES_RCV, DOC_CONFIG_RCV } from "@/lib/rcv/tipos";
+import { conectar } from "./conectar-admin";
 
 const USO =
   "Uso: bun run seed:produccion (--prod | --emulador) [--proyecto=<id>] [--forzar]";
 
 const args = process.argv.slice(2);
 const flag = (nombre: string) => args.includes(`--${nombre}`);
-const proyectoArg = args
-  .find((a) => a.startsWith("--proyecto="))
-  ?.slice("--proyecto=".length);
 const forzar = flag("forzar");
 
-function fallar(mensaje: string): never {
-  console.error(`✗ ${mensaje}`);
-  process.exit(1);
-}
-
-const projectId = conectar();
+const projectId = conectar(args, USO);
 const db = getFirestore();
 const coleccion = db.collection(COLECCION_PRODUCTOS);
 
@@ -152,49 +143,3 @@ if (omitidos.length > 0 && !forzar) {
   console.log("  Para reescribirlos con la lista del 29/09: --forzar.");
 }
 process.exit(0);
-
-/** Elige emulador o producción y devuelve el projectId (igual que scripts/crear-admin.ts). */
-function conectar(): string {
-  const emulador = flag("emulador") || !!process.env.FIRESTORE_EMULATOR_HOST;
-  if (emulador) {
-    if (flag("prod"))
-      fallar(
-        "--prod con emulador activo (FIRESTORE_EMULATOR_HOST): elige uno.",
-      );
-    process.env.FIRESTORE_EMULATOR_HOST ??= "127.0.0.1:8080";
-    const id =
-      proyectoArg ??
-      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ??
-      "demo-inversiones-js";
-    if (!id.startsWith("demo-"))
-      fallar(`Con emulador el proyecto debe ser demo-*; recibí "${id}".`);
-    initializeApp({ projectId: id });
-    return `${id} (emulador ${process.env.FIRESTORE_EMULATOR_HOST})`;
-  }
-
-  if (!flag("prod"))
-    fallar(
-      `Sin --emulador esto apunta a PRODUCCIÓN: repite con --prod si es lo que quieres.\n${USO}`,
-    );
-  const credenciales = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  if (!credenciales)
-    fallar(
-      "Falta GOOGLE_APPLICATION_CREDENTIALS (ruta a la clave de la cuenta de servicio).",
-    );
-  let idDeCuenta: string | undefined;
-  try {
-    idDeCuenta = JSON.parse(readFileSync(credenciales, "utf8")).project_id;
-  } catch {
-    fallar(`No pude leer la cuenta de servicio en "${credenciales}".`);
-  }
-  const id = proyectoArg ?? idDeCuenta;
-  if (!id) fallar("No sé el proyecto: pasa --proyecto=<id>.");
-  if (id.startsWith("demo-"))
-    fallar(`"${id}" es un proyecto de emulador: usa --emulador.`);
-  if (idDeCuenta && idDeCuenta !== id)
-    fallar(
-      `La cuenta de servicio es de "${idDeCuenta}" y pediste "${id}": no coinciden.`,
-    );
-  initializeApp({ credential: applicationDefault(), projectId: id });
-  return `${id} (PRODUCCIÓN)`;
-}

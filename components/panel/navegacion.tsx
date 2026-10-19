@@ -3,7 +3,6 @@
 import { FileTextIcon, SmartphoneIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FOCO } from "@/components/catalogo/formato";
 import { cn } from "@/lib/utils";
 
 const SECCIONES = [
@@ -53,7 +52,6 @@ export function Navegacion() {
                   actual
                     ? "text-card-foreground"
                     : "text-muted-foreground hover:text-foreground",
-                  FOCO,
                 )}
               >
                 <Icono

@@ -25,7 +25,7 @@ import {
   validarProducto,
 } from "@/lib/catalogo/validacion";
 import { cn } from "@/lib/utils";
-import { DIALOGO_CON_PIE_FIJO, FOCO, haceCuanto } from "./formato";
+import { DIALOGO_CON_PIE_FIJO, haceCuanto } from "./formato";
 import { SelectorMarca } from "./selector-marca";
 
 interface Props {
@@ -184,7 +184,7 @@ function Formulario({
           onBlur={tocar(c)}
           aria-invalid={error ? true : undefined}
           aria-describedby={descritoPor || undefined}
-          className={cn("h-11", FOCO)}
+          className={cn("h-11")}
           autoComplete="off"
           {...extra}
         />
@@ -317,10 +317,7 @@ function Formulario({
           <Button
             type="button"
             variant="destructive"
-            className={cn(
-              "h-11 max-sm:w-11 max-sm:px-0 dark:bg-destructive/10",
-              FOCO,
-            )}
+            className={cn("h-11 max-sm:w-11 max-sm:px-0")}
             onClick={() => alPedirBorrar(producto)}
             aria-label={`Borrar ${producto.marca} ${producto.nombre}`}
           >
@@ -334,15 +331,11 @@ function Formulario({
         )}
         <div className="flex gap-2">
           <DialogClose
-            render={<Button variant="outline" className={cn("h-11", FOCO)} />}
+            render={<Button variant="outline" className={cn("h-11")} />}
           >
             Cancelar
           </DialogClose>
-          <Button
-            type="submit"
-            className={cn("h-11", FOCO)}
-            disabled={guardando}
-          >
+          <Button type="submit" className={cn("h-11")} disabled={guardando}>
             {guardando && (
               <LoaderCircleIcon
                 className="motion-safe:animate-spin"

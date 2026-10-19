@@ -44,13 +44,6 @@ export function normalizarBusqueda(texto: string): string {
 }
 
 /**
- * Anillo de foco a opacidad completa: el `ring-ring/50` de shadcn deja el verde azulado por
- * debajo de 3:1 sobre blanco. Se aplica a cada control de esta pantalla (no se toca components/ui).
- */
-export const FOCO =
-  "focus-visible:ring-ring aria-invalid:focus-visible:ring-ring aria-invalid:focus-visible:border-ring";
-
-/**
  * DialogContent de una columna flexible: el cuerpo se desplaza (`overflow-y-auto` en el hijo)
  * y el pie queda fijo abajo. 100dvh sigue al alto visible, también con el teclado del teléfono
  * abierto (ver `interactiveWidget` en app/layout.tsx).

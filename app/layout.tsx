@@ -15,7 +15,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Base de las URLs absolutas (Open Graph). En Vercel, la URL de producción; fuera de Vercel,
+// la de producción fija para que la imagen de la OG no apunte a localhost.
+const urlDelSitio = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "https://inversiones-js.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(urlDelSitio),
   title: { default: "Panel · Inversiones JS", template: "%s · Inversiones JS" },
   description: "Panel administrativo del catálogo de Inversiones JS.",
   robots: { index: false, follow: false },

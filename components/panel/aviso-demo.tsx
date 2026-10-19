@@ -2,7 +2,6 @@
 
 import { FlaskConicalIcon, XIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
-import { FOCO } from "@/components/catalogo/formato";
 import { Button } from "@/components/ui/button";
 import { modoDemo, salirDeDemo } from "@/lib/financiamiento/demo";
 import { cn } from "@/lib/utils";
@@ -26,7 +25,7 @@ export function AvisoDemo() {
       </p>
       <Button
         variant="outline"
-        className={cn("h-11 px-3", FOCO)}
+        className={cn("h-11 px-3")}
         onClick={salirDeDemo}
       >
         <XIcon aria-hidden="true" />

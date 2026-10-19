@@ -104,9 +104,9 @@ const texto = textoListaDePrecios(productos, new Date());
 
 Opciones (D021):
 
-- `agotados: "marcar"` (por defecto) añade ` (agotado)` a los de `cantidad == 0`;
-  `"ocultar"` los quita. **Ojo:** el catálogo inicial arranca con `cantidad = 0`; hasta que el
-  cliente cargue el stock en el panel, con `"marcar"` todo saldrá agotado.
+- `agotados: "ocultar"` (por defecto, D041) quita los de `cantidad == 0`; `"marcar"` los deja
+  con ` (agotado)`. **Ojo:** el catálogo inicial arranca con `cantidad = 0`; hasta que el
+  cliente cargue el stock en el panel, la lista saldrá vacía (solo el título).
 - `zonaHoraria` (por defecto `America/Caracas`) para el `DD/MM` del título.
 
 ### Buscar un modelo

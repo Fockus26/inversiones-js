@@ -38,12 +38,7 @@ import { CantidadRapida } from "./cantidad-rapida";
 import { DialogoBorrar, nombreCompleto } from "./dialogo-borrar";
 import { DialogoMarcas } from "./dialogo-marcas";
 import { DialogoProducto } from "./dialogo-producto";
-import {
-  FOCO,
-  formatearCuota,
-  formatearMonto,
-  normalizarBusqueda,
-} from "./formato";
+import { formatearCuota, formatearMonto, normalizarBusqueda } from "./formato";
 import { useCatalogo } from "./use-catalogo";
 
 /**
@@ -72,7 +67,7 @@ export function CatalogoProductos() {
               accion={
                 <Link
                   href="/login"
-                  className={cn(buttonVariants(), "h-11 px-4", FOCO)}
+                  className={cn(buttonVariants(), "h-11 px-4")}
                 >
                   Iniciar sesión
                 </Link>
@@ -89,7 +84,6 @@ export function CatalogoProductos() {
                   className={cn(
                     buttonVariants({ variant: "outline" }),
                     "h-11 px-4",
-                    FOCO,
                   )}
                 >
                   Entrar con otra cuenta
@@ -251,14 +245,14 @@ function Lista({
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
             <Button
               variant="outline"
-              className={cn("h-11 px-4", FOCO)}
+              className={cn("h-11 px-4")}
               onClick={() => setMarcasAbierto(true)}
             >
               <TagsIcon aria-hidden="true" />
               Marcas
             </Button>
             <Button
-              className={cn("h-11 px-4", FOCO)}
+              className={cn("h-11 px-4")}
               onClick={() => abrirEditar(null)}
             >
               <PlusIcon aria-hidden="true" />
@@ -283,7 +277,7 @@ function Lista({
             placeholder="Buscar por nombre o variante"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className={cn("h-11 pl-9", FOCO)}
+            className={cn("h-11 pl-9")}
             autoComplete="off"
           />
         </div>
@@ -324,7 +318,7 @@ function Lista({
           accion={
             <Button
               variant="outline"
-              className={cn("h-11 px-4", FOCO)}
+              className={cn("h-11 px-4")}
               onClick={() => {
                 setBusqueda("");
                 setMarca(null);
@@ -429,7 +423,6 @@ function Estado({ p, className }: { p: ProductoConId; className?: string }) {
         <Badge
           variant="destructive"
           // En oscuro, el fondo /20 de shadcn deja el texto en 4.37:1; con /10 pasa de 4.5:1.
-          className="dark:bg-destructive/10"
         >
           <PackageXIcon aria-hidden="true" />
           Agotado
@@ -464,7 +457,7 @@ function Acciones({
     <div className="flex items-center gap-1">
       <Button
         variant="outline"
-        className={cn("h-11 px-3", FOCO)}
+        className={cn("h-11 px-3")}
         onClick={() => alEditar(p)}
         aria-label={`Editar ${nombre}`}
       >
@@ -473,7 +466,7 @@ function Acciones({
       </Button>
       <Button
         variant="ghost"
-        className={cn("size-11 text-destructive hover:text-destructive", FOCO)}
+        className={cn("size-11 text-destructive hover:text-destructive")}
         onClick={() => alBorrar(p)}
         aria-label={`Borrar ${nombre}`}
       >

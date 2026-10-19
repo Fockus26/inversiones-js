@@ -11,7 +11,7 @@ import {
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { Aviso } from "@/components/catalogo/catalogo-productos";
-import { FOCO, haceCuanto } from "@/components/catalogo/formato";
+import { haceCuanto } from "@/components/catalogo/formato";
 import { DialogoClienteRcv } from "@/components/clientes/clientes-rcv";
 import {
   ENTRADA,
@@ -115,7 +115,6 @@ export function Solicitudes({
                   variant="ghost"
                   className={cn(
                     "size-11 shrink-0 text-destructive hover:text-destructive",
-                    FOCO,
                   )}
                   onClick={() => setBorrando(s)}
                   aria-label={`Borrar la solicitud de ${s.nombre}`}
@@ -180,7 +179,7 @@ export function Solicitudes({
               </ul>
               <Button
                 variant="outline"
-                className={cn("h-11 justify-self-start px-3", FOCO)}
+                className={cn("h-11 justify-self-start px-3")}
                 onClick={() => setRegistrando(s)}
                 aria-label={`Registrar a ${s.nombre} como cliente de póliza`}
               >
@@ -217,12 +216,12 @@ export function Solicitudes({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className={cn("h-11", FOCO)} disabled={ocupado}>
+            <AlertDialogCancel className={cn("h-11")} disabled={ocupado}>
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              className={cn("h-11 dark:bg-destructive/10", FOCO)}
+              className={cn("h-11")}
               disabled={ocupado}
               onClick={borrar}
             >
@@ -268,7 +267,6 @@ function Contacto({
         rel={href.startsWith("http") ? "noreferrer" : undefined}
         className={cn(
           "inline-flex min-h-11 max-w-full items-center gap-2 rounded-md text-success underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring [&>svg]:size-4 [&>svg]:shrink-0",
-          FOCO,
         )}
       >
         {icono}

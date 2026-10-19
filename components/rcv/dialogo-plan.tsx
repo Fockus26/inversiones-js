@@ -5,7 +5,6 @@ import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   DIALOGO_CON_PIE_FIJO,
-  FOCO,
   haceCuanto,
 } from "@/components/catalogo/formato";
 import { Button } from "@/components/ui/button";
@@ -182,7 +181,7 @@ function Formulario({
           onBlur={tocar(c)}
           aria-invalid={error ? true : undefined}
           aria-describedby={describe || undefined}
-          className={cn("h-11", FOCO)}
+          className={cn("h-11")}
           autoComplete="off"
           {...extra}
         />
@@ -313,7 +312,7 @@ function Formulario({
             inputMode="numeric"
             aria-invalid={errorOrden ? true : undefined}
             aria-describedby={errorOrden ? `${idDe("orden")}-error` : undefined}
-            className={cn("h-11 w-28", FOCO)}
+            className={cn("h-11 w-28")}
             autoComplete="off"
           />
           {errorOrden && (
@@ -340,10 +339,7 @@ function Formulario({
           <Button
             type="button"
             variant="destructive"
-            className={cn(
-              "h-11 max-sm:w-11 max-sm:px-0 dark:bg-destructive/10",
-              FOCO,
-            )}
+            className={cn("h-11 max-sm:w-11 max-sm:px-0")}
             onClick={() => alPedirBorrar(plan)}
             aria-label={`Borrar ${plan.clase}`}
           >
@@ -357,15 +353,11 @@ function Formulario({
         )}
         <div className="flex gap-2">
           <DialogClose
-            render={<Button variant="outline" className={cn("h-11", FOCO)} />}
+            render={<Button variant="outline" className={cn("h-11")} />}
           >
             Cancelar
           </DialogClose>
-          <Button
-            type="submit"
-            className={cn("h-11", FOCO)}
-            disabled={guardando}
-          >
+          <Button type="submit" className={cn("h-11")} disabled={guardando}>
             {guardando && (
               <LoaderCircleIcon
                 className="motion-safe:animate-spin"

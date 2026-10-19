@@ -20,7 +20,6 @@ import { toast } from "sonner";
 import { Aviso } from "@/components/catalogo/catalogo-productos";
 import {
   DIALOGO_CON_PIE_FIJO,
-  FOCO,
   formatearMonto,
   haceCuanto,
 } from "@/components/catalogo/formato";
@@ -165,7 +164,7 @@ function Contenido({ clientes }: { clientes: ClienteRcvConId[] }) {
       <Encabezado
         resumen={`${clientes.length} ${clientes.length === 1 ? "cliente" : "clientes"} con póliza RCV`}
         accion={
-          <Button className={cn("h-11 px-4", FOCO)} onClick={() => abrir(null)}>
+          <Button className={cn("h-11 px-4")} onClick={() => abrir(null)}>
             <PlusIcon aria-hidden="true" />
             Nuevo cliente
           </Button>
@@ -248,7 +247,7 @@ function Contenido({ clientes }: { clientes: ClienteRcvConId[] }) {
           accion={
             <Button
               variant="outline"
-              className={cn("h-11 px-4", FOCO)}
+              className={cn("h-11 px-4")}
               onClick={() => {
                 setBusqueda("");
                 setFiltro("todos");
@@ -412,7 +411,7 @@ function Tarjeta({
       <div className="flex flex-wrap items-center justify-end gap-1">
         {poliza.tipo === "sin-emitir" && (
           <Button
-            className={cn("h-11 px-3", FOCO)}
+            className={cn("h-11 px-3")}
             onClick={alEditar}
             aria-label={`Confirmar la póliza de ${c.nombre}`}
           >
@@ -422,7 +421,7 @@ function Tarjeta({
         )}
         {puedeRenovar && (
           <Button
-            className={cn("h-11 px-3", FOCO)}
+            className={cn("h-11 px-3")}
             onClick={alRenovar}
             aria-label={`Renovar la póliza de ${c.nombre}`}
           >
@@ -437,7 +436,7 @@ function Tarjeta({
                 ? "outline"
                 : "default"
             }
-            className={cn("h-11 px-3", FOCO)}
+            className={cn("h-11 px-3")}
             onClick={alVerCuotas}
             aria-label={`Cuotas de ${c.nombre}`}
           >
@@ -447,7 +446,7 @@ function Tarjeta({
         )}
         <Button
           variant="outline"
-          className={cn("h-11 px-3", FOCO)}
+          className={cn("h-11 px-3")}
           onClick={alEditar}
           aria-label={`Editar a ${c.nombre}`}
         >
@@ -456,10 +455,7 @@ function Tarjeta({
         </Button>
         <Button
           variant="ghost"
-          className={cn(
-            "size-11 text-destructive hover:text-destructive",
-            FOCO,
-          )}
+          className={cn("size-11 text-destructive hover:text-destructive")}
           onClick={alBorrar}
           aria-label={`Borrar a ${c.nombre}`}
         >
@@ -518,11 +514,11 @@ function DialogoRenovar({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className={cn("h-11", FOCO)} disabled={ocupado}>
+          <AlertDialogCancel className={cn("h-11")} disabled={ocupado}>
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction
-            className={cn("h-11", FOCO)}
+            className={cn("h-11")}
             disabled={ocupado}
             onClick={renovar}
           >
@@ -809,11 +805,11 @@ function FormularioRcv({
       </div>
       <DialogFooter className="m-0 flex-row justify-end">
         <DialogClose
-          render={<Button variant="outline" className={cn("h-11", FOCO)} />}
+          render={<Button variant="outline" className={cn("h-11")} />}
         >
           Cancelar
         </DialogClose>
-        <Button type="submit" className={cn("h-11", FOCO)} disabled={guardando}>
+        <Button type="submit" className={cn("h-11")} disabled={guardando}>
           {guardando && (
             <LoaderCircleIcon
               className="motion-safe:animate-spin"

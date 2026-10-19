@@ -25,8 +25,6 @@ import { firebaseAuth } from "@/lib/firebase/client";
 import { cn } from "@/lib/utils";
 
 // El anillo de shadcn va al 50 %: el verde azulado así no llega a 3:1 sobre blanco.
-const FOCO_PLENO = "focus-visible:ring-ring";
-
 const MENSAJE_SIN_ACCESO = "Esta cuenta no tiene acceso al panel.";
 // Neutro a propósito: no confirma si el correo tiene cuenta (D012).
 const MENSAJE_RESTABLECER =
@@ -160,7 +158,7 @@ export function FormularioLogin() {
               value={correo}
               onChange={(e) => setCorreo(e.target.value)}
               aria-invalid={error ? true : undefined}
-              className={cn("h-11", FOCO_PLENO)}
+              className={cn("h-11")}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -176,13 +174,13 @@ export function FormularioLogin() {
                 value={contrasena}
                 onChange={(e) => setContrasena(e.target.value)}
                 aria-invalid={error ? true : undefined}
-                className={cn("h-11 pr-12", FOCO_PLENO)}
+                className={cn("h-11 pr-12")}
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className={cn("absolute top-0 right-0 size-11", FOCO_PLENO)}
+                className={cn("absolute top-0 right-0 size-11")}
                 aria-pressed={verContrasena}
                 aria-label="Mostrar contraseña"
                 aria-controls={`${id}-contrasena`}
@@ -213,7 +211,7 @@ export function FormularioLogin() {
 
           <Button
             type="submit"
-            className={cn("h-11 text-base", FOCO_PLENO)}
+            className={cn("h-11 text-base")}
             disabled={enviando}
           >
             {enviando && (
