@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { escucharMarcas, escucharProductos } from "@/lib/catalogo/repositorio";
 import type { Marca, ProductoConId } from "@/lib/catalogo/tipos";
 import { firebaseAuth } from "@/lib/firebase/client";
+import { MENSAJE_INESPERADO, mensajeDeError } from "@/lib/firebase/errores";
 
 export type EstadoCatalogo =
   | { tipo: "cargando" }
@@ -47,7 +48,10 @@ export function useCatalogo(): EstadoCatalogo {
         setEstado(
           error.code === "permission-denied"
             ? { tipo: "sin-acceso" }
-            : { tipo: "error", mensaje: error.message },
+            : {
+                tipo: "error",
+                mensaje: mensajeDeError(error) ?? MENSAJE_INESPERADO,
+              },
         );
       };
       dejarDeEscuchar = [

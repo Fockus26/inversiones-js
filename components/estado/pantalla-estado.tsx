@@ -1,5 +1,8 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -27,6 +30,7 @@ export function PantallaEstado({
   linea,
   children,
   acciones,
+  enfocarTitulo = false,
 }: {
   icono: LucideIcon;
   etiqueta: string;
@@ -35,7 +39,13 @@ export function PantallaEstado({
   /** Bloque opcional entre la línea y las acciones (código de soporte, lista…). */
   children?: React.ReactNode;
   acciones: React.ReactNode;
+  /** En un error el foco va al título, para que el lector de pantalla lo anuncie al llegar. */
+  enfocarTitulo?: boolean;
 }) {
+  const tituloRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (enfocarTitulo) tituloRef.current?.focus();
+  }, [enfocarTitulo]);
   return (
     <div className="flex min-h-dvh flex-1 flex-col bg-background text-foreground">
       <header className="flex h-14 items-center bg-sidebar px-4 text-sidebar-foreground md:h-16 md:px-10">
@@ -62,7 +72,11 @@ export function PantallaEstado({
             <Icono aria-hidden="true" className="size-4" />
             {etiqueta}
           </p>
-          <h1 className="mt-2 text-3xl leading-tight font-extrabold tracking-tight md:text-[44px] md:leading-[1.1]">
+          <h1
+            ref={tituloRef}
+            tabIndex={enfocarTitulo ? -1 : undefined}
+            className="mt-2 text-3xl outline-none leading-tight font-extrabold tracking-tight md:text-[44px] md:leading-[1.1]"
+          >
             {titulo}
           </h1>
           <p className="text-base leading-relaxed text-muted-foreground md:text-lg">

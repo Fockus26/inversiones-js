@@ -34,13 +34,22 @@ export function haceCuanto(fecha: Date, ahora: Date = new Date()): string {
   return "hace un momento";
 }
 
-/** Normaliza para buscar sin importar mayúsculas ni acentos. */
+/** Normaliza para buscar sin importar mayúsculas ni acentos. La "ñ" no es un acento: se queda. */
 export function normalizarBusqueda(texto: string): string {
   return texto
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
     .toLowerCase()
+    .normalize("NFD")
+    .replace(/n\u0303/g, "\u00f1")
+    .replace(/\p{Diacritic}/gu, "")
     .trim();
+}
+
+/** Cada palabra de la búsqueda aparece en el texto, en cualquier orden ("honor 8/256"). */
+export function contienePalabras(texto: string, busqueda: string): boolean {
+  const t = normalizarBusqueda(texto);
+  return normalizarBusqueda(busqueda)
+    .split(/\s+/)
+    .every((palabra) => t.includes(palabra));
 }
 
 /**

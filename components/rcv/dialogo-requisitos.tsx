@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import { guardarRequisitos } from "@/lib/rcv/repositorio";
 import { validarRequisitos } from "@/lib/rcv/validacion";
 import { cn } from "@/lib/utils";
@@ -59,7 +60,7 @@ function Formulario({ requisitos, alCambiarAbierto }: Props) {
       alCambiarAbierto(false);
     } catch (err) {
       toast.error("No se pudieron guardar", {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeDeError(err),
       });
       setGuardando(false);
     }

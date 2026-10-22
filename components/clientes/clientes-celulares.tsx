@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CircleAlertIcon,
   ListChecksIcon,
   LoaderCircleIcon,
   PencilIcon,
@@ -54,6 +55,7 @@ import {
   LIMITES_CLIENTE,
   validarClienteCelular,
 } from "@/lib/financiamiento/validacion";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import { cn } from "@/lib/utils";
 import {
   AreaTexto,
@@ -76,7 +78,22 @@ import { CamposPagos, DialogoCuotas } from "./cuotas";
 export function ClientesCelulares() {
   const estado = useClientes(escucharClientesCelulares);
   if (estado.tipo !== "listo") return <EstadoCarga estado={estado} />;
-  return <Contenido clientes={estado.clientes} />;
+  return (
+    <>
+      {estado.omitidos > 0 && (
+        <output className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/40 px-3 py-2 text-sm">
+          <CircleAlertIcon
+            className="mt-0.5 size-4 shrink-0 text-destructive"
+            aria-hidden="true"
+          />
+          {estado.omitidos === 1
+            ? "Hay 1 cliente con el plan de pagos incompleto que no se puede mostrar. Revísalo en la consola de Firebase o avísale a soporte."
+            : `Hay ${estado.omitidos} clientes con el plan de pagos incompleto que no se pueden mostrar. Revísalos en la consola de Firebase o avísale a soporte.`}
+        </output>
+      )}
+      <Contenido clientes={estado.clientes} />
+    </>
+  );
 }
 
 type Filtro = "todos" | EstadoPagos;
@@ -104,6 +121,11 @@ function Contenido({ clientes }: { clientes: ClienteCelularConId[] }) {
       coincide(busqueda, c.nombre, c.cedula, c.telefono, c.equipo),
   );
   const conCuotas = clientes.find((c) => c.id === cuotasDe) ?? null;
+  // El diálogo trabaja con la versión en vivo: si otra pestaña (o el bot) cambia cuotas o
+  // avisos mientras está abierto, guardar no los pisa con la foto de cuando se abrió.
+  const editandoVivo = editando
+    ? (clientes.find((c) => c.id === editando.id) ?? editando)
+    : null;
 
   function abrir(c: ClienteCelularConId | null) {
     setEditando(c);
@@ -115,7 +137,10 @@ function Contenido({ clientes }: { clientes: ClienteCelularConId[] }) {
       <Encabezado
         resumen={`${clientes.length} ${clientes.length === 1 ? "cliente" : "clientes"} con celular a crédito`}
         accion={
-          <Button className={cn("h-11 px-4")} onClick={() => abrir(null)}>
+          <Button
+            className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
+            onClick={() => abrir(null)}
+          >
             <PlusIcon aria-hidden="true" />
             Nuevo cliente
           </Button>
@@ -143,6 +168,12 @@ function Contenido({ clientes }: { clientes: ClienteCelularConId[] }) {
       />
 
       <search className="grid gap-3">
+        {/* Anuncia cuántos quedan al filtrar: "Sin resultados" se pinta fuera de una región viva. */}
+        <p className="sr-only" aria-live="polite">
+          {busqueda.trim() || filtro !== "todos"
+            ? `${visibles.length} de ${clientes.length} clientes coinciden`
+            : ""}
+        </p>
         <Buscador
           id="buscar-cliente-celular"
           etiqueta="Buscar por nombre, cédula, teléfono o equipo"
@@ -176,7 +207,7 @@ function Contenido({ clientes }: { clientes: ClienteCelularConId[] }) {
           accion={
             <Button
               variant="outline"
-              className={cn("h-11 px-4")}
+              className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
               onClick={() => {
                 setBusqueda("");
                 setFiltro("todos");
@@ -187,7 +218,7 @@ function Contenido({ clientes }: { clientes: ClienteCelularConId[] }) {
           }
         />
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {visibles.map(({ c, r }, i) => (
             <Tarjeta
               key={c.id}
@@ -205,7 +236,7 @@ function Contenido({ clientes }: { clientes: ClienteCelularConId[] }) {
       <DialogoClienteCelular
         abierto={dialogoAbierto}
         alCambiarAbierto={setDialogoAbierto}
-        cliente={editando}
+        cliente={editandoVivo}
       />
       <DialogoCuotas
         coleccion={COLECCION_CLIENTES_CELULARES}
@@ -241,7 +272,7 @@ function Tarjeta({
     <li
       style={escalonado(indice)}
       className={cn(
-        "grid content-start gap-3 rounded-xl border bg-card p-4 text-card-foreground",
+        "grid min-w-0 grid-cols-1 content-start gap-3 rounded-xl border bg-card p-4 text-card-foreground",
         ENTRADA,
         TARJETA_VIVA,
         r.estado === "atrasado" && "border-destructive/50",
@@ -249,8 +280,8 @@ function Tarjeta({
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="font-medium break-words">{c.nombre}</h2>
-          <p className="text-sm break-words text-muted-foreground">
+          <h2 className="font-medium wrap-anywhere">{c.nombre}</h2>
+          <p className="text-sm wrap-anywhere text-muted-foreground">
             {c.equipo}
             {c.cedula && ` · ${c.cedula}`}
           </p>
@@ -260,7 +291,7 @@ function Tarjeta({
       <Contacto telefono={c.telefono} />
       <ProgresoPagos r={r} />
       {c.notas && (
-        <p className="text-xs break-words whitespace-pre-line text-muted-foreground">
+        <p className="text-xs wrap-anywhere whitespace-pre-line text-muted-foreground">
           {c.notas}
         </p>
       )}
@@ -395,7 +426,7 @@ function FormularioCelular({
       alCambiarAbierto(false);
     } catch (err) {
       toast.error("No se pudo guardar", {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeDeError(err),
       });
       setGuardando(false);
     }

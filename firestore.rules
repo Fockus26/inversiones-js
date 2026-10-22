@@ -124,7 +124,9 @@ service cloud.firestore {
 
     // D032: clientes con financiamiento. Mismos límites que lib/financiamiento/validacion.ts.
     function fecha(f) {
-      return f is string && f.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+      // Rango grueso (D042): corta años de dos dígitos ("0026") y fechas absurdas.
+      return f is string && f.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && f >= '2000-01-01' && f <= '2099-12-31';
     }
 
     function texto(t, min, max) {

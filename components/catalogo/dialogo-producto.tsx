@@ -17,13 +17,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { unirMarcas } from "@/lib/catalogo/marcas";
 import { actualizarProducto, crearProducto } from "@/lib/catalogo/repositorio";
-import type { Marca, ProductoConId } from "@/lib/catalogo/tipos";
+import type {
+  CamposEditables,
+  Marca,
+  ProductoConId,
+} from "@/lib/catalogo/tipos";
 import {
   type CampoFormulario,
   type FormularioProducto,
   LIMITES,
   validarProducto,
 } from "@/lib/catalogo/validacion";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import { cn } from "@/lib/utils";
 import { DIALOGO_CON_PIE_FIJO, haceCuanto } from "./formato";
 import { SelectorMarca } from "./selector-marca";
@@ -118,6 +123,12 @@ function Formulario({
       ? unirMarcas(marcas, [producto.marca])
       : marcas;
   const resultado = validarProducto(form, opciones);
+  // Valores con los que se abrió: al guardar solo se mandan los campos que cambiaron, para no
+  // pisar lo que otra pestaña (o la cantidad rápida) guardó mientras el diálogo estaba abierto.
+  const [alAbrir] = useState(() => {
+    const r = validarProducto(aFormulario(producto, marcaInicial), opciones);
+    return r.ok ? r.valor : null;
+  });
   const errores = resultado.ok ? {} : resultado.errores;
   const errorVisible = (c: CampoFormulario) =>
     intentado || tocados.has(c) ? errores[c] : undefined;
@@ -143,7 +154,11 @@ function Formulario({
     }
     setGuardando(true);
     try {
-      if (producto) await actualizarProducto(producto.id, resultado.valor);
+      if (producto)
+        await actualizarProducto(
+          producto.id,
+          soloCambios(resultado.valor, alAbrir),
+        );
       else await crearProducto(resultado.valor, ordenNuevo);
       toast.success(
         producto
@@ -153,7 +168,7 @@ function Formulario({
       alCambiarAbierto(false);
     } catch (err) {
       toast.error("No se pudo guardar", {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeDeError(err),
       });
       setGuardando(false);
     }
@@ -253,12 +268,12 @@ function Formulario({
 
         {campoTexto("nombre", "Nombre", {
           maxLength: LIMITES.nombreMax,
-          placeholder: "600 Elite",
+          placeholder: "p. ej. 600 Elite",
         })}
         {campoTexto(
           "variante",
           "Variante (RAM/almacenamiento)",
-          { maxLength: LIMITES.varianteMax, placeholder: "8/256" },
+          { maxLength: LIMITES.varianteMax, placeholder: "p. ej. 8/256" },
           "Opcional. Formato sugerido: 8/256.",
         )}
 
@@ -267,11 +282,11 @@ function Formulario({
         <div className="grid grid-cols-2 items-start gap-4 max-[359px]:grid-cols-1">
           {campoTexto("inicial", "Inicial ($)", {
             inputMode: "decimal",
-            placeholder: "125",
+            placeholder: "p. ej. 125",
           })}
           {campoTexto("cuota", "Cuota quincenal ($)", {
             inputMode: "decimal",
-            placeholder: "63",
+            placeholder: "p. ej. 63",
           })}
           {campoTexto("numeroCuotas", "Número de cuotas", {
             inputMode: "numeric",
@@ -347,5 +362,17 @@ function Formulario({
         </div>
       </DialogFooter>
     </form>
+  );
+}
+
+function soloCambios(
+  valor: CamposEditables,
+  alAbrir: CamposEditables | null,
+): Partial<CamposEditables> {
+  if (!alAbrir) return valor;
+  return Object.fromEntries(
+    Object.entries(valor).filter(
+      ([k, v]) => alAbrir[k as keyof CamposEditables] !== v,
+    ),
   );
 }

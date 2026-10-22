@@ -74,7 +74,8 @@ export function renovacion(
  */
 export function whatsappDe(telefono: string): string | null {
   const d = telefono.replace(/\D/g, "");
-  if (/^0\d{10}$/.test(d)) return `58${d.slice(1)}`;
+  // Venezuela: 04xx (celular) o 02xx (fijo); "00000000000" no es un número.
+  if (/^0[24]\d{9}$/.test(d)) return `58${d.slice(1)}`;
   if (/^4\d{9}$/.test(d)) return `58${d}`;
   if (d.length >= 11 && d.length <= 15 && !d.startsWith("0")) return d;
   return null;

@@ -147,8 +147,8 @@ if ((await escuchando(AUTH)) && (await escuchando(FIRESTORE))) {
   console.log("… firebase emulators:start");
   lanzar("bun", ["run", "emulators"]);
   try {
-    await esperar(AUTH, 90);
-    await esperar(FIRESTORE, 90);
+    await esperar(AUTH, 240);
+    await esperar(FIRESTORE, 240);
   } catch (e) {
     matarTodo();
     throw e;

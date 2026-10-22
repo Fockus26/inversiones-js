@@ -40,6 +40,7 @@ export function ErrorServidor({
 
   return (
     <PantallaEstado
+      enfocarTitulo
       icono={TriangleAlertIcon}
       etiqueta="Error 500"
       titulo="Algo falló de nuestro lado"
@@ -66,7 +67,8 @@ export function ErrorServidor({
       {codigo && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3.5">
           <div className="flex min-w-0 flex-col gap-0.5">
-            {/* La etiqueta va justo antes en el orden de lectura: no hace falta ARIA. */}
+            {/* La etiqueta va justo antes en el orden de lectura. `aria-labelledby` no vale en <code>
+                (rol genérico: no admite nombre accesible), aunque lo pida el HANDOFF §1. */}
             <span className="text-[13px] text-muted-foreground">
               Código para soporte
             </span>

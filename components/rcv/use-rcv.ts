@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import type { FirestoreError } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { firebaseAuth } from "@/lib/firebase/client";
+import { MENSAJE_INESPERADO, mensajeDeError } from "@/lib/firebase/errores";
 import {
   escucharConfigRcv,
   escucharPlanesRcv,
@@ -56,7 +57,10 @@ export function useRcv(): EstadoRcv {
         setEstado(
           error.code === "permission-denied"
             ? { tipo: "sin-acceso" }
-            : { tipo: "error", mensaje: error.message },
+            : {
+                tipo: "error",
+                mensaje: mensajeDeError(error) ?? MENSAJE_INESPERADO,
+              },
         );
       };
       dejar = [

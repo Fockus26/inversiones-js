@@ -30,9 +30,16 @@ export function esFecha(texto: unknown): texto is Fecha {
   );
 }
 
+/** `Date.UTC` toma los años 0–99 como 1900–1999 ("0026" → 1926): se fija el año aparte. */
+function utc(anio: number, mes: number, dia: number): Date {
+  const d = new Date(Date.UTC(2000, mes, dia));
+  d.setUTCFullYear(anio, mes, dia);
+  return d;
+}
+
 function aUtc(f: Fecha): Date {
   const [a, m, d] = f.split("-").map(Number);
-  return new Date(Date.UTC(a, m - 1, d));
+  return utc(a, m - 1, d);
 }
 
 function deUtc(d: Date): Fecha {
@@ -51,8 +58,22 @@ export function sumarMeses(f: Fecha, meses: number): Fecha {
   const total = a * 12 + (m - 1) + meses;
   const anio = Math.floor(total / 12);
   const mes = total % 12;
-  const ultimo = new Date(Date.UTC(anio, mes + 1, 0)).getUTCDate();
-  return deUtc(new Date(Date.UTC(anio, mes, Math.min(d, ultimo))));
+  const ultimo = utc(anio, mes + 1, 0).getUTCDate();
+  return deUtc(utc(anio, mes, Math.min(d, ultimo)));
+}
+
+/** Primera fecha que aceptan los formularios: antes de esto es un error de tecleo. */
+export const FECHA_MINIMA: Fecha = "2020-01-01";
+/** Hasta cuántos meses por delante de hoy se acepta una fecha (D042). */
+export const MESES_MAXIMOS_ADELANTE = 24;
+
+/** Fecha válida y razonable: entre 2020 y dos años por delante de `hoy` (D042). */
+export function fechaEnRango(f: Fecha, hoy: Fecha): boolean {
+  return (
+    esFecha(f) &&
+    f >= FECHA_MINIMA &&
+    f <= sumarMeses(hoy, MESES_MAXIMOS_ADELANTE)
+  );
 }
 
 /** Días de `desde` a `hasta` (negativo si `hasta` ya pasó). */

@@ -32,7 +32,7 @@ export function GuardPanel({ children }: { children: React.ReactNode }) {
       if (motivoSalida === "salida") router.replace("/login");
       else if (motivoSalida === "sin-acceso")
         router.replace(`/login?aviso=${AVISO_SIN_ACCESO}`);
-      else router.replace(urlLoginConSiguiente(ruta));
+      else router.replace(urlLoginConSiguiente(ruta + window.location.search));
     }
   }, [estado, motivoSalida, salir, router, ruta]);
 
@@ -43,7 +43,7 @@ export function GuardPanel({ children }: { children: React.ReactNode }) {
       <Cabecera correo={usuario?.email ?? ""} onSalir={() => salir()} />
       <main
         id="contenido"
-        className="mx-auto w-full max-w-6xl flex-1 px-4 py-6"
+        className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6"
       >
         <AvisoDemo />
         <Navegacion />
@@ -61,7 +61,7 @@ function PanelCargando() {
     <>
       <CabeceraEsqueleto />
       <main
-        className="mx-auto w-full max-w-6xl flex-1 px-4 py-6"
+        className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 py-6"
         aria-busy="true"
       >
         <output className="sr-only">Cargando el panel…</output>

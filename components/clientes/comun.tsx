@@ -15,7 +15,12 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Aviso } from "@/components/catalogo/catalogo-productos";
-import { formatearMonto } from "@/components/catalogo/formato";
+import {
+  contienePalabras,
+  formatearMonto,
+  normalizarBusqueda,
+} from "@/components/catalogo/formato";
+import { ACTIVO } from "@/components/panel/estilos";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +44,7 @@ import type {
   COLECCION_CLIENTES_RCV,
 } from "@/lib/financiamiento/tipos";
 import { firebaseAuth } from "@/lib/firebase/client";
+import { MENSAJE_INESPERADO, mensajeDeError } from "@/lib/firebase/errores";
 import { cn } from "@/lib/utils";
 
 /** Piezas compartidas por /clientes/celulares y /clientes/rcv (D032). */
@@ -51,12 +57,13 @@ export type EstadoClientes<T> =
   | { tipo: "cargando" }
   | { tipo: "sin-acceso" }
   | { tipo: "error"; mensaje: string }
-  | { tipo: "listo"; clientes: T[] };
+  /** `omitidos`: documentos a medias que no se pueden mostrar (lib/firebase/normalizar.ts). */
+  | { tipo: "listo"; clientes: T[]; omitidos: number };
 
 /** Como `useRcv`: espera la sesión y escucha la colección en vivo. */
 export function useClientes<T>(
   escuchar: (
-    alCambiar: (c: T[]) => void,
+    alCambiar: (c: T[], omitidos?: number) => void,
     alFallar: (e: FirestoreError) => void,
   ) => () => void,
 ): EstadoClientes<T> {
@@ -74,12 +81,16 @@ export function useClientes<T>(
       }
       setEstado({ tipo: "cargando" });
       dejar = escuchar(
-        (clientes) => setEstado({ tipo: "listo", clientes }),
+        (clientes, omitidos = 0) =>
+          setEstado({ tipo: "listo", clientes, omitidos }),
         (error) =>
           setEstado(
             error.code === "permission-denied"
               ? { tipo: "sin-acceso" }
-              : { tipo: "error", mensaje: error.message },
+              : {
+                  tipo: "error",
+                  mensaje: mensajeDeError(error) ?? MENSAJE_INESPERADO,
+                },
           ),
       );
     });
@@ -118,6 +129,9 @@ export function Encabezado({
   );
 }
 
+/** Badge que puede partirse en dos líneas (texto grande del teléfono: "Vigente hasta 05/04/2027"). */
+export const BADGE_LARGO = "h-auto min-h-5 whitespace-normal text-left";
+
 const SUBSECCIONES = [
   { href: "/clientes/celulares", nombre: "Celulares" },
   { href: "/clientes/rcv", nombre: "Póliza RCV" },
@@ -138,8 +152,8 @@ function Subnavegacion() {
                 className={cn(
                   "-mb-px flex h-11 items-center border-b-2 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring rounded-t-md",
                   actual
-                    ? "border-success text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
+                    ? cn("border-success text-foreground", ACTIVO)
+                    : "border-transparent text-muted-foreground hover:text-foreground forced-colors:border-transparent",
                 )}
               >
                 {nombre}
@@ -275,7 +289,10 @@ export function Filtros<K extends string>({
           className={cn(
             "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 whitespace-nowrap text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring focus-visible:border-ring",
             actual === o.clave
-              ? "border-transparent bg-primary text-primary-foreground"
+              ? cn(
+                  "border-transparent bg-primary text-primary-foreground",
+                  ACTIVO,
+                )
               : "bg-card hover:bg-muted",
           )}
         >
@@ -290,14 +307,17 @@ export function Filtros<K extends string>({
 export function BadgePagos({ r }: { r: ResumenPagos }) {
   if (r.estado === "pagado")
     return (
-      <Badge variant="outline" className="border-success text-success">
+      <Badge
+        variant="outline"
+        className={cn(BADGE_LARGO, "border-success text-success")}
+      >
         <CircleCheckIcon aria-hidden="true" />
         Pagado
       </Badge>
     );
   if (r.estado === "atrasado")
     return (
-      <Badge variant="destructive">
+      <Badge variant="destructive" className={BADGE_LARGO}>
         <TriangleAlertIcon aria-hidden="true" />
         {r.vencidas === 1
           ? "1 cuota atrasada"
@@ -305,7 +325,7 @@ export function BadgePagos({ r }: { r: ResumenPagos }) {
       </Badge>
     );
   return (
-    <Badge variant="outline">
+    <Badge variant="outline" className={BADGE_LARGO}>
       <ClockIcon aria-hidden="true" />
       Al día
     </Badge>
@@ -336,11 +356,11 @@ export function ProgresoPagos({ r }: { r: ResumenPagos }) {
         aria-valuemax={r.total}
         aria-valuenow={r.pagadas}
         aria-valuetext={`${r.pagadas} de ${r.total} cuotas pagadas`}
-        className="h-2 overflow-hidden rounded-full bg-muted"
+        className="h-2 overflow-hidden rounded-full bg-muted forced-colors:border"
       >
         <div
           className={cn(
-            "h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none",
+            "h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none forced-colors:bg-[CanvasText] forced-colors:forced-color-adjust-none",
             r.estado === "atrasado" ? "bg-destructive" : "bg-success",
           )}
           style={{ width: `${porcentaje}%` }}
@@ -412,7 +432,7 @@ export function DialogoBorrarCliente({
       alCerrar();
     } catch (e) {
       toast.error("No se pudo borrar", {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeDeError(e),
       });
     } finally {
       setOcupado(false);
@@ -524,19 +544,14 @@ export function AreaTexto({
   );
 }
 
-/** Coincide con nombre, cédula, teléfono u otros textos, sin importar acentos. */
+/** Coincide con nombre, cédula, teléfono u otros textos, sin importar acentos ni el orden de las palabras. */
 export function coincide(busqueda: string, ...textos: string[]): boolean {
-  const n = (t: string) =>
-    t
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "")
-      .toLowerCase();
-  const q = n(busqueda.trim());
+  const q = normalizarBusqueda(busqueda);
   if (!q) return true;
   const digitos = q.replace(/\D/g, "");
-  return textos.some(
-    (t) =>
-      n(t).includes(q) ||
-      (digitos.length >= 3 && t.replace(/\D/g, "").includes(digitos)),
+  return (
+    contienePalabras(textos.join(" "), q) ||
+    (digitos.length >= 3 &&
+      textos.some((t) => t.replace(/\D/g, "").includes(digitos)))
   );
 }

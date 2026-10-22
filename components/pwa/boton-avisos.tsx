@@ -10,6 +10,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import {
   activarPush,
   desactivarPush,
@@ -85,7 +86,7 @@ export function BotonAvisos({ className }: { className?: string }) {
       }
     } catch (e) {
       toast.error("No se pudieron cambiar los avisos", {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeDeError(e),
       });
       refrescar();
     } finally {

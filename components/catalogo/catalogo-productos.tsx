@@ -19,6 +19,7 @@ import {
   escalonado,
   TARJETA_VIVA,
 } from "@/components/panel/animacion";
+import { ACTIVO } from "@/components/panel/estilos";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,12 @@ import { CantidadRapida } from "./cantidad-rapida";
 import { DialogoBorrar, nombreCompleto } from "./dialogo-borrar";
 import { DialogoMarcas } from "./dialogo-marcas";
 import { DialogoProducto } from "./dialogo-producto";
-import { formatearCuota, formatearMonto, normalizarBusqueda } from "./formato";
+import {
+  contienePalabras,
+  formatearCuota,
+  formatearMonto,
+  normalizarBusqueda,
+} from "./formato";
 import { useCatalogo } from "./use-catalogo";
 
 /**
@@ -201,9 +207,7 @@ function Lista({
     return productos.filter(
       (p) =>
         (!marca || p.marca === marca) &&
-        (!q ||
-          normalizarBusqueda(`${p.nombre} ${p.variante}`).includes(q) ||
-          normalizarBusqueda(nombreCompleto(p)).includes(q)),
+        (!q || contienePalabras(nombreCompleto(p), q)),
     );
   }, [productos, busqueda, marca]);
 
@@ -245,14 +249,14 @@ function Lista({
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
             <Button
               variant="outline"
-              className={cn("h-11 px-4")}
+              className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
               onClick={() => setMarcasAbierto(true)}
             >
               <TagsIcon aria-hidden="true" />
               Marcas
             </Button>
             <Button
-              className={cn("h-11 px-4")}
+              className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
               onClick={() => abrirEditar(null)}
             >
               <PlusIcon aria-hidden="true" />
@@ -263,6 +267,12 @@ function Lista({
       />
 
       <search className="grid gap-3">
+        {/* Anuncia cuántos quedan al filtrar: "Sin resultados" se pinta fuera de una región viva. */}
+        <p className="sr-only" aria-live="polite">
+          {busqueda.trim() || marca
+            ? `${filtrados.length} de ${plural(productos.length, "producto", "productos")} coinciden`
+            : ""}
+        </p>
         <div className="relative">
           <label htmlFor="buscar-producto" className="sr-only">
             Buscar por nombre o variante
@@ -318,7 +328,7 @@ function Lista({
           accion={
             <Button
               variant="outline"
-              className={cn("h-11 px-4")}
+              className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
               onClick={() => {
                 setBusqueda("");
                 setMarca(null);
@@ -403,7 +413,7 @@ function Chip({
       className={cn(
         "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 whitespace-nowrap text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring focus-visible:border-ring",
         activo
-          ? "border-transparent bg-primary text-primary-foreground"
+          ? cn("border-transparent bg-primary text-primary-foreground", ACTIVO)
           : "bg-card hover:bg-muted",
       )}
     >
@@ -478,7 +488,7 @@ function Acciones({
 
 function Tarjetas({ productos, alEditar, alBorrar }: PropsFilas) {
   return (
-    <ul className="grid gap-3 md:grid-cols-2 lg:hidden">
+    <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
       {productos.map((p, i) => (
         <li
           key={p.id}
@@ -492,7 +502,7 @@ function Tarjetas({ productos, alEditar, alBorrar }: PropsFilas) {
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="font-medium break-words">
+              <h3 className="font-medium wrap-anywhere">
                 {p.nombre}{" "}
                 {p.variante && (
                   <span className="text-muted-foreground">{p.variante}</span>

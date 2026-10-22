@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { parsearEntero } from "@/lib/catalogo/validacion";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import { cotizar, textoPrecio } from "@/lib/rcv/cotizacion";
 import { actualizarPlanRcv, crearPlanRcv } from "@/lib/rcv/repositorio";
 import {
@@ -154,7 +155,7 @@ function Formulario({
       alCambiarAbierto(false);
     } catch (err) {
       toast.error("No se pudo guardar", {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeDeError(err),
       });
       setGuardando(false);
     }

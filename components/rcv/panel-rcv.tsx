@@ -40,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import { cotizar, numeroEs, textoCop } from "@/lib/rcv/cotizacion";
 import {
   actualizarPlanRcv,
@@ -170,14 +171,14 @@ function Contenido({
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
             <Button
               variant="outline"
-              className={cn("h-11 px-4")}
+              className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
               onClick={() => setRequisitosAbierto(true)}
             >
               <ClipboardListIcon aria-hidden="true" />
               Requisitos
             </Button>
             <Button
-              className={cn("h-11 px-4")}
+              className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
               onClick={() => abrirEditar(null)}
             >
               <PlusIcon aria-hidden="true" />
@@ -386,13 +387,13 @@ function Tarjetas({ planes, tasas, alEditar, alBorrar }: PropsFilas) {
             )}
           >
             <div className="min-w-0">
-              <h3 className="font-medium break-words">
+              <h3 className="font-medium wrap-anywhere">
                 <span className="text-muted-foreground tabular-nums">
                   {p.orden}.
                 </span>{" "}
                 {p.clase}
               </h3>
-              <p className="text-sm break-words text-muted-foreground">
+              <p className="text-sm wrap-anywhere text-muted-foreground">
                 {p.descripcion}
               </p>
             </div>
@@ -513,7 +514,7 @@ function DialogoBorrarPlan({
       toast.error(
         accion === "borrar" ? "No se pudo borrar" : "No se pudo ocultar",
         {
-          description: e instanceof Error ? e.message : undefined,
+          description: mensajeDeError(e),
         },
       );
     } finally {

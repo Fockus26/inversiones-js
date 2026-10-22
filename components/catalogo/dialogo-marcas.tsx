@@ -30,6 +30,7 @@ import {
   renombrarMarca,
 } from "@/lib/catalogo/repositorio";
 import type { Marca } from "@/lib/catalogo/tipos";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import { cn } from "@/lib/utils";
 import { DIALOGO_CON_PIE_FIJO } from "./formato";
 
@@ -47,7 +48,7 @@ function productos(n: number) {
 }
 
 function mensajeDe(e: unknown) {
-  return e instanceof Error ? e.message : undefined;
+  return mensajeDeError(e);
 }
 
 /** Agregar, renombrar y borrar marcas. Cada fila se edita o se confirma en el mismo lugar. */
@@ -179,7 +180,7 @@ function Contenido({ marcas, conteo }: Props) {
             />
             <Button
               type="submit"
-              className={cn("h-11 px-4")}
+              className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
               disabled={ocupado}
             >
               <PlusIcon aria-hidden="true" />

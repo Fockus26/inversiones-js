@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import { textoPrecio } from "@/lib/rcv/cotizacion";
 import { borrarSolicitudRcv } from "@/lib/rcv/repositorio";
 import { NOMBRES_CATEGORIA, type SolicitudRcvConId } from "@/lib/rcv/tipos";
@@ -63,7 +64,7 @@ export function Solicitudes({
       setBorrando(null);
     } catch (e) {
       toast.error("No se pudo borrar", {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeDeError(e),
       });
     } finally {
       setOcupado(false);
@@ -86,7 +87,7 @@ export function Solicitudes({
           texto="Cuando alguien pida una póliza por WhatsApp, aquí verás su nombre, correo, teléfono y el plan que eligió."
         />
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {solicitudes.map((s, i) => (
             <li
               key={s.id}
@@ -99,7 +100,7 @@ export function Solicitudes({
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <h3 className="font-medium break-words">{s.nombre}</h3>
+                  <h3 className="font-medium wrap-anywhere">{s.nombre}</h3>
                   {s.creadoEn && (
                     <p className="text-xs text-muted-foreground">
                       <time
@@ -138,7 +139,7 @@ export function Solicitudes({
                 <strong>{s.clase}</strong> — {s.descripcion}
               </p>
               {s.vehiculo && (
-                <p className="break-words">
+                <p className="wrap-anywhere">
                   <span className="text-muted-foreground">Vehículo: </span>
                   {s.vehiculo}
                 </p>
@@ -181,10 +182,11 @@ export function Solicitudes({
                 variant="outline"
                 className={cn("h-11 justify-self-start px-3")}
                 onClick={() => setRegistrando(s)}
-                aria-label={`Registrar a ${s.nombre} como cliente de póliza`}
               >
                 <UserPlusIcon aria-hidden="true" />
-                <span aria-hidden="true">Registrar cliente</span>
+                {/* El texto visible va primero en el nombre accesible (WCAG 2.5.3, control por voz). */}
+                Registrar cliente
+                <span className="sr-only">: {s.nombre}</span>
               </Button>
             </li>
           ))}

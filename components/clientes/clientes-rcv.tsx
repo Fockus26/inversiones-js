@@ -50,7 +50,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { type ResumenPagos, resumenPagos } from "@/lib/financiamiento/cuotas";
-import { fechaCorta, hoyCaracas } from "@/lib/financiamiento/fechas";
+import {
+  FECHA_MINIMA,
+  fechaCorta,
+  hoyCaracas,
+} from "@/lib/financiamiento/fechas";
 import {
   DIAS_AVISO_FINAL,
   DIAS_AVISO_MES,
@@ -75,9 +79,11 @@ import {
   LIMITES_CLIENTE,
   validarClienteRcv,
 } from "@/lib/financiamiento/validacion";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import { cn } from "@/lib/utils";
 import {
   AreaTexto,
+  BADGE_LARGO,
   BadgePagos,
   Buscador,
   Campo,
@@ -153,6 +159,11 @@ function Contenido({ clientes }: { clientes: ClienteRcvConId[] }) {
     (f) => f.poliza.tipo === "vigente" || f.poliza.tipo === "por-vencer",
   ).length;
   const conCuotas = clientes.find((c) => c.id === cuotasDe) ?? null;
+  // El diálogo trabaja con la versión en vivo: si otra pestaña (o el bot) cambia cuotas o
+  // avisos mientras está abierto, guardar no los pisa con la foto de cuando se abrió.
+  const editandoVivo = editando
+    ? (clientes.find((c) => c.id === editando.id) ?? editando)
+    : null;
 
   function abrir(c: ClienteRcvConId | null) {
     setEditando(c);
@@ -164,7 +175,10 @@ function Contenido({ clientes }: { clientes: ClienteRcvConId[] }) {
       <Encabezado
         resumen={`${clientes.length} ${clientes.length === 1 ? "cliente" : "clientes"} con póliza RCV`}
         accion={
-          <Button className={cn("h-11 px-4")} onClick={() => abrir(null)}>
+          <Button
+            className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
+            onClick={() => abrir(null)}
+          >
             <PlusIcon aria-hidden="true" />
             Nuevo cliente
           </Button>
@@ -201,6 +215,12 @@ function Contenido({ clientes }: { clientes: ClienteRcvConId[] }) {
       </p>
 
       <search className="grid gap-3">
+        {/* Anuncia cuántos quedan al filtrar: "Sin resultados" se pinta fuera de una región viva. */}
+        <p className="sr-only" aria-live="polite">
+          {busqueda.trim() || filtro !== "todos"
+            ? `${visibles.length} de ${clientes.length} clientes coinciden`
+            : ""}
+        </p>
         <Buscador
           id="buscar-cliente-rcv"
           etiqueta="Buscar por nombre, cédula, teléfono o placa"
@@ -247,7 +267,7 @@ function Contenido({ clientes }: { clientes: ClienteRcvConId[] }) {
           accion={
             <Button
               variant="outline"
-              className={cn("h-11 px-4")}
+              className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
               onClick={() => {
                 setBusqueda("");
                 setFiltro("todos");
@@ -258,7 +278,7 @@ function Contenido({ clientes }: { clientes: ClienteRcvConId[] }) {
           }
         />
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {visibles.map((f, i) => (
             <Tarjeta
               key={f.c.id}
@@ -276,7 +296,7 @@ function Contenido({ clientes }: { clientes: ClienteRcvConId[] }) {
       <DialogoClienteRcv
         abierto={dialogoAbierto}
         alCambiarAbierto={setDialogoAbierto}
-        cliente={editando}
+        cliente={editandoVivo}
       />
       <DialogoCuotas
         coleccion={COLECCION_CLIENTES_RCV}
@@ -312,21 +332,21 @@ function peso(p: EstadoPoliza): number {
 function BadgePoliza({ p, vence }: { p: EstadoPoliza; vence: string | null }) {
   if (p.tipo === "sin-emitir")
     return (
-      <Badge variant="outline">
+      <Badge variant="outline" className={BADGE_LARGO}>
         <FileClockIcon aria-hidden="true" />
         Sin emitir
       </Badge>
     );
   if (p.tipo === "vencida")
     return (
-      <Badge variant="destructive">
+      <Badge variant="destructive" className={BADGE_LARGO}>
         <CalendarXIcon aria-hidden="true" />
         Vencida hace {p.dias} {p.dias === 1 ? "día" : "días"}
       </Badge>
     );
   if (p.tipo === "por-vencer")
     return (
-      <Badge>
+      <Badge className={BADGE_LARGO}>
         <CalendarClockIcon aria-hidden="true" />
         {p.dias === 0
           ? "Vence hoy"
@@ -334,7 +354,10 @@ function BadgePoliza({ p, vence }: { p: EstadoPoliza; vence: string | null }) {
       </Badge>
     );
   return (
-    <Badge variant="outline" className="border-success text-success">
+    <Badge
+      variant="outline"
+      className={cn(BADGE_LARGO, "border-success text-success")}
+    >
       <CalendarCheckIcon aria-hidden="true" />
       Vigente hasta {vence ? fechaCorta(vence) : "—"}
     </Badge>
@@ -366,7 +389,7 @@ function Tarjeta({
     <li
       style={escalonado(indice)}
       className={cn(
-        "grid content-start gap-3 rounded-xl border bg-card p-4 text-card-foreground",
+        "grid min-w-0 grid-cols-1 content-start gap-3 rounded-xl border bg-card p-4 text-card-foreground",
         ENTRADA,
         TARJETA_VIVA,
         (poliza.tipo === "vencida" || pagos?.estado === "atrasado") &&
@@ -376,8 +399,8 @@ function Tarjeta({
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="font-medium break-words">{c.nombre}</h2>
-          <p className="text-sm break-words text-muted-foreground">
+          <h2 className="font-medium wrap-anywhere">{c.nombre}</h2>
+          <p className="text-sm wrap-anywhere text-muted-foreground">
             {c.vehiculo}
             {c.placa && ` · Placa ${c.placa}`}
             {c.cedula && ` · ${c.cedula}`}
@@ -404,7 +427,7 @@ function Tarjeta({
         <p className="text-xs text-muted-foreground">Pagada de contado.</p>
       )}
       {c.notas && (
-        <p className="text-xs break-words whitespace-pre-line text-muted-foreground">
+        <p className="text-xs wrap-anywhere whitespace-pre-line text-muted-foreground">
           {c.notas}
         </p>
       )}
@@ -413,7 +436,7 @@ function Tarjeta({
           <Button
             className={cn("h-11 px-3")}
             onClick={alEditar}
-            aria-label={`Confirmar la póliza de ${c.nombre}`}
+            aria-label={`Confirmar póliza de ${c.nombre}`}
           >
             <CalendarCheckIcon aria-hidden="true" />
             <span aria-hidden="true">Confirmar póliza</span>
@@ -423,7 +446,7 @@ function Tarjeta({
           <Button
             className={cn("h-11 px-3")}
             onClick={alRenovar}
-            aria-label={`Renovar la póliza de ${c.nombre}`}
+            aria-label={`Renovar póliza de ${c.nombre}`}
           >
             <RefreshCwIcon aria-hidden="true" />
             <span aria-hidden="true">Renovar</span>
@@ -488,7 +511,7 @@ function DialogoRenovar({
       alCerrar();
     } catch (e) {
       toast.error("No se pudo renovar", {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeDeError(e),
       });
     } finally {
       setOcupado(false);
@@ -657,7 +680,7 @@ function FormularioRcv({
       alCambiarAbierto(false);
     } catch (err) {
       toast.error("No se pudo guardar", {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeDeError(err),
       });
       setGuardando(false);
     }
@@ -736,6 +759,7 @@ function FormularioRcv({
         <Campo
           etiqueta="Fecha de emisión de la póliza"
           type="date"
+          min={FECHA_MINIMA}
           max={hoy}
           ayuda={
             vence
