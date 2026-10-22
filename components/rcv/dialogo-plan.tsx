@@ -45,6 +45,8 @@ interface Props {
   plan: PlanRcvConId | null;
   /** Posición para uno nuevo (último + 1). */
   ordenNuevo: number;
+  /** Todos los transportes: dos no pueden compartir posición en la lista. */
+  planes: readonly PlanRcvConId[];
   tasas: TasasRcv | null;
   alPedirBorrar: (plan: PlanRcvConId) => void;
 }
@@ -98,6 +100,7 @@ const ORDEN_CAMPOS: Campo[] = [
 function Formulario({
   plan,
   ordenNuevo,
+  planes,
   tasas,
   alCambiarAbierto,
   alPedirBorrar,
@@ -112,11 +115,19 @@ function Formulario({
 
   const resultado = validarPlanRcv(form);
   const ordenValor = parsearEntero(orden);
+  const ocupada =
+    ordenValor === null
+      ? undefined
+      : planes.find((p) => p.orden === ordenValor && p.id !== plan?.id);
   const errores: Partial<Record<Campo, string>> = {
     ...(resultado.ok ? {} : resultado.errores),
     ...(ordenValor === null || ordenValor < 1
       ? { orden: "Usa un número entero desde 1." }
-      : {}),
+      : ocupada
+        ? {
+            orden: `Esa posición ya la tiene «${ocupada.clase}». Elige otra (la siguiente libre es ${ordenNuevo}).`,
+          }
+        : {}),
   };
   const errorVisible = (c: Campo) =>
     intentado || tocados.has(c) ? errores[c] : undefined;
@@ -133,7 +144,7 @@ function Formulario({
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     setIntentado(true);
-    if (!resultado.ok || ordenValor === null || ordenValor < 1) {
+    if (!resultado.ok || ordenValor === null || ordenValor < 1 || ocupada) {
       const primero = ORDEN_CAMPOS.find((c) => errores[c]);
       if (primero)
         formRef.current

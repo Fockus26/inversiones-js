@@ -419,7 +419,7 @@ function EstadoAutomatica({
       </div>
     );
   return (
-    <p className="grid min-h-11 content-center gap-0.5 rounded-lg bg-accent px-3 py-2 text-sm text-accent-foreground">
+    <p className="grid min-h-11 max-w-prose content-center gap-0.5 rounded-lg bg-accent px-3 py-2 text-sm text-accent-foreground">
       <span>
         <strong className="tabular-nums">{valor}</strong> por euro, {fuente}
         {fecha ? ` del ${fechaCorta.format(fecha)}` : ""}.

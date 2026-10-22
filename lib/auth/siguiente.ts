@@ -4,6 +4,13 @@ export const RUTA_INICIO_PANEL = "/productos";
 /** Valor de `?aviso=` con el que el panel manda al login a una cuenta que no es admin. */
 export const AVISO_SIN_ACCESO = "sin-acceso";
 
+/** `?aviso=` cuando la sesión se cerró sin que el usuario saliera aquí (otra pestaña, caducó). */
+export const AVISO_SESION_CERRADA = "sesion-cerrada";
+
+export function urlLoginSesionCerrada(ruta: string): string {
+  return `/login?aviso=${AVISO_SESION_CERRADA}&siguiente=${encodeURIComponent(ruta)}`;
+}
+
 /** Tab, saltos de línea y demás caracteres de control: el navegador los ignora al resolver URLs. */
 function tieneControl(valor: string): boolean {
   for (const c of valor) {

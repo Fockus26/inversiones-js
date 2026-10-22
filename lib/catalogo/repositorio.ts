@@ -12,12 +12,11 @@ import {
   serverTimestamp,
   setDoc,
   Timestamp,
-  updateDoc,
   where,
   writeBatch,
 } from "firebase/firestore";
 import { firebaseAuth, firestore } from "@/lib/firebase/client";
-import { escribir } from "@/lib/firebase/escritura";
+import { actualizar, escribir } from "@/lib/firebase/escritura";
 import {
   type CamposEditables,
   COLECCION_MARCAS,
@@ -106,12 +105,10 @@ export async function actualizarProducto(
     limpio.cantidad = Math.trunc(limpio.cantidad);
   if (limpio.numeroCuotas !== undefined)
     limpio.numeroCuotas = Math.trunc(limpio.numeroCuotas);
-  await escribir(
-    updateDoc(doc(firestore(), COLECCION_PRODUCTOS, id), {
-      ...limpio,
-      ...huella(),
-    }),
-  );
+  await actualizar(doc(firestore(), COLECCION_PRODUCTOS, id), {
+    ...limpio,
+    ...huella(),
+  });
 }
 
 export async function borrarProducto(id: string): Promise<void> {

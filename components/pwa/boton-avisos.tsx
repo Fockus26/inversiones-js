@@ -156,7 +156,7 @@ export function BotonInstalar({ className }: { className?: string }) {
       }}
     >
       <DownloadIcon aria-hidden="true" className="size-5" />
-      <span className="max-[480px]:sr-only">Instalar</span>
+      <span className="max-movil:sr-only">Instalar</span>
     </Button>
   );
 }

@@ -20,7 +20,11 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { codigoDeError, mensajeDeErrorAuth } from "@/lib/auth/errores";
 import { useSesion } from "@/lib/auth/sesion";
-import { AVISO_SIN_ACCESO, rutaSiguienteSegura } from "@/lib/auth/siguiente";
+import {
+  AVISO_SESION_CERRADA,
+  AVISO_SIN_ACCESO,
+  rutaSiguienteSegura,
+} from "@/lib/auth/siguiente";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +52,11 @@ export function FormularioLogin() {
   const [error, setError] = useState<string | null>(
     parametros.get("aviso") === AVISO_SIN_ACCESO ? MENSAJE_SIN_ACCESO : null,
   );
-  const [aviso, setAviso] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(
+    parametros.get("aviso") === AVISO_SESION_CERRADA
+      ? "Tu sesión se cerró (quizá desde otra pestaña). Lo que no alcanzaste a guardar no se guardó: entra de nuevo y revísalo."
+      : null,
+  );
   // Bloqueo síncrono contra doble clic (el estado de React llega un render tarde).
   const ocupado = useRef(false);
   const id = useId();

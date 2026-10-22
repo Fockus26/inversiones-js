@@ -9,10 +9,9 @@ import {
   serverTimestamp,
   setDoc,
   Timestamp,
-  updateDoc,
 } from "firebase/firestore";
 import { firebaseAuth, firestore } from "@/lib/firebase/client";
-import { escribir } from "@/lib/firebase/escritura";
+import { actualizar, escribir } from "@/lib/firebase/escritura";
 import { conTextos, esPlanPagos } from "@/lib/firebase/normalizar";
 import {
   actualizarDemo,
@@ -133,12 +132,10 @@ export async function actualizarClienteCelular(
 ): Promise<void> {
   if (modoDemo())
     return actualizarDemo(COLECCION_CLIENTES_CELULARES, id, campos);
-  await escribir(
-    updateDoc(doc(firestore(), COLECCION_CLIENTES_CELULARES, id), {
-      ...campos,
-      ...huella(),
-    }),
-  );
+  await actualizar(doc(firestore(), COLECCION_CLIENTES_CELULARES, id), {
+    ...campos,
+    ...huella(),
+  });
 }
 
 export async function crearClienteRcv(campos: CamposClienteRcv): Promise<void> {
@@ -156,12 +153,10 @@ export async function actualizarClienteRcv(
   campos: Partial<CamposClienteRcv>,
 ): Promise<void> {
   if (modoDemo()) return actualizarDemo(COLECCION_CLIENTES_RCV, id, campos);
-  await escribir(
-    updateDoc(doc(firestore(), COLECCION_CLIENTES_RCV, id), {
-      ...campos,
-      ...huella(),
-    }),
-  );
+  await actualizar(doc(firestore(), COLECCION_CLIENTES_RCV, id), {
+    ...campos,
+    ...huella(),
+  });
 }
 
 export async function borrarCliente(
@@ -179,10 +174,8 @@ export async function guardarCuotas(
   cuotas: Cuota[],
 ): Promise<void> {
   if (modoDemo()) return guardarCuotasDemo(coleccion, id, cuotas);
-  await escribir(
-    updateDoc(doc(firestore(), coleccion, id), {
-      "pagos.cuotas": cuotas,
-      ...huella(),
-    }),
-  );
+  await actualizar(doc(firestore(), coleccion, id), {
+    "pagos.cuotas": cuotas,
+    ...huella(),
+  });
 }

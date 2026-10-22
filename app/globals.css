@@ -5,6 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Cortes para teléfonos, por debajo de sm (640): uno para lo mínimo (320–359) y otro para
+     esconder textos de botones en la cabecera. Sustituyen los max-[…px] sueltos. */
+  --breakpoint-xs: 22.5rem;
+  --breakpoint-movil: 30rem;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -170,6 +174,18 @@
  * el sistema dibuja su barra superpuesta y no aplica nada de esto. */
 html {
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+/* Pantallas 2K/4K: todo el panel escala con la raíz (rem) en vez de quedar como una columna
+   pequeña en el centro. Respeta igual el tamaño de letra que elija el usuario. */
+@media (min-width: 2400px) {
+  html {
+    font-size: 125%;
+  }
+}
+@media (min-width: 3400px) {
+  html {
+    font-size: 175%;
+  }
 }
 ::-webkit-scrollbar {
   width: 14px;

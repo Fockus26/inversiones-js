@@ -279,7 +279,7 @@ function Formulario({
 
         {/* Dos columnas también en el teléfono: son cuatro números cortos y así se ve todo
           el precio sin desplazarse. Solo a menos de 360 px se apilan. */}
-        <div className="grid grid-cols-2 items-start gap-4 max-[359px]:grid-cols-1">
+        <div className="grid grid-cols-2 items-start gap-4 max-xs:grid-cols-1">
           {campoTexto("inicial", "Inicial ($)", {
             inputMode: "decimal",
             placeholder: "p. ej. 125",

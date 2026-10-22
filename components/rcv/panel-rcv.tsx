@@ -245,6 +245,7 @@ function Contenido({
         alCambiarAbierto={setDialogoAbierto}
         plan={editando}
         ordenNuevo={ordenNuevo}
+        planes={planes}
         tasas={tasas}
         alPedirBorrar={(p) => {
           setDialogoAbierto(false);
