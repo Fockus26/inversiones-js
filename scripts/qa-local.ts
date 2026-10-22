@@ -43,6 +43,35 @@ const sembrar = !args.includes("--no-seed");
 if (!PROYECTO.startsWith("demo-"))
   throw new Error("La QA solo corre contra demo-*");
 
+// 0. Chromium de Playwright (wave-qa lo necesita). En la nube viene instalado: no se baja.
+try {
+  const { chromium } = await import("@playwright/test");
+  if (!existsSync(chromium.executablePath())) {
+    if (process.env.CLAUDE_CODE_REMOTE === "true") {
+      console.warn(
+        "! El Chromium de Playwright no está donde lo espera (nube: no se descarga).",
+      );
+    } else {
+      console.log(
+        "… Falta el Chromium de Playwright: instalándolo (una vez por máquina)",
+      );
+      const r = spawnSync(
+        process.execPath,
+        ["node_modules/@playwright/test/cli.js", "install", "chromium"],
+        { stdio: "inherit" },
+      );
+      if (r.status !== 0)
+        console.warn(
+          "! Falló: node node_modules/@playwright/test/cli.js install chromium",
+        );
+    }
+  }
+} catch {
+  console.warn(
+    "! El proyecto no tiene @playwright/test: wave-qa no podrá abrir un navegador.",
+  );
+}
+
 function leerEnv(archivo: string): Record<string, string> {
   if (!existsSync(archivo)) return {};
   const salida: Record<string, string> = {};

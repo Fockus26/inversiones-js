@@ -10,7 +10,7 @@
     "format": "biome format --write",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "bun test ./tests/unit --pass-with-no-tests",
-    "test:related": "bun scripts/test-related.ts",
+    "test:related": "bun scripts/test-related.ts --dir=tests/unit",
     "shots": "node scripts/pr-screenshots.ts .pr-shots.json",
     "shots:publish": "bash scripts/publish-pr-shots.sh .pr-shots",
     "context:backup": "bash scripts/context-backup.sh",

@@ -74,9 +74,9 @@ Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/di
 - Lo local (gitignored): `CURRENT_PHASE`, `CONTENT_CHECKLIST`, `PHASE_LOG/`, `plans/` — respaldo: `bun run context:backup`.
   `.env.local` se baja de Vercel, nunca se edita a mano (`vercel env pull`; `reference/DEPLOY.md` §2c del kit).
   Los slots del pool de worktrees (`orchestrate`, `..\inversiones-js-wt\wtN`) traen los
-  `.env*` copiados, pero **no** `context/` local: se lee en la carpeta principal
-  (`C:\Users\Admin\Documents\Work\inversiones-js`). Si un subagente en un slot no puede
-  escribir ahí, lo devuelve en su informe y el orquestador lo copia.
+  `.env*` copiados, pero **no** `context/` local: se lee en la carpeta principal (primera
+  línea de `git worktree list`). Desde un worktree (slot del pool o `.claude/worktrees/`)
+  puede faltar permiso de escritura ahí: devuelve los cambios de `context/` en tu informe.
 
 ## Feedback para el kit
 
