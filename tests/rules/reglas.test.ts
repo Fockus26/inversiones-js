@@ -76,7 +76,8 @@ beforeAll(async () => {
       ),
     },
   });
-});
+  // Con el emulador recién levantado, cargar las reglas pasa de los 5 s por defecto de bun.
+}, 30_000);
 
 beforeEach(async () => {
   await entorno.clearFirestore();
@@ -556,6 +557,8 @@ describe("clientes con financiamiento (D032)", () => {
       ["f", rcv({ recordatorio30: "si" })],
       ["g", rcv({ vehiculo: "" })],
       ["h", rcv({ placa: "X".repeat(13) })],
+      // D042: año de dos dígitos tecleado en el selector de fecha.
+      ["i", rcv({ emision: "0026-10-28", vence: "0027-10-28" })],
     ] as const)
       await assertFails(setDoc(col(id), { ...malo, ...huella(ADMIN) }));
     await assertFails(getDoc(doc(dbOtro(), "clientesRcv", "a")));

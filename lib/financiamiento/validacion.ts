@@ -1,6 +1,6 @@
 import { parsearEntero, parsearMonto } from "@/lib/catalogo/validacion";
 import { conservarPagos, generarCuotas } from "./cuotas";
-import { esFecha } from "./fechas";
+import { esFecha, fechaEnRango, hoyCaracas } from "./fechas";
 import { venceDe, whatsappDe } from "./poliza";
 import {
   type CamposClienteCelular,
@@ -64,6 +64,9 @@ export interface FormularioClienteRcv extends FormularioPagos {
   financiado: boolean;
 }
 
+const FUERA_DE_RANGO =
+  "Revisa el año: la fecha debe estar entre 2020 y dos años desde hoy.";
+
 type Errores<C extends string> = Partial<Record<C, string>>;
 
 export type Resultado<T, C extends string> =
@@ -88,7 +91,11 @@ function texto<C extends string>(
 function telefono(errores: { telefono?: string }, valor: string): string {
   const limpio = espacios(valor);
   if (!limpio) errores.telefono = "Escribe el teléfono, p. ej. 0414-1234567.";
-  else if (limpio.length > LIMITES_CLIENTE.telefonoMax || !whatsappDe(limpio))
+  else if (
+    limpio.length > LIMITES_CLIENTE.telefonoMax ||
+    /[^\d\s+().-]/.test(limpio) ||
+    !whatsappDe(limpio)
+  )
     errores.telefono =
       "No parece un número válido. Escríbelo con el código de área, p. ej. 0414-1234567.";
   return limpio;
@@ -99,6 +106,7 @@ function pagos(
   errores: Errores<CampoPagos>,
   f: FormularioPagos,
   previo: PlanPagos | null,
+  hoy: string,
 ): PlanPagos | null {
   const inicial = f.inicial.trim() === "" ? 0 : parsearMonto(f.inicial);
   if (inicial === null)
@@ -114,13 +122,16 @@ function pagos(
 
   const numero = parsearEntero(f.numeroCuotas);
   if (numero === null || numero < 1 || numero > LIMITES_CLIENTE.cuotasMax)
-    errores.numeroCuotas = `Usa un número entero entre 1 y ${LIMITES_CLIENTE.cuotasMax}.`;
+    errores.numeroCuotas = /^\d+[.,]\d+$/.test(f.numeroCuotas.trim())
+      ? "Usa un número entero, sin decimales."
+      : `Usa un número entero entre 1 y ${LIMITES_CLIENTE.cuotasMax}.`;
 
   if (!FRECUENCIAS.includes(f.frecuencia))
     errores.frecuencia = "Elige cada cuánto paga.";
 
   if (!esFecha(f.primera))
     errores.primera = "Elige la fecha de la primera cuota.";
+  else if (!fechaEnRango(f.primera, hoy)) errores.primera = FUERA_DE_RANGO;
 
   if (
     inicial === null ||
@@ -140,6 +151,7 @@ function pagos(
 export function validarClienteCelular(
   f: FormularioClienteCelular,
   previo: PlanPagos | null = null,
+  hoy: string = hoyCaracas(),
 ): Resultado<CamposClienteCelular, keyof FormularioClienteCelular> {
   const errores: Errores<keyof FormularioClienteCelular> = {};
   const L = LIMITES_CLIENTE;
@@ -150,7 +162,8 @@ export function validarClienteCelular(
     L.nombreMax,
     "Escribe el nombre del cliente.",
   );
-  const cedula = texto(errores, "cedula", f.cedula, L.cedulaMax).toUpperCase();
+  // Mayúsculas antes de medir: "ß" pasa a "SS" y la regla mide el texto final.
+  const cedula = texto(errores, "cedula", f.cedula.toUpperCase(), L.cedulaMax);
   const tel = telefono(errores, f.telefono);
   const equipo = texto(
     errores,
@@ -162,7 +175,7 @@ export function validarClienteCelular(
   const notas = f.notas.trim();
   if (notas.length > L.notasMax)
     errores.notas = `Máximo ${L.notasMax} caracteres.`;
-  const plan = pagos(errores, f, previo);
+  const plan = pagos(errores, f, previo, hoy);
   if (!plan || Object.keys(errores).length > 0) return { ok: false, errores };
   return {
     ok: true,
@@ -176,6 +189,7 @@ export function validarClienteRcv(
     ClienteRcv,
     "emision" | "recordatorio30" | "recordatorio3" | "pagos"
   > | null = null,
+  hoy: string = hoyCaracas(),
 ): Resultado<CamposClienteRcv, keyof FormularioClienteRcv> {
   const errores: Errores<keyof FormularioClienteRcv> = {};
   const L = LIMITES_CLIENTE;
@@ -186,7 +200,8 @@ export function validarClienteRcv(
     L.nombreMax,
     "Escribe el nombre del cliente.",
   );
-  const cedula = texto(errores, "cedula", f.cedula, L.cedulaMax).toUpperCase();
+  // Mayúsculas antes de medir: "ß" pasa a "SS" y la regla mide el texto final.
+  const cedula = texto(errores, "cedula", f.cedula.toUpperCase(), L.cedulaMax);
   const tel = telefono(errores, f.telefono);
   const correo = espacios(f.correo).toLowerCase();
   if (correo && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(correo))
@@ -197,11 +212,11 @@ export function validarClienteRcv(
   const vehiculo = texto(
     errores,
     "vehiculo",
-    f.vehiculo,
+    f.vehiculo.toLocaleUpperCase("es"),
     L.vehiculoMax,
     "Escribe el vehículo o el plan.",
-  ).toLocaleUpperCase("es");
-  const placa = texto(errores, "placa", f.placa, L.placaMax).toUpperCase();
+  );
+  const placa = texto(errores, "placa", f.placa.toUpperCase(), L.placaMax);
   const notas = f.notas.trim();
   if (notas.length > L.notasMax)
     errores.notas = `Máximo ${L.notasMax} caracteres.`;
@@ -209,9 +224,14 @@ export function validarClienteRcv(
   const emision = f.emision.trim() === "" ? null : f.emision.trim();
   if (emision !== null && !esFecha(emision))
     errores.emision = "Elige una fecha válida o déjala vacía.";
+  else if (emision !== null && !fechaEnRango(emision, hoy))
+    errores.emision = FUERA_DE_RANGO;
+  // Una renovación deja la emisión en el vencimiento anterior (futuro): se respeta al editar.
+  else if (emision !== null && emision > hoy && previo?.emision !== emision)
+    errores.emision = "La póliza no puede emitirse después de hoy.";
 
   let plan: PlanPagos | null = null;
-  if (f.financiado) plan = pagos(errores, f, previo?.pagos ?? null);
+  if (f.financiado) plan = pagos(errores, f, previo?.pagos ?? null, hoy);
 
   if (Object.keys(errores).length > 0 || (f.financiado && !plan))
     return { ok: false, errores };

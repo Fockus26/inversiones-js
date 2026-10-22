@@ -4,9 +4,11 @@ import { LoaderCircleIcon, RefreshCwIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { haceCuanto } from "@/components/catalogo/formato";
+import { ACTIVO } from "@/components/panel/estilos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import { cotizar, numeroEs, textoPrecio } from "@/lib/rcv/cotizacion";
 import { guardarTasas } from "@/lib/rcv/repositorio";
 import {
@@ -131,7 +133,7 @@ export function Tasas({
       setIntentado(false);
     } catch (err) {
       toast.error("No se pudieron guardar las tasas", {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeDeError(err),
       });
     } finally {
       setGuardando(false);
@@ -335,7 +337,7 @@ function FilaTasa<F extends string>({
         <span
           aria-hidden="true"
           className={cn(
-            "absolute inset-y-1 left-1 w-[calc(50%-0.375rem)] rounded-lg bg-card shadow-sm transition-transform duration-300 ease-out motion-reduce:transition-none",
+            "absolute inset-y-1 left-1 w-[calc(50%-0.375rem)] rounded-lg border border-input bg-card shadow-sm transition-transform duration-300 ease-out motion-reduce:transition-none",
             esManual && "translate-x-[calc(100%+0.25rem)]",
           )}
         />
@@ -345,7 +347,7 @@ function FilaTasa<F extends string>({
             className={cn(
               "relative flex h-11 cursor-pointer items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring",
               fuente === o.valor
-                ? "text-card-foreground"
+                ? cn("text-card-foreground", ACTIVO)
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

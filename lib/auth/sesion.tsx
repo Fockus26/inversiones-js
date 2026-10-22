@@ -1,7 +1,7 @@
 "use client";
 
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import {
   createContext,
   useCallback,
@@ -15,8 +15,9 @@ import { COLECCION_ADMINS } from "@/lib/catalogo/tipos";
 import { firebaseAuth, firestore } from "@/lib/firebase/client";
 
 /**
- * Sesión del panel (D010). Escucha Firebase Auth y, si hay usuario, comprueba que exista
- * `admins/{uid}` (las reglas solo le dejan leer el suyo). Es comodidad de UI: la barrera real
+ * Sesión del panel (D010). Escucha Firebase Auth y, si hay usuario, escucha `admins/{uid}`
+ * (las reglas solo le dejan leer el suyo): si le quitan el acceso con el panel abierto, pasa a
+ * "sin-acceso" sin esperar a que recargue. Es comodidad de UI: la barrera real
  * son las reglas de Firestore (D003). Se monta en `app/(panel)/layout.tsx` y en `/login`.
  */
 
@@ -48,11 +49,14 @@ export function SesionProvider({ children }: { children: React.ReactNode }) {
   const motivoPendiente = useRef<MotivoSalida>(null);
 
   useEffect(() => {
-    // Cada cambio de usuario invalida la comprobación anterior (evita carreras si se sale
-    // mientras getDoc sigue en vuelo).
+    // Cada cambio de usuario invalida la escucha anterior (evita carreras si se sale
+    // mientras la primera lectura sigue en vuelo).
     let turno = 0;
-    const cancelar = onAuthStateChanged(firebaseAuth(), async (usuario) => {
+    let dejarDeEscuchar: (() => void) | null = null;
+    const cancelar = onAuthStateChanged(firebaseAuth(), (usuario) => {
       const miTurno = ++turno;
+      dejarDeEscuchar?.();
+      dejarDeEscuchar = null;
       if (!usuario) {
         setInterno({
           estado: "fuera",
@@ -63,30 +67,31 @@ export function SesionProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       setInterno({ estado: "cargando", usuario, motivoSalida: null });
-      let esAdmin = false;
-      try {
-        const ficha = await getDoc(
-          doc(firestore(), COLECCION_ADMINS, usuario.uid),
-        );
-        esAdmin = ficha.exists();
-      } catch (error) {
-        // Sin poder comprobarlo, lo conservador es no dejar pasar (D010). Se registra el
-        // motivo porque, si no, se confunde con "no es admin".
-        console.error(
-          `[sesion] No se pudo comprobar admins/${usuario.uid}:`,
-          error,
-        );
-        esAdmin = false;
-      }
-      if (miTurno !== turno) return;
-      setInterno({
-        estado: esAdmin ? "admin" : "sin-acceso",
-        usuario,
-        motivoSalida: null,
-      });
+      const fijar = (esAdmin: boolean) => {
+        if (miTurno !== turno) return;
+        setInterno({
+          estado: esAdmin ? "admin" : "sin-acceso",
+          usuario,
+          motivoSalida: null,
+        });
+      };
+      dejarDeEscuchar = onSnapshot(
+        doc(firestore(), COLECCION_ADMINS, usuario.uid),
+        (ficha) => fijar(ficha.exists()),
+        (error) => {
+          // Sin poder comprobarlo, lo conservador es no dejar pasar (D010). Se registra el
+          // motivo porque, si no, se confunde con "no es admin".
+          console.error(
+            `[sesion] No se pudo comprobar admins/${usuario.uid}:`,
+            error,
+          );
+          fijar(false);
+        },
+      );
     });
     return () => {
       turno++;
+      dejarDeEscuchar?.();
       cancelar();
     };
   }, []);

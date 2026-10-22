@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { actualizarProducto } from "@/lib/catalogo/repositorio";
 import { LIMITES, validarCantidad } from "@/lib/catalogo/validacion";
+import { mensajeDeError } from "@/lib/firebase/errores";
 import { cn } from "@/lib/utils";
 
 /** Espera tras el último toque antes de guardar; salir del campo guarda en el acto. */
@@ -85,7 +86,7 @@ export function CantidadRapida({
         setTexto(String(anterior));
         setEstado("error");
         toast.error(`No se guardó la cantidad de ${nombre}`, {
-          description: e instanceof Error ? e.message : undefined,
+          description: mensajeDeError(e),
         });
       }
     },
@@ -231,7 +232,9 @@ export function CantidadRapida({
         {valido === null ? (
           <span className="flex items-center gap-1 text-destructive">
             <CircleAlertIcon className="size-3.5" aria-hidden="true" />
-            <span className="texto">Usa un número entero</span>
+            <span className="texto">
+              Usa un entero de 0 a {LIMITES.cantidadMax}
+            </span>
           </span>
         ) : estado === "guardando" ? (
           <>

@@ -82,7 +82,13 @@ function validarEntero(
 ): { valor: number } | { error: string } {
   if (texto.trim() === "") return { error: vacio };
   const n = parsearEntero(texto);
-  if (n === null) return { error: "Usa un número entero, sin decimales." };
+  if (n === null) {
+    const t = texto.trim();
+    if (/^-\s*\d/.test(t)) return { error: `Debe ser ${min} o más.` };
+    if (/^\d+[.,]\d+$/.test(t))
+      return { error: "Usa un número entero, sin decimales." };
+    return { error: "Usa solo números enteros, p. ej. 6." };
+  }
   if (n < min) return { error: `Debe ser ${min} o más.` };
   if (n > max) return { error: `No puede pasar de ${max}.` };
   return { valor: n };

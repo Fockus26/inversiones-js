@@ -4,6 +4,7 @@ import { FileTextIcon, SmartphoneIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { ACTIVO } from "./estilos";
 
 const SECCIONES = [
   {
@@ -34,7 +35,7 @@ export function Navegacion() {
         {indice >= 0 && (
           <li
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-1rem)/3)] rounded-lg bg-card shadow-sm transition-transform duration-300 ease-out motion-reduce:transition-none"
+            className="pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-1rem)/3)] rounded-lg border border-input bg-card shadow-sm transition-transform duration-300 ease-out motion-reduce:transition-none"
             style={{
               transform: `translateX(calc(${indice} * (100% + 0.25rem)))`,
             }}
@@ -43,20 +44,21 @@ export function Navegacion() {
         {SECCIONES.map(({ href, nombre, corto, icono: Icono }) => {
           const actual = ruta === href || ruta.startsWith(`${href}/`);
           return (
-            <li key={href}>
+            <li key={href} className="@container">
               <Link
                 href={href}
                 aria-current={actual ? "page" : undefined}
                 className={cn(
-                  "relative flex h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm font-medium outline-none transition-colors duration-300 focus-visible:ring-3 focus-visible:ring-ring sm:px-4",
+                  "relative flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-lg px-2 text-center text-sm leading-tight font-medium outline-none transition-colors duration-300 focus-visible:ring-3 focus-visible:ring-ring sm:px-4",
                   actual
-                    ? "text-card-foreground"
+                    ? cn("text-card-foreground", ACTIVO)
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 <Icono
                   aria-hidden="true"
-                  className="size-4 shrink-0 max-[360px]:hidden"
+                  // Sin sitio (pantalla estrecha o letra grande del teléfono) el texto manda.
+                  className="size-4 shrink-0 @max-[6rem]:hidden"
                 />
                 {/* En móvil, «RCV» para que las tres quepan a 320 px; el nombre completo sigue para lectores. */}
                 {corto === nombre ? (

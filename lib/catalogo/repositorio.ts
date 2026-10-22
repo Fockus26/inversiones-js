@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -18,6 +17,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { firebaseAuth, firestore } from "@/lib/firebase/client";
+import { escribir } from "@/lib/firebase/escritura";
 import {
   type CamposEditables,
   COLECCION_MARCAS,
@@ -85,11 +85,14 @@ export async function crearProducto(
   campos: CamposEditables,
   orden: number,
 ): Promise<string> {
-  const ref = await addDoc(collection(firestore(), COLECCION_PRODUCTOS), {
-    ...campos,
-    orden,
-    ...huella(),
-  });
+  const ref = doc(collection(firestore(), COLECCION_PRODUCTOS));
+  await escribir(
+    setDoc(ref, {
+      ...campos,
+      orden,
+      ...huella(),
+    }),
+  );
   return ref.id;
 }
 
@@ -103,14 +106,16 @@ export async function actualizarProducto(
     limpio.cantidad = Math.trunc(limpio.cantidad);
   if (limpio.numeroCuotas !== undefined)
     limpio.numeroCuotas = Math.trunc(limpio.numeroCuotas);
-  await updateDoc(doc(firestore(), COLECCION_PRODUCTOS, id), {
-    ...limpio,
-    ...huella(),
-  });
+  await escribir(
+    updateDoc(doc(firestore(), COLECCION_PRODUCTOS, id), {
+      ...limpio,
+      ...huella(),
+    }),
+  );
 }
 
 export async function borrarProducto(id: string): Promise<void> {
-  await deleteDoc(doc(firestore(), COLECCION_PRODUCTOS, id));
+  await escribir(deleteDoc(doc(firestore(), COLECCION_PRODUCTOS, id)));
 }
 
 /* ── Marcas (D025) ─────────────────────────────────────────────────────────────────────────
@@ -133,10 +138,12 @@ export function escucharMarcas(
 
 /** `nombre` ya validado con `validarMarca`. */
 export async function crearMarca(nombre: Marca): Promise<void> {
-  await setDoc(doc(firestore(), COLECCION_MARCAS, nombre), {
-    nombre,
-    ...huella(),
-  });
+  await escribir(
+    setDoc(doc(firestore(), COLECCION_MARCAS, nombre), {
+      nombre,
+      ...huella(),
+    }),
+  );
 }
 
 /** Productos que usan la marca (consulta de un campo: índice automático). */
@@ -165,7 +172,7 @@ export async function renombrarMarca(
   lote.set(doc(db, COLECCION_MARCAS, nueva), { nombre: nueva, ...huella() });
   for (const p of productos) lote.update(p.ref, { marca: nueva, ...huella() });
   lote.delete(doc(db, COLECCION_MARCAS, vieja));
-  await lote.commit();
+  await escribir(lote.commit());
   return productos.length;
 }
 
@@ -175,5 +182,5 @@ export async function borrarMarca(nombre: Marca): Promise<void> {
     throw new Error(
       `${nombre} todavía tiene productos: muévelos a otra marca o bórralos primero.`,
     );
-  await deleteDoc(doc(firestore(), COLECCION_MARCAS, nombre));
+  await escribir(deleteDoc(doc(firestore(), COLECCION_MARCAS, nombre)));
 }
