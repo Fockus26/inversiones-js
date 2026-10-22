@@ -68,6 +68,8 @@ Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/di
 
 - Modo `pr`: en tu rama se commitea y empuja sin pedir permiso; **nunca** push a `main`,
   nunca `gh pr merge`, nunca auto-merge. Nada destructivo (`reset --hard`, `push --force`).
+- **Sesión en la nube** (`CLAUDE_CODE_REMOTE=true`): skill `cloud-session` al empezar y al
+  cerrar. Anula las dos reglas de arriba: cada unidad termina mergeada en `main` (PR + CI verde).
 - **Sin versión:** el proyecto no lleva `version` ni `CHANGELOG.md` ni changesets (D038).
 - Lo local (gitignored): `CURRENT_PHASE`, `CONTENT_CHECKLIST`, `PHASE_LOG/`, `plans/` — respaldo: `bun run context:backup`.
   `.env.local` se baja de Vercel, nunca se edita a mano (`vercel env pull`; `reference/DEPLOY.md` §2c del kit).
