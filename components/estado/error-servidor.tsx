@@ -69,10 +69,10 @@ export function ErrorServidor({
           <div className="flex min-w-0 flex-col gap-0.5">
             {/* La etiqueta va justo antes en el orden de lectura. `aria-labelledby` no vale en <code>
                 (rol genérico: no admite nombre accesible), aunque lo pida el HANDOFF §1. */}
-            <span className="text-[13px] text-muted-foreground">
+            <span className="text-sm text-muted-foreground">
               Código para soporte
             </span>
-            <code className="font-mono text-[17px] font-medium tracking-wide break-all select-all">
+            <code className="font-mono text-lg font-medium tracking-wide break-all select-all">
               {codigo}
             </code>
           </div>
@@ -81,7 +81,7 @@ export function ErrorServidor({
             onClick={copiar}
             className={cn(
               BOTON_ESTADO_SECUNDARIO,
-              "min-h-11 w-auto px-3.5 text-[15px] md:w-auto",
+              "min-h-11 w-auto px-3.5 text-sm md:w-auto",
             )}
           >
             {copiado ? (

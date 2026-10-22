@@ -297,7 +297,7 @@ function Lista({
         <div
           role="group"
           aria-label="Filtrar por marca"
-          className="-mx-4 flex scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden"
+          className="-mx-4 flex scroll-px-4 gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
         >
           <Chip activo={marca === null} onClick={() => setMarca(null)}>
             Todas <Contador n={productos.length} />

@@ -1,7 +1,15 @@
 "use client";
 
+import {
+  type DocumentData,
+  type DocumentReference,
+  getDoc,
+  type UpdateData,
+  updateDoc,
+} from "firebase/firestore";
 import { toast } from "sonner";
-import { mensajeDeError } from "./errores";
+import { codigoDeError } from "@/lib/auth/errores";
+import { MENSAJE_BORRADO, mensajeDeError } from "./errores";
 
 /**
  * Sin conexión, Firestore deja la escritura en cola y su promesa no se resuelve hasta que
@@ -43,4 +51,27 @@ export async function escribir(operacion: Promise<unknown>): Promise<void> {
         description: mensajeDeError(e),
       }),
   );
+}
+
+/**
+ * `updateDoc` con `escribir`. Si el documento ya no existe, las reglas responden
+ * PERMISSION_DENIED (no hay `resource` que validar) y el aviso diría "no tienes acceso": se
+ * comprueba y se dice lo que de verdad pasó.
+ */
+export async function actualizar(
+  ref: DocumentReference,
+  datos: UpdateData<DocumentData>,
+): Promise<void> {
+  try {
+    await escribir(updateDoc(ref, datos));
+  } catch (e) {
+    if (codigoDeError(e) === "permission-denied") {
+      const existe = await getDoc(ref).then(
+        (s) => s.exists(),
+        () => true,
+      );
+      if (!existe) throw new Error(MENSAJE_BORRADO);
+    }
+    throw e;
+  }
 }

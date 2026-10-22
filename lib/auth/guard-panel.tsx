@@ -1,14 +1,18 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ENTRADA } from "@/components/panel/animacion";
 import { AvisoDemo } from "@/components/panel/aviso-demo";
 import { Cabecera, CabeceraEsqueleto } from "@/components/panel/cabecera";
 import { Navegacion } from "@/components/panel/navegacion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSesion } from "@/lib/auth/sesion";
-import { AVISO_SIN_ACCESO, urlLoginConSiguiente } from "@/lib/auth/siguiente";
+import {
+  AVISO_SIN_ACCESO,
+  urlLoginConSiguiente,
+  urlLoginSesionCerrada,
+} from "@/lib/auth/siguiente";
 import { modoDemo } from "@/lib/financiamiento/demo";
 
 /**
@@ -25,6 +29,10 @@ export function GuardPanel({ children }: { children: React.ReactNode }) {
     modoDemo();
   }, []);
 
+  // Si ya estaba dentro y la sesión desaparece sin "Cerrar sesión" aquí, se le explica en el login.
+  const estuvoDentro = useRef(false);
+  if (estado === "admin") estuvoDentro.current = true;
+
   useEffect(() => {
     if (estado === "sin-acceso") {
       void salir("sin-acceso");
@@ -32,7 +40,14 @@ export function GuardPanel({ children }: { children: React.ReactNode }) {
       if (motivoSalida === "salida") router.replace("/login");
       else if (motivoSalida === "sin-acceso")
         router.replace(`/login?aviso=${AVISO_SIN_ACCESO}`);
-      else router.replace(urlLoginConSiguiente(ruta + window.location.search));
+      else {
+        const actual = ruta + window.location.search;
+        router.replace(
+          estuvoDentro.current
+            ? urlLoginSesionCerrada(actual)
+            : urlLoginConSiguiente(actual),
+        );
+      }
     }
   }, [estado, motivoSalida, salir, router, ruta]);
 

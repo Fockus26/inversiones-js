@@ -25,7 +25,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(urlDelSitio),
   title: { default: "Panel · Inversiones JS", template: "%s · Inversiones JS" },
   description: "Panel administrativo del catálogo de Inversiones JS.",
-  robots: { index: false, follow: false },
   applicationName: "Inversiones JS",
   // Instalada en iPhone: sin barra del navegador y con la barra de estado en tinta.
   appleWebApp: {

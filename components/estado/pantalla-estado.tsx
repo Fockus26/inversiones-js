@@ -55,7 +55,7 @@ export function PantallaEstado({
         >
           <span
             aria-hidden="true"
-            className="flex size-8 items-center justify-center gap-0.5 rounded-lg bg-sidebar-primary text-[13px] font-extrabold text-sidebar-primary-foreground"
+            className="flex size-8 items-center justify-center gap-0.5 rounded-lg bg-sidebar-primary text-sm font-extrabold text-sidebar-primary-foreground"
           >
             <span className="h-3 w-0.5 rounded-full bg-sidebar-primary-foreground" />
             JS
@@ -67,7 +67,7 @@ export function PantallaEstado({
         id="contenido"
         className="flex flex-1 items-start justify-center px-4 pt-12 pb-8 md:items-center md:px-10 md:py-16"
       >
-        <div className="flex w-full max-w-[560px] flex-col gap-4">
+        <div className="flex w-full max-w-xl flex-col gap-4">
           <p className="inline-flex items-center gap-2 self-start rounded-full border border-border bg-muted px-3 py-1.5 text-sm font-semibold">
             <Icono aria-hidden="true" className="size-4" />
             {etiqueta}
@@ -75,7 +75,7 @@ export function PantallaEstado({
           <h1
             ref={tituloRef}
             tabIndex={enfocarTitulo ? -1 : undefined}
-            className="mt-2 text-3xl outline-none leading-tight font-extrabold tracking-tight md:text-[44px] md:leading-[1.1]"
+            className="mt-2 text-3xl outline-none leading-tight font-extrabold tracking-tight md:text-5xl md:leading-tight"
           >
             {titulo}
           </h1>

@@ -13,10 +13,9 @@ import {
   serverTimestamp,
   setDoc,
   Timestamp,
-  updateDoc,
 } from "firebase/firestore";
 import { firebaseAuth, firestore } from "@/lib/firebase/client";
-import { escribir } from "@/lib/firebase/escritura";
+import { actualizar, escribir } from "@/lib/firebase/escritura";
 import { conTextos } from "@/lib/firebase/normalizar";
 import { COLECCION_CONFIGURACION } from "@/lib/horario/tipos";
 import {
@@ -86,12 +85,10 @@ export async function actualizarPlanRcv(
   id: string,
   cambios: Partial<CamposPlanRcv & { orden: number }>,
 ): Promise<void> {
-  await escribir(
-    updateDoc(doc(firestore(), COLECCION_PLANES_RCV, id), {
-      ...cambios,
-      ...huella(),
-    }),
-  );
+  await actualizar(doc(firestore(), COLECCION_PLANES_RCV, id), {
+    ...cambios,
+    ...huella(),
+  });
 }
 
 export async function borrarPlanRcv(id: string): Promise<void> {

@@ -7,13 +7,12 @@ import "./globals.css";
 /**
  * Fallo en el propio layout raíz: reemplaza el documento entero, así que trae sus estilos y
  * sigue el tema del sistema (no hay next-themes aquí). Fuente del sistema: Geist vive en el layout.
+ * "Reintentar" recarga entera, como en `app/error.tsx`.
  */
 export default function ErrorGlobal({
   error,
-  retry,
 }: {
   error: Error & { digest?: string };
-  retry: () => void;
 }) {
   useEffect(() => {
     console.error(error);
@@ -33,7 +32,10 @@ export default function ErrorGlobal({
     <html lang="es" className="h-full antialiased">
       <body className="flex min-h-full flex-col font-[system-ui,sans-serif]">
         <title>Error · Inversiones JS</title>
-        <ErrorServidor codigo={error.digest} onReintentar={retry} />
+        <ErrorServidor
+          codigo={error.digest}
+          onReintentar={() => window.location.reload()}
+        />
       </body>
     </html>
   );

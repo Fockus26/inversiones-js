@@ -82,7 +82,7 @@ export function Cabecera({
           >
             <LogOutIcon aria-hidden="true" className="size-5" />
             {/* En pantallas muy estrechas queda solo el ícono; el nombre sigue para lectores. */}
-            <span className="max-[400px]:sr-only">
+            <span className="max-movil:sr-only">
               {saliendo ? "Saliendo…" : "Cerrar sesión"}
             </span>
           </Button>

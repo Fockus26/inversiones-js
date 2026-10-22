@@ -6,6 +6,9 @@ import { codigoDeError } from "@/lib/auth/errores";
  * propios del panel (sin `code`) ya vienen en español y se muestran tal cual.
  */
 
+export const MENSAJE_BORRADO =
+  "Este registro ya no existe: alguien lo borró mientras lo editabas.";
+
 const MENSAJES: Record<string, string> = {
   "permission-denied":
     "No se aceptó el cambio: puede que ya no tengas acceso o que algún dato no sea válido. Recarga la página e inténtalo de nuevo.",
