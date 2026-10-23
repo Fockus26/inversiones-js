@@ -44,7 +44,9 @@ export function Navegacion() {
         {SECCIONES.map(({ href, nombre, corto, icono: Icono }) => {
           const actual = ruta === href || ruta.startsWith(`${href}/`);
           return (
-            <li key={href} className="@container">
+            // Contenedor solo en móvil: un @container no aporta ancho propio, y desde sm la
+            // barra es inline-grid de ancho automático y se encogería con todo encimado.
+            <li key={href} className="max-sm:@container">
               <Link
                 href={href}
                 aria-current={actual ? "page" : undefined}
