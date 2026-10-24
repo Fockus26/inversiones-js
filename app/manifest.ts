@@ -36,6 +36,11 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
+        name: "Solicitudes",
+        url: "/solicitudes",
+        icons: [{ src: "/icono/192", sizes: "192x192" }],
+      },
+      {
         name: "Clientes",
         url: "/clientes",
         icons: [{ src: "/icono/192", sizes: "192x192" }],

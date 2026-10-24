@@ -93,8 +93,9 @@ Completa:
 - `EVOLUTION_API_KEY` = la `AUTHENTICATION_API_KEY` de Evolution (la que ya guardaste).
 - `WEBHOOK_TOKEN` = el resultado de `openssl rand -hex 16`.
 - `GOOGLE_CALENDAR_ID` = el ID del calendario del paso B.
-- `ASESOR_NUMEROS` = número(s) que reciben los avisos (`58412…`, separados por coma). **No pongas
-  el mismo número del bot.**
+- `ASESOR_NUMEROS` = número(s) que pueden mandar `gaby on`/`gaby off` (`58412…`, separados por
+  coma). **No pongas el mismo número del bot.** Gaby no les escribe avisos: las solicitudes
+  del chat se ven en el panel, pestaña **Solicitudes** (D043).
 
 ```bash
 docker compose up -d --build

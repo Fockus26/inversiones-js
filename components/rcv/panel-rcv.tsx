@@ -55,14 +55,12 @@ import {
   NOMBRES_CATEGORIA,
   type PlanRcvConId,
   requisitosEfectivos,
-  type SolicitudRcvConId,
   type TasasRcv,
   tasasDe,
 } from "@/lib/rcv/tipos";
 import { cn } from "@/lib/utils";
 import { DialogoPlan } from "./dialogo-plan";
 import { DialogoRequisitos } from "./dialogo-requisitos";
-import { Solicitudes } from "./solicitudes";
 import { Tasas } from "./tasas";
 import { useRcv } from "./use-rcv";
 import { useTasaBcv } from "./use-tasa-bcv";
@@ -70,7 +68,7 @@ import { useTasaMercado } from "./use-tasa-mercado";
 
 /**
  * /rcv (D030): tasas del día, transportes de la póliza (crear, editar, ocultar, borrar),
- * requisitos por tipo de transporte y solicitudes que deja la gente en el chat.
+ * y requisitos. Las solicitudes que deja la gente en el chat están en /solicitudes/rcv (D043).
  * Mismo patrón que /productos: tarjetas hasta lg, tabla desde lg.
  */
 export function PanelRcv() {
@@ -128,11 +126,9 @@ function Encabezado({
 function Contenido({
   planes,
   config,
-  solicitudes,
 }: {
   planes: PlanRcvConId[];
   config: ConfigRcv | null;
-  solicitudes: SolicitudRcvConId[];
 }) {
   const [editando, setEditando] = useState<PlanRcvConId | null>(null);
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
@@ -153,7 +149,6 @@ function Contenido({
   const resumen = [
     `${planes.length} ${planes.length === 1 ? "transporte" : "transportes"}`,
     ocultos > 0 ? `${ocultos} ${ocultos === 1 ? "oculto" : "ocultos"}` : null,
-    `${solicitudes.length} ${solicitudes.length === 1 ? "solicitud" : "solicitudes"}`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -237,8 +232,6 @@ function Contenido({
           </>
         )}
       </section>
-
-      <Solicitudes solicitudes={solicitudes} />
 
       <DialogoPlan
         abierto={dialogoAbierto}

@@ -11,12 +11,17 @@ import {
   REQUISITOS_RCV_POR_DEFECTO as REQUISITOS,
   type SolicitudRcv,
 } from "../../lib/rcv/tipos";
+import type {
+  SolicitudCelular,
+  SolicitudCita,
+} from "../../lib/solicitudes/tipos";
 import {
   type Contacto,
   correoValido,
   type Estado,
   esNo,
   esSi,
+  ID_SIN_PLANES,
   nombreValido,
   numeroElegido,
   procesar,
@@ -90,7 +95,8 @@ const productos: ProductoDeLista[] = [
 ];
 
 function falsos(extra: Partial<Servicios> = {}) {
-  const avisos: string[] = [];
+  const celulares: SolicitudCelular[] = [];
+  const pedidosCita: SolicitudCita[] = [];
   const citas: { turno: Turno; direccion: string }[] = [];
   const solicitudes: SolicitudRcv[] = [];
   const s: Servicios = {
@@ -104,14 +110,17 @@ function falsos(extra: Partial<Servicios> = {}) {
     guardarSolicitudRcv: async (sol) => {
       solicitudes.push(sol);
     },
-    avisarAsesor: async (t) => {
-      avisos.push(t);
+    guardarSolicitudCelular: async (sol) => {
+      celulares.push(sol);
+    },
+    guardarSolicitudCita: async (sol) => {
+      pedidosCita.push(sol);
     },
     ahora: () => AHORA,
     azar: () => 0,
     ...extra,
   };
-  return { s, avisos, citas, solicitudes };
+  return { s, citas, solicitudes, celulares, pedidosCita };
 }
 
 /** Recorre una conversación y devuelve todas las respuestas y el estado final. */
@@ -164,7 +173,7 @@ describe("flujo", () => {
   });
 
   test("opción 1 → sí → horario → dirección → cita agendada", async () => {
-    const { s, avisos, citas } = falsos();
+    const { s, citas, pedidosCita } = falsos();
     const { respuestas, estado } = await conversar(s, [
       "hola",
       "1",
@@ -182,7 +191,15 @@ describe("flujo", () => {
         direccion: "Av. Bolívar, edificio Sol, frente a la plaza. 0412-1234567",
       },
     ]);
-    expect(avisos[0]).toContain("Nueva cita");
+    expect(pedidosCita).toEqual([
+      {
+        nombre: contacto.nombre,
+        whatsapp: contacto.telefono,
+        estado: "agendada",
+        horario: "Viernes 02 3pm",
+        direccion: "Av. Bolívar, edificio Sol, frente a la plaza. 0412-1234567",
+      },
+    ]);
     expect(estado?.paso).toBe("menu");
   });
 
@@ -207,10 +224,45 @@ describe("flujo", () => {
     expect(estado?.paso).toBe("loteria_horario");
   });
 
-  test("sin horarios libres → avisa al asesor y vuelve al menú", async () => {
-    const { s, avisos } = falsos({ turnosDisponibles: async () => [] });
+  test("sin horarios libres → queda la solicitud de cita y vuelve al menú", async () => {
+    const { s, pedidosCita } = falsos({ turnosDisponibles: async () => [] });
     const { estado } = await conversar(s, ["hola", "1", "si"]);
-    expect(avisos[0]).toContain("Sin horarios libres");
+    expect(pedidosCita).toEqual([
+      {
+        nombre: contacto.nombre,
+        whatsapp: contacto.telefono,
+        estado: "sin-horarios",
+        horario: null,
+        direccion: null,
+      },
+    ]);
+    expect(estado?.paso).toBe("menu");
+  });
+
+  test("si no se puede guardar la solicitud, el cliente igual recibe respuesta", async () => {
+    const { s } = falsos({
+      guardarSolicitudCelular: async () => {
+        throw new Error("Firestore caído");
+      },
+    });
+    const { respuestas, estado } = await conversar(s, ["hola", "2", "1"]);
+    expect(respuestas[2][0]).toContain("*HONOR 600 Elite 8/256*");
+    expect(estado?.paso).toBe("menu");
+  });
+
+  test("RCV sin planes que mostrar → queda la solicitud con su WhatsApp", async () => {
+    const { s, solicitudes } = falsos({
+      rcv: async () => ({ planes: [], tasas: null, requisitos: [] }),
+    });
+    const { estado } = await conversar(s, ["hola", "3", "2"]);
+    expect(solicitudes).toEqual([
+      expect.objectContaining({
+        whatsapp: contacto.telefono,
+        categoria: "privado",
+        planId: ID_SIN_PLANES,
+        correo: "",
+      }),
+    ]);
     expect(estado?.paso).toBe("menu");
   });
 
@@ -221,7 +273,7 @@ describe("flujo", () => {
   });
 
   test("opción 2 → lista numerada sin agotados → elegir equipo", async () => {
-    const { s, avisos } = falsos();
+    const { s, celulares } = falsos();
     const { respuestas, estado } = await conversar(s, ["hola", "2", "2"]);
     const lista = respuestas[1][1];
     expect(lista).toContain(
@@ -233,7 +285,13 @@ describe("flujo", () => {
     expect(respuestas[2][0]).toContain(
       "• Copia de la cédula\n• Copia del RIF actualizado\n• 2 referencias familiares",
     );
-    expect(avisos[0]).toContain("REDMI Note 15 8/256");
+    expect(celulares).toEqual([
+      {
+        nombre: contacto.nombre,
+        whatsapp: contacto.telefono,
+        equipo: "REDMI Note 15 8/256",
+      },
+    ]);
     expect(estado?.paso).toBe("menu");
   });
 
@@ -257,7 +315,7 @@ describe("flujo", () => {
   });
 
   test("opción 3 → privado → pick up → precio y requisitos → datos guardados", async () => {
-    const { s, avisos, solicitudes } = falsos();
+    const { s, solicitudes } = falsos();
     const { respuestas, estado } = await conversar(s, [
       "hola",
       "3",
@@ -296,13 +354,11 @@ describe("flujo", () => {
         financiamiento: null,
       },
     ]);
-    expect(avisos[0]).toContain("Transporte privado");
-    expect(avisos[0]).toContain("PICK UP");
     expect(estado?.paso).toBe("menu");
   });
 
   test("público → minibuses pregunta financiamiento; taxi no", async () => {
-    const { s, solicitudes, avisos } = falsos();
+    const { s, solicitudes } = falsos();
     const { respuestas } = await conversar(s, [
       "hola",
       "3",
@@ -319,7 +375,6 @@ describe("flujo", () => {
     expect(respuestas[3][1]).toContain("financiar");
     expect(solicitudes[0].financiamiento).toBe(true);
     expect(solicitudes[0].telefono).toBe("04145551234");
-    expect(avisos[0]).toContain("Financiamiento: Sí");
 
     const taxi = await conversar(falsos().s, ["hola", "3", "1", "6"]);
     expect(taxi.respuestas[3][1]).not.toContain("financiar");
@@ -327,7 +382,7 @@ describe("flujo", () => {
   });
 
   test("placas extranjeras (D034): requisitos, pide el vehículo y guarda para cotizar", async () => {
-    const { s, solicitudes, avisos } = falsos();
+    const { s, solicitudes } = falsos();
     const { respuestas, estado } = await conversar(s, [
       "hola",
       "3",
@@ -363,9 +418,6 @@ describe("flujo", () => {
         financiamiento: null,
       },
     ]);
-    expect(avisos[0]).toContain("Placas extranjeras");
-    expect(avisos[0]).toContain("Vehículo: camioneta Toyota Hilux 2018");
-    expect(avisos[0]).toContain("por cotizar");
     expect(estado?.paso).toBe("menu");
   });
 

@@ -37,6 +37,10 @@ import {
   DOC_CONFIG_RCV,
   REQUISITOS_RCV_POR_DEFECTO,
 } from "@/lib/rcv/tipos";
+import {
+  COLECCION_SOLICITUDES_CELULARES,
+  COLECCION_SOLICITUDES_CITAS,
+} from "@/lib/solicitudes/tipos";
 
 /** Cuentas que SOLO existen en el emulador (proyecto demo-*). */
 export const CUENTAS_EMULADOR = {
@@ -165,6 +169,35 @@ lote.set(db.collection(COLECCION_SOLICITUDES_RCV).doc("ejemplo"), {
   precioUsd: 146.63,
   precioBs: 128259.32,
   financiamiento: true,
+  creadoEn: FieldValue.serverTimestamp(),
+});
+// Solicitudes de celulares y citas (D043): una de cada caso.
+lote.set(db.collection(COLECCION_SOLICITUDES_CELULARES).doc("ejemplo"), {
+  nombre: "Luis Mendoza",
+  whatsapp: "584241112233",
+  equipo: "SAMSUNG A16 4/128",
+  creadoEn: FieldValue.serverTimestamp(),
+});
+lote.set(db.collection(COLECCION_SOLICITUDES_CELULARES).doc("sin-lista"), {
+  nombre: "",
+  whatsapp: "584161234567",
+  equipo: null,
+  creadoEn: FieldValue.serverTimestamp(),
+});
+lote.set(db.collection(COLECCION_SOLICITUDES_CITAS).doc("ejemplo"), {
+  nombre: "Carla Díaz",
+  whatsapp: "584129876543",
+  estado: "agendada",
+  horario: "Lunes 27 10am",
+  direccion: "Av. Libertador, local 4, frente al banco. 0412-9876543",
+  creadoEn: FieldValue.serverTimestamp(),
+});
+lote.set(db.collection(COLECCION_SOLICITUDES_CITAS).doc("sin-horarios"), {
+  nombre: "Pedro",
+  whatsapp: "584145556677",
+  estado: "sin-horarios",
+  horario: null,
+  direccion: null,
   creadoEn: FieldValue.serverTimestamp(),
 });
 await lote.commit();

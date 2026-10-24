@@ -73,12 +73,3 @@ export async function marcarLeido(jid: string, id: string): Promise<void> {
     readMessages: [{ remoteJid: jid, fromMe: false, id }],
   }).catch((e) => console.warn("No se pudo marcar como leído", e.message));
 }
-
-/** Aviso interno a los asesores configurados (no falla el flujo si no se puede enviar). */
-export async function avisarAsesores(texto: string): Promise<void> {
-  for (const numero of config.asesores) {
-    await enviarTexto(`${numero}@s.whatsapp.net`, texto).catch((e) =>
-      console.error("No se pudo avisar al asesor", numero, e.message),
-    );
-  }
-}

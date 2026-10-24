@@ -257,7 +257,7 @@ function Contenido({ clientes }: { clientes: ClienteRcvConId[] }) {
         <Aviso
           icono={<UsersIcon aria-hidden="true" />}
           titulo="Todavía no hay clientes de póliza"
-          texto="Regístralos con «Nuevo cliente» o desde una solicitud del chat en Póliza RCV."
+          texto="Regístralos con «Nuevo cliente» o desde una solicitud del chat en Solicitudes."
         />
       ) : visibles.length === 0 ? (
         <Aviso

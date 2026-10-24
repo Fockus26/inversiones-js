@@ -122,6 +122,17 @@ service cloud.firestore {
       allow create, update: if false;
     }
 
+    // D043: las demás solicitudes del chat (antes eran mensajes de WhatsApp a los asesores).
+    match /solicitudesCelulares/{id} {
+      allow read, delete: if esAdmin();
+      allow create, update: if false;
+    }
+
+    match /solicitudesCitas/{id} {
+      allow read, delete: if esAdmin();
+      allow create, update: if false;
+    }
+
     // D032: clientes con financiamiento. Mismos límites que lib/financiamiento/validacion.ts.
     function fecha(f) {
       // Rango grueso (D042): corta años de dos dígitos ("0026") y fechas absurdas.

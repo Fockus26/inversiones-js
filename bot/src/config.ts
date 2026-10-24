@@ -21,7 +21,10 @@ export const config = {
   calendarId: requerida("GOOGLE_CALENDAR_ID"),
   /** Proyecto de Firebase del panel, si no es el mismo de la cuenta de servicio. */
   proyectoFirebase: process.env.FIREBASE_PROJECT_ID?.trim() ?? "",
-  /** Número(s) del asesor que recibe los avisos, separados por coma (58412…). Opcional. */
+  /**
+   * Número(s) del asesor, separados por coma (58412…). Opcional. Solo para que manden
+   * "gaby on/off": Gaby no les escribe avisos (D043, riesgo de baneo); van al panel.
+   */
   asesores: (process.env.ASESOR_NUMEROS ?? "")
     .split(",")
     .map((n) => n.replace(/\D/g, ""))

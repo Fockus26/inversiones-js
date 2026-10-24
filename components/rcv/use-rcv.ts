@@ -5,16 +5,8 @@ import type { FirestoreError } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { firebaseAuth } from "@/lib/firebase/client";
 import { MENSAJE_INESPERADO, mensajeDeError } from "@/lib/firebase/errores";
-import {
-  escucharConfigRcv,
-  escucharPlanesRcv,
-  escucharSolicitudesRcv,
-} from "@/lib/rcv/repositorio";
-import type {
-  ConfigRcv,
-  PlanRcvConId,
-  SolicitudRcvConId,
-} from "@/lib/rcv/tipos";
+import { escucharConfigRcv, escucharPlanesRcv } from "@/lib/rcv/repositorio";
+import type { ConfigRcv, PlanRcvConId } from "@/lib/rcv/tipos";
 
 export type EstadoRcv =
   | { tipo: "cargando" }
@@ -24,10 +16,9 @@ export type EstadoRcv =
       tipo: "listo";
       planes: PlanRcvConId[];
       config: ConfigRcv | null;
-      solicitudes: SolicitudRcvConId[];
     };
 
-/** Como `useCatalogo`: espera la sesión y escucha planes, configuración y solicitudes en vivo. */
+/** Como `useCatalogo`: espera la sesión y escucha planes y configuración en vivo. */
 export function useRcv(): EstadoRcv {
   const [estado, setEstado] = useState<EstadoRcv>({ tipo: "cargando" });
 
@@ -46,11 +37,10 @@ export function useRcv(): EstadoRcv {
       setEstado({ tipo: "cargando" });
       let planes: PlanRcvConId[] | null = null;
       let config: ConfigRcv | null | undefined;
-      let solicitudes: SolicitudRcvConId[] | null = null;
       let fallo = false;
       const publicar = () => {
-        if (!fallo && planes && config !== undefined && solicitudes)
-          setEstado({ tipo: "listo", planes, config, solicitudes });
+        if (!fallo && planes && config !== undefined)
+          setEstado({ tipo: "listo", planes, config });
       };
       const alFallar = (error: FirestoreError) => {
         fallo = true;
@@ -70,10 +60,6 @@ export function useRcv(): EstadoRcv {
         }, alFallar),
         escucharConfigRcv((c) => {
           config = c;
-          publicar();
-        }, alFallar),
-        escucharSolicitudesRcv((s) => {
-          solicitudes = s;
           publicar();
         }, alFallar),
       ];

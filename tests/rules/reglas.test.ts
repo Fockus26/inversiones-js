@@ -447,20 +447,30 @@ describe("póliza RCV (D030)", () => {
     await assertFails(getDoc(doc(dbAdmin(), "configuracion", "horario")));
   });
 
-  test("solicitudes: admin lee y borra, nadie las crea desde el cliente", async () => {
-    await entorno.withSecurityRulesDisabled(async (ctx) => {
-      await setDoc(doc(ctx.firestore(), "solicitudesRcv", "s1"), {
-        nombre: "Ana",
+  // D043: las tres colecciones de solicitudes del chat tienen las mismas reglas.
+  for (const coleccion of [
+    "solicitudesRcv",
+    "solicitudesCelulares",
+    "solicitudesCitas",
+  ]) {
+    test(`${coleccion}: admin lee y borra, nadie las crea desde el cliente`, async () => {
+      await entorno.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), coleccion, "s1"), {
+          nombre: "Ana",
+        });
       });
+      await assertSucceeds(getDoc(doc(dbAdmin(), coleccion, "s1")));
+      await assertFails(getDoc(doc(dbOtro(), coleccion, "s1")));
+      await assertFails(
+        setDoc(doc(dbAdmin(), coleccion, "s2"), { nombre: "x" }),
+      );
+      await assertFails(
+        updateDoc(doc(dbAdmin(), coleccion, "s1"), { nombre: "x" }),
+      );
+      await assertFails(deleteDoc(doc(dbOtro(), coleccion, "s1")));
+      await assertSucceeds(deleteDoc(doc(dbAdmin(), coleccion, "s1")));
     });
-    await assertSucceeds(getDoc(doc(dbAdmin(), "solicitudesRcv", "s1")));
-    await assertFails(getDoc(doc(dbOtro(), "solicitudesRcv", "s1")));
-    await assertFails(
-      setDoc(doc(dbAdmin(), "solicitudesRcv", "s2"), { nombre: "x" }),
-    );
-    await assertFails(deleteDoc(doc(dbOtro(), "solicitudesRcv", "s1")));
-    await assertSucceeds(deleteDoc(doc(dbAdmin(), "solicitudesRcv", "s1")));
-  });
+  }
 });
 
 describe("clientes con financiamiento (D032)", () => {
