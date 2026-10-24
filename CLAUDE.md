@@ -49,9 +49,9 @@ bun run build
 puerto, en segundo plano). Build, typecheck, lint y tests sí se corren sin preguntar.
 
 **QA contra base local:** `bun run qa:local -- --port <p>` levanta los **emuladores de
-Firebase** (proyecto `demo-inversiones-js`, necesita Java), carga `seed-emulador`, crea las
-cuentas de `.env.test.local` (`ADMIN_…` con `admins/{uid}`, `EMAIL_TEST` sin acceso) y
-arranca el servidor apuntando a los emuladores. Nunca contra el proyecto real.
+Firebase** (Java, sin Docker; proyecto `demo-inversiones-js`), carga `seed-emulador`, crea
+las cuentas de `.env.test.local` (`ADMIN_…` con `admins/{uid}`, `EMAIL_TEST` sin acceso) y
+arranca el servidor sobre ellos. Nunca contra el proyecto real. Sin ellos: `--offline`.
 
 Playwright, si se usa, se corre con `node`, no con `bun` (en Windows se cuelga).
 Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/dist/docs/`.
