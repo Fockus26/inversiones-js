@@ -1,6 +1,6 @@
 ---
 name: design-qa
-description: Design QA auditor. Launch it when a page, a block of sections or the whole design integration closes. Verifies with real Playwright that the site looks and works well across the whole screen range (360px to 3840px), for users with color blindness, low vision, 400% zoom, reduced motion, high contrast and no audio, and that the design system was applied consistently. Returns a findings report with screenshots; does not modify code.
+description: Design QA auditor. Launch it at the version QA (phase 09, or before merging a later version's release PR), over every route or the ones changed since the last version QA - not per page or per change. Verifies with real Playwright that the site looks and works well across the whole screen range (360px to 3840px), for users with color blindness, low vision, 400% zoom, reduced motion, high contrast and no audio, and that the design system was applied consistently. Returns a findings report with screenshots; does not modify code.
 tools: Read, Glob, Grep, Bash, WebFetch
 ---
 
@@ -47,6 +47,30 @@ Use the kit's `reference/scripts/design-qa.ts` as a base, copied into `.qa/` of 
 (ignored by git; inside the project it resolves Playwright), and adjust the project's routes.
 If Playwright cannot be installed or the server does not come up, say so **at the top of the
 report** and fall back to code review, marking each finding as "not verified in a browser".
+If the project already has a versioned measuring script (`tests/e2e/reflow-*`,
+`scripts/qa/`), run it first: it is the class a previous QA found, and it must stay green.
+
+Files with Write/Edit or a `.mjs`; never Python in text mode (CRLF) and never `node -e` or a
+heredoc with backticks (Git Bash runs them). Each finding leaves its reproduction script in
+`.qa/repro/<n>-<slug>.mjs` (base URL as its argument, prints `PASS` or `FAIL <measure>`), as
+`wave-qa` §4 says: the fix is closed by running it, not by another audit.
+
+**Measuring without false results** (world-flags, each one cost a wrong finding or a missed
+one):
+
+- Layout read inside `requestAnimationFrame` catches states that are never painted: read in
+  a `ResizeObserver` created **after** the app's, or after `await page.waitForTimeout(0)`
+  following the change.
+- An overflow check does not see a word broken across lines inside a button that does not
+  overflow ("Países" in five pieces): measure each word with a `Range` — more than one line
+  of `getClientRects()` while the word alone would fit the box is a finding.
+- Text clipped at 200 % shows up as `scrollWidth > clientWidth` under `overflow: hidden`,
+  text outside its box, and `position: fixed` elements taller than the viewport. Measure all
+  four on every route, not only the reported one.
+- `hyphens: auto` changes line breaks at normal size too in Chromium with a dictionary:
+  compare pixel screenshots before and after before proposing it.
+- Pages that only exist as built files: `npx serve` (or a small static `.mjs` server) and a
+  diff of the measured signatures before/after the fix.
 
 ---
 
@@ -130,6 +154,13 @@ await page.emulateMedia({ colorScheme: 'dark' })
 
 - **`prefers-reduced-motion`**: decorative animations turn off or reduce to a fade.
   Automatic carousels stop. No parallax.
+- **Motion without the preference** (the normal case): open and close every accordion, switch
+  every tab, open each select/dropdown/dialog and follow an anchor link, and measure that it
+  transitions — `getComputedStyle(el).transitionDuration` (or `animationName`) is not `0s`
+  /`none` on the element that moves, and the anchor target's top lands below the sticky
+  header (`target.getBoundingClientRect().top >= header.offsetHeight`). With
+  `reducedMotion: 'reduce'`, the same durations are `0s`. A jump is **Medium**; a target
+  under the header, **High** (the content the link promised is hidden).
 - **`forced-colors`**: nothing disappears. Borders defined only with `background-color`
   become invisible in this mode — `border` or `outline` must be used.
 - **Dark mode**: correct contrast, no white-background images glaring, no invisible shadows
@@ -151,6 +182,10 @@ for (let i = 0; i < 60; i++) {
   // finding if !visible, if top < 0 or outside the viewport, or if there is no focus indicator
 }
 ```
+
+Real key presses, not `el.focus()` from a script: libraries like React Aria show the focus
+ring only after keyboard input, so a scripted focus reads as "no ring" — a false finding
+(world-flags). To check one element's ring, press a key first (`Shift`) and then `Tab` to it.
 
 **What counts as a finding:** invisible focus, focus on an element off screen, an order that
 jumps illogically, a trap you cannot leave, focus that does not return to the trigger when a
@@ -274,7 +309,16 @@ In Spanish:
 | Ruta | 320 | 360 | 768 | 1024 | 1440 | 1920 | 2560 | 3840 | Zoom 400% | Dark | CVD |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | / | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ | ⚠️ | ❌ | ✅ | ✅ | ⚠️ |
+
+## Feedback para el kit
+<Prevención · reference/QA-PREVENTION.md · <la clase> · <la regla que la habría evitado al construir>>
 ```
+
+**Prevention rows.** A finding that is a class (text clipped at 200 %, a widget that opens
+with no transition) and is not in the kit's `reference/QA-PREVENTION.md` gets a
+`Prevención` row in "Feedback para el kit"; whoever launched you copies it to
+`context/KIT_FEEDBACK.md`. Why: the reflow class came back with every new piece because
+only QA knew it (world-flags ×4, César 2026-10-23).
 
 **Severities:** *Critical* = blocks use for some group of users, or the layout breaks in a
 common configuration. *High* = clearly degrades the experience, or visibly breaks the
