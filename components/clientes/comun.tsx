@@ -10,8 +10,6 @@ import {
   SearchIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Aviso } from "@/components/catalogo/catalogo-productos";
@@ -21,6 +19,7 @@ import {
   normalizarBusqueda,
 } from "@/components/catalogo/formato";
 import { ACTIVO } from "@/components/panel/estilos";
+import { Subnavegacion } from "@/components/panel/subnavegacion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,7 +123,10 @@ export function Encabezado({
         </div>
         {accion}
       </div>
-      <Subnavegacion />
+      <Subnavegacion
+        etiqueta="Tipo de financiamiento"
+        secciones={SUBSECCIONES}
+      />
     </div>
   );
 }
@@ -136,35 +138,6 @@ const SUBSECCIONES = [
   { href: "/clientes/celulares", nombre: "Celulares" },
   { href: "/clientes/rcv", nombre: "Póliza RCV" },
 ] as const;
-
-function Subnavegacion() {
-  const ruta = usePathname();
-  return (
-    <nav aria-label="Tipo de financiamiento">
-      <ul className="flex gap-6 border-b">
-        {SUBSECCIONES.map(({ href, nombre }) => {
-          const actual = ruta === href;
-          return (
-            <li key={href}>
-              <Link
-                href={href}
-                aria-current={actual ? "page" : undefined}
-                className={cn(
-                  "-mb-px flex h-11 items-center border-b-2 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring rounded-t-md",
-                  actual
-                    ? cn("border-success text-foreground", ACTIVO)
-                    : "border-transparent text-muted-foreground hover:text-foreground forced-colors:border-transparent",
-                )}
-              >
-                {nombre}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
-}
 
 /** Esqueleto, sin acceso o error mientras la lista no está lista. */
 export function EstadoCarga({

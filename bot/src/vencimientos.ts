@@ -4,8 +4,9 @@ import {
   DIAS_AVISO_MES,
   whatsappDe,
 } from "../../lib/financiamiento/poliza";
+import { notificarPanel } from "./avisos-push";
 import { textoAvisoVencimiento } from "./avisos-rcv";
-import { avisarAsesores, enviarTexto } from "./evolution";
+import { enviarTexto } from "./evolution";
 import { clientesRcvPorVencer, marcarAvisoRcv } from "./google";
 
 /**
@@ -50,9 +51,13 @@ export async function revisarVencimientos(ahora = new Date()): Promise<void> {
         textoAvisoVencimiento(c, aviso, hoy),
       );
       console.log(`Aviso de vencimiento (${aviso}) enviado a ${c.nombre}`);
-      await avisarAsesores(
-        `🔔 Se le recordó a ${c.nombre} (+${numero}) que su póliza RCV${c.placa ? ` (${c.placa})` : ""} vence el ${c.vence.split("-").reverse().join("/")}.`,
-      );
+      // Aviso push al panel, no por WhatsApp a los asesores (D043).
+      void notificarPanel({
+        titulo: "🔔 Recordatorio de póliza enviado",
+        cuerpo: `${c.nombre}${c.placa ? ` (${c.placa})` : ""} · vence el ${c.vence.split("-").reverse().join("/")}`,
+        url: "/clientes/rcv",
+        etiqueta: `vence-${c.id}`,
+      });
       await Bun.sleep(5_000 + Math.random() * 10_000);
     } catch (e) {
       console.error("Falló un aviso de vencimiento", c.id, e);

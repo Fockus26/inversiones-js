@@ -35,12 +35,18 @@ import {
   type SolicitudRcv,
   tasasDe,
 } from "../../lib/rcv/tipos";
+import {
+  COLECCION_SOLICITUDES_CELULARES,
+  COLECCION_SOLICITUDES_CITAS,
+  type SolicitudCelular,
+  type SolicitudCita,
+} from "../../lib/solicitudes/tipos";
 import { config } from "./config";
 
 /**
  * Acceso a Google con la misma cuenta de servicio (`chatbot-lectura`, D024):
- * - Firestore (rol Datastore User, D030): lee catálogo, horario y póliza RCV; escribe
- *   `solicitudesRcv`, los avisos ya mandados en `clientesRcv` (D033) y borra suscripciones push
+ * - Firestore (rol Datastore User, D030): lee catálogo, horario y póliza RCV; escribe las
+ *   solicitudes del chat (`solicitudesRcv`, `solicitudesCelulares`, `solicitudesCitas`), los avisos ya mandados en `clientesRcv` (D033) y borra suscripciones push
  *   vencidas (D035).
  * - Calendar (calendario compartido con la cuenta) para huecos, citas y recordatorios.
  */
@@ -163,6 +169,20 @@ export const leerRcv = cacheada(async () => {
 export async function guardarSolicitudRcv(s: SolicitudRcv): Promise<void> {
   await db
     .collection(COLECCION_SOLICITUDES_RCV)
+    .add({ ...s, creadoEn: FieldValue.serverTimestamp() });
+}
+
+export async function guardarSolicitudCelular(
+  s: SolicitudCelular,
+): Promise<void> {
+  await db
+    .collection(COLECCION_SOLICITUDES_CELULARES)
+    .add({ ...s, creadoEn: FieldValue.serverTimestamp() });
+}
+
+export async function guardarSolicitudCita(s: SolicitudCita): Promise<void> {
+  await db
+    .collection(COLECCION_SOLICITUDES_CITAS)
     .add({ ...s, creadoEn: FieldValue.serverTimestamp() });
 }
 

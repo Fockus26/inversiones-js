@@ -213,7 +213,3 @@ export function escucharSolicitudesRcv(
     alFallar,
   );
 }
-
-export async function borrarSolicitudRcv(id: string): Promise<void> {
-  await escribir(deleteDoc(doc(firestore(), COLECCION_SOLICITUDES_RCV, id)));
-}

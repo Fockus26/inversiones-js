@@ -10,6 +10,10 @@ import {
   NOMBRES_CATEGORIA,
   type SolicitudRcv,
 } from "../../lib/rcv/tipos";
+import type {
+  SolicitudCelular,
+  SolicitudCita,
+} from "../../lib/solicitudes/tipos";
 import {
   type DatosRcvFirestore,
   type PlanMostrado,
@@ -21,7 +25,7 @@ import * as T from "./textos";
 
 /**
  * Árbol de conversación de Gaby. Puro salvo por los `Servicios` que recibe (catálogo,
- * agenda, avisos), así los tests lo recorren con datos falsos.
+ * agenda, solicitudes), así los tests lo recorren con datos falsos.
  */
 
 export type Paso =
@@ -85,10 +89,13 @@ export interface Servicios {
   agendar(turno: Turno, contacto: Contacto, datos: DatosCita): Promise<boolean>;
   /** Transportes, tasas y requisitos de la póliza RCV (panel /rcv). */
   rcv(): Promise<DatosRcvFirestore>;
-  /** Guarda nombre, correo y teléfono de quien pidió la póliza. */
+  /**
+   * Solicitudes para el panel (/solicitudes, D043). Nada se avisa por WhatsApp a los asesores:
+   * escribirles desde el número del negocio sube el riesgo de que lo baneen.
+   */
   guardarSolicitudRcv(solicitud: SolicitudRcv): Promise<void>;
-  /** Aviso interno al asesor (WhatsApp). Puede no hacer nada si no hay número configurado. */
-  avisarAsesor(texto: string): Promise<void>;
+  guardarSolicitudCelular(solicitud: SolicitudCelular): Promise<void>;
+  guardarSolicitudCita(solicitud: SolicitudCita): Promise<void>;
   ahora(): Date;
   azar(): number;
 }
@@ -195,6 +202,30 @@ function nuevo(paso: Paso, s: Servicios, extra: Partial<Estado> = {}): Estado {
   return { paso, actualizado: s.ahora().getTime(), ...extra };
 }
 
+/** Guarda una solicitud para el panel. Si falla, queda en el log: la respuesta al cliente sigue. */
+async function anotar(que: string, guardar: () => Promise<void>) {
+  try {
+    await guardar();
+  } catch (e) {
+    console.error(`No se pudo guardar la solicitud (${que})`, e);
+  }
+}
+
+function cita(
+  contacto: Contacto,
+  estado: SolicitudCita["estado"],
+  horario: string | null = null,
+  direccion: string | null = null,
+): SolicitudCita {
+  return {
+    nombre: contacto.nombre.trim(),
+    whatsapp: contacto.telefono,
+    estado,
+    horario,
+    direccion,
+  };
+}
+
 /** Lista numerada de equipos con stock, agrupada por marca. */
 export function listaEquipos(
   productos: ProductoDeLista[],
@@ -234,8 +265,8 @@ async function ofrecerTurnos(
     turnos = await s.turnosDisponibles();
   } catch (e) {
     console.error("No se pudieron leer los horarios", e);
-    await s.avisarAsesor(
-      `⚠️ Gaby no pudo leer la agenda. Contactar a ${contacto.nombre || "cliente"} (+${contacto.telefono}) para cita de agencia de loterías.`,
+    await anotar("cita", () =>
+      s.guardarSolicitudCita(cita(contacto, "error-agenda")),
     );
     return {
       respuestas: [T.elegir(T.ERROR_AGENDA, {}, s.azar)],
@@ -243,8 +274,8 @@ async function ofrecerTurnos(
     };
   }
   if (turnos.length === 0) {
-    await s.avisarAsesor(
-      `📅 Sin horarios libres. Contactar a ${contacto.nombre || "cliente"} (+${contacto.telefono}) para cita de agencia de loterías.`,
+    await anotar("cita", () =>
+      s.guardarSolicitudCita(cita(contacto, "sin-horarios")),
     );
     return {
       respuestas: [T.elegir(T.LOTERIA_SIN_HORARIOS, {}, s.azar)],
@@ -270,8 +301,10 @@ async function agendar(
     ok = await s.agendar(turno, contacto, { direccion });
   } catch (e) {
     console.error("No se pudo crear la cita", e);
-    await s.avisarAsesor(
-      `⚠️ Gaby no pudo guardar la cita en el calendario.\nCliente: ${contacto.nombre} (+${contacto.telefono})\nHorario pedido: ${turno.etiqueta}\nDirección: ${direccion}`,
+    await anotar("cita", () =>
+      s.guardarSolicitudCita(
+        cita(contacto, "error-agenda", turno.etiqueta, direccion),
+      ),
     );
     return {
       respuestas: [T.elegir(T.ERROR_AGENDA, {}, s.azar)],
@@ -282,14 +315,24 @@ async function agendar(
     const r = await ofrecerTurnos(s, contacto, T.LOTERIA_TURNO_OCUPADO);
     return r;
   }
-  await s.avisarAsesor(
-    `📅 Nueva cita (agencia de loterías)\nCliente: ${contacto.nombre || "—"} (+${contacto.telefono})\nCuándo: ${turno.etiqueta}\nDirección y contacto: ${direccion}`,
+  await anotar("cita", () =>
+    s.guardarSolicitudCita(
+      cita(contacto, "agendada", turno.etiqueta, direccion),
+    ),
   );
   return {
     respuestas: [
       `${T.elegir(T.LOTERIA_CONFIRMADA, { turno: turno.etiqueta }, s.azar)}\n\n${T.elegir(T.MENU_DE_NUEVO, {}, s.azar)} Escribe *MENU* para ver las opciones.`,
     ],
     estado: nuevo("menu", s),
+  };
+}
+
+function celular(contacto: Contacto, equipo: string | null): SolicitudCelular {
+  return {
+    nombre: contacto.nombre.trim(),
+    whatsapp: contacto.telefono,
+    equipo,
   };
 }
 
@@ -366,8 +409,23 @@ async function ofrecerPlanes(
     console.error("No se pudieron leer los planes RCV", e);
   }
   if (planes.length === 0) {
-    await s.avisarAsesor(
-      `🚗 Póliza RCV: no se pudieron mostrar los planes.\nCliente: ${contacto.nombre || "—"} (+${contacto.telefono})\nTipo: ${NOMBRES_CATEGORIA[categoria]}`,
+    // Sin correo ni plan: el asesor solo tiene su WhatsApp para escribirle.
+    await anotar("rcv", () =>
+      s.guardarSolicitudRcv({
+        nombre: contacto.nombre.trim(),
+        correo: "",
+        telefono: contacto.telefono,
+        whatsapp: contacto.telefono,
+        categoria,
+        planId: ID_SIN_PLANES,
+        clase: NOMBRES_CATEGORIA[categoria].toUpperCase(),
+        descripcion: "NO SE LE PUDIERON MOSTRAR LOS PLANES",
+        precioEur: null,
+        precioUsd: null,
+        precioBs: null,
+        precioCop: null,
+        financiamiento: null,
+      }),
     );
     return {
       respuestas: [T.elegir(T.RCV_SIN_PLANES, {}, s.azar)],
@@ -455,6 +513,8 @@ function planDeSolicitud(rcv: DatosRcv): PlanMostrado | null {
 }
 
 export const ID_COTIZACION_EXTRANJERA = "cotizacion-extranjera";
+/** Pidió la póliza pero el chat no pudo mostrarle los planes (D043). */
+export const ID_SIN_PLANES = "sin-planes";
 
 async function cerrarRcv(
   s: Servicios,
@@ -486,22 +546,7 @@ async function cerrarRcv(
     precioCop: plan.precios?.cop ?? null,
     financiamiento: rcv.financiamiento ?? null,
   };
-  try {
-    await s.guardarSolicitudRcv(solicitud);
-  } catch (e) {
-    // El aviso al asesor lleva los mismos datos: no se pierden.
-    console.error("No se pudo guardar la solicitud RCV", e);
-  }
-  const financiamiento =
-    rcv.financiamiento === undefined
-      ? ""
-      : `\nFinanciamiento: ${rcv.financiamiento ? "Sí" : "No"}`;
-  const detalle = rcv.vehiculo
-    ? `Vehículo: ${rcv.vehiculo}\nPrecio: por cotizar`
-    : `Plan: ${plan.clase} — ${plan.descripcion}\nPrecio: ${textoPrecio(plan.precios)}`;
-  await s.avisarAsesor(
-    `🚗 Póliza RCV\nTipo: ${NOMBRES_CATEGORIA[rcv.categoria]}\n${detalle}${financiamiento}\nNombre: ${nombre}\nCorreo: ${correo}\nTeléfono: ${telefono}\nWhatsApp: +${contacto.telefono}`,
-  );
+  await anotar("rcv", () => s.guardarSolicitudRcv(solicitud));
   const confirmada = rcv.vehiculo
     ? T.RCV_COTIZACION_CONFIRMADA
     : T.RCV_CONFIRMADA;
@@ -597,8 +642,8 @@ export async function procesar(
       const num = numeroElegido(texto);
       const equipo = num ? equipos[num - 1] : undefined;
       if (equipo) {
-        await s.avisarAsesor(
-          `📱 Interesado en teléfono a crédito\nCliente: ${contacto.nombre || "—"} (+${contacto.telefono})\nEquipo: ${equipo}`,
+        await anotar("celular", () =>
+          s.guardarSolicitudCelular(celular(contacto, equipo)),
         );
         return {
           respuestas: [
@@ -745,8 +790,8 @@ export async function procesar(
         console.error("No se pudo leer el catálogo", e);
       }
       if (!lista || lista.equipos.length === 0) {
-        await s.avisarAsesor(
-          `📱 Pidió la lista de teléfonos pero no se pudo mostrar.\nCliente: ${contacto.nombre || "—"} (+${contacto.telefono})`,
+        await anotar("celular", () =>
+          s.guardarSolicitudCelular(celular(contacto, null)),
         );
         return {
           respuestas: [

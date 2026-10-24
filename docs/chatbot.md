@@ -204,8 +204,11 @@ junto a Evolution API (WhatsApp). Usa directamente `lib/catalogo/` (lista de equ
   (1 público, 2 privado, 3 placas extranjeras) → lista de los transportes activos de esa
   categoría (si hay uno solo, como placas extranjeras, va directo) → precio en €, $ y Bs. +
   requisitos → si el plan tiene financiamiento y es público, lo pregunta → nombre, correo y
-  teléfono (`ESTE` = su número de WhatsApp) → se guarda en `solicitudesRcv` y se avisa al
-  asesor. Todo se edita en el panel, sección **Póliza RCV** (`/rcv`); ver abajo.
+  teléfono (`ESTE` = su número de WhatsApp) → se guarda en `solicitudesRcv`. Todo se edita en
+  el panel, sección **Póliza RCV** (`/rcv`); ver abajo.
+- **Solicitudes (D043):** Gaby **no** les escribe a los asesores por WhatsApp (riesgo de
+  baneo del número). Al terminar cada flujo guarda la solicitud y manda un aviso push al panel;
+  se ven en la pestaña **Solicitudes** (`/solicitudes/celulares`, `/rcv`, `/citas`). Ver abajo.
 - **Horario de atención:** documento `configuracion/horario` (tipo `HorarioAtencion` de
   `lib/horario/tipos.ts`). Si no existe, el bot usa `HORARIO_POR_DEFECTO` (lun–vie 9–17,
   sáb 9–13, citas de 60 min, mínimo 3 h de anticipación).
@@ -242,8 +245,11 @@ Se edita en el panel (`/rcv`). Modelo en `lib/rcv/tipos.ts`; el bot lo lee con c
 - **Placas extranjeras (D034):** no tiene planes ni precio fijo. El chat muestra los
   requisitos, pide el vehículo (tipo, marca, modelo, año) y luego nombre, correo y teléfono.
   La solicitud se guarda con `planId: "cotizacion-extranjera"`, precios `null` y `vehiculo`.
+- **Sin planes que mostrar (D043):** si no se pudieron leer los planes, la solicitud se guarda
+  igual con `planId: "sin-planes"`, `correo: ""`, `telefono` = su WhatsApp y precios `null`.
 - **Escritura del bot:** la cuenta `chatbot-lectura` pasa a **Cloud Datastore User**
-  (`roles/datastore.user`) para poder crear `solicitudesRcv`. El código solo escribe ahí.
+  (`roles/datastore.user`) para poder crear las solicitudes (`solicitudesRcv`,
+  `solicitudesCelulares`, `solicitudesCitas`).
 - Seed: `bun run seed:emulador` y `bun run seed:produccion` cargan la tabla del cliente
   (`lib/rcv/planes-iniciales.ts`) y sus tasas implícitas (1 € = 1,1193 $ = 979,0788 Bs.).
 
@@ -260,8 +266,21 @@ Se editan en el panel (`/clientes`). Modelo en `lib/financiamiento/tipos.ts`. Fe
 - **Recordatorios de vencimiento (D033):** cada hora, entre 9:00 y 19:00 de Caracas, el bot
   busca los `clientesRcv` con `vence` en los próximos 30 días. Cuando faltan ≤ 30 días manda el
   aviso del mes; cuando faltan ≤ 3 días, el final. Marca el campo **antes** de enviar (en una
-  transacción que comprueba que `vence` no cambió) y avisa a los asesores. Renovar en el panel
+  transacción que comprueba que `vence` no cambió) y manda un aviso push al panel (no por
+  WhatsApp a los asesores, D043). Renovar en el panel
   corre `vence` un año y pone los dos campos en `false`. Sale aunque Gaby esté apagada.
+
+## Solicitudes del chat (D043)
+
+Modelo en `lib/solicitudes/tipos.ts`. Solo las escribe el bot (Admin SDK); el panel las lee y
+las borra en `/solicitudes`. Las de póliza RCV siguen en `solicitudesRcv` (arriba).
+
+| Dónde | Campos | Cuándo |
+|---|---|---|
+| `solicitudesCelulares/{id}` | `nombre` (perfil de WhatsApp, puede ser `""`), `whatsapp`, `equipo` (texto, o `null` si no se le pudo mostrar la lista), `creadoEn` | Elige un equipo, o falla el catálogo |
+| `solicitudesCitas/{id}` | `nombre`, `whatsapp`, `estado` (`agendada` / `sin-horarios` / `error-agenda`), `horario` (etiqueta del turno o `null`), `direccion` (o `null`), `creadoEn` | Cita creada en Calendar, o hay que cuadrarla a mano |
+
+`ASESOR_NUMEROS` sigue existiendo solo para que esos números manden `gaby on`/`gaby off`.
 
 ## Avisos push al panel (D035)
 
@@ -269,7 +288,9 @@ El panel es instalable (PWA: `app/manifest.ts`, `public/sw.js`). La campana de l
 guarda la suscripción Web Push del teléfono en `suscripcionesPush/{sha256(endpoint)}`
 (`endpoint`, `p256dh`, `auth`, `uid`, `dispositivo`, `creadaEn`). Cuando Gaby agenda una cita,
 el bot (`bot/src/avisos-push.ts`, librería `web-push`) manda un aviso a cada suscripción; al
-tocarlo se abre el evento en Google Calendar. Las que responden 404/410 se borran.
+tocarlo se abre el evento en Google Calendar. También avisa de cada solicitud nueva (lleva a
+su pestaña de `/solicitudes`, D043) y de cada recordatorio de vencimiento enviado. Las que
+responden 404/410 se borran.
 
 Configuración: `bunx web-push generate-vapid-keys` → la pública en el panel
 (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`) y en el bot (`VAPID_PUBLIC_KEY`), la privada solo en el bot
