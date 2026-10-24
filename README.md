@@ -155,6 +155,40 @@ Firestore › `admins`.
 - Con una cuenta sin documento en `admins` (o sin sesión) no se ve nada.
 - Conecta el chatbot siguiendo [`docs/chatbot.md`](docs/chatbot.md).
 
+## Bot de WhatsApp (Gaby) en el VPS
+
+Gaby corre en Docker en el VPS. Despliegue completo: [`bot/DESPLIEGUE.md`](bot/DESPLIEGUE.md).
+
+**Entrar a la terminal del VPS** (desde PowerShell o Git Bash en tu PC):
+
+```bash
+ssh root@178.238.238.7
+```
+
+Pide la contraseña: está en `.env.vps` en la raíz del repo (`VPS_PASSWORD`). Ese archivo es
+solo tuyo, está ignorado por git y **no se sube nunca**. Si no lo tienes, créalo así:
+
+```bash
+VPS_HOST=178.238.238.7
+VPS_USUARIO=root
+VPS_PASSWORD=
+```
+
+Ya dentro, todo se corre desde la carpeta del bot:
+
+```bash
+cd /opt/inversiones-js/bot
+```
+
+| Para… | Comando |
+|---|---|
+| Ver los logs | `docker compose logs -f --tail 100 gaby` (Ctrl+C para salir) |
+| Ver los números de asesores que usa Gaby | `docker compose exec gaby printenv ASESOR_NUMEROS` |
+| Ver los asesores del archivo `.env` | `grep ASESOR_NUMEROS .env` |
+| Aplicar un cambio del `.env` | `docker compose up -d gaby` |
+| Encender / apagar / ver estado | `./scripts/gaby.sh on` · `./scripts/gaby.sh off` · `./scripts/gaby.sh estado` |
+| Salir del VPS | `exit` |
+
 ### Mejoras recomendadas después
 
 - **App Check** (reCAPTCHA Enterprise) para que solo la web del panel pueda llamar a Firestore y
