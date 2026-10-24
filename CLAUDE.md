@@ -49,12 +49,15 @@ bun run build
 puerto, en segundo plano). Build, typecheck, lint y tests sí se corren sin preguntar.
 
 **QA contra base local:** `bun run qa:local -- --port <p>` levanta los **emuladores de
-Firebase** (proyecto `demo-inversiones-js`, necesita Java), carga `seed-emulador`, crea las
-cuentas de `.env.test.local` (`ADMIN_…` con `admins/{uid}`, `EMAIL_TEST` sin acceso) y
-arranca el servidor apuntando a los emuladores. Nunca contra el proyecto real.
+Firebase** (Java, sin Docker; proyecto `demo-inversiones-js`), carga `seed-emulador`, crea
+las cuentas de `.env.test.local` (`ADMIN_…` con `admins/{uid}`, `EMAIL_TEST` sin acceso) y
+arranca el servidor sobre ellos. Nunca contra el proyecto real. Sin ellos: `--offline`.
 
 Playwright, si se usa, se corre con `node`, no con `bun` (en Windows se cuelga).
 Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/dist/docs/`.
+
+**Modelo por tarea:** antes de cada una, `Modelo recomendado: <modelo · esfuerzo>` (kit
+`TOKEN-ECONOMY.md` §12; riesgo → `opus`); los subagentes llevan ambos en `Agent(...)`.
 
 ## Reglas del proyecto
 
@@ -92,5 +95,6 @@ más que en una línea. Se envía al kit con `/kit-feedback`.
 | `a11y` | Siempre que se toque UI, antes de pedir revisión |
 | `git-flow` | Al abrir y al cerrar cada unidad |
 | `orchestrate` | Llega una lista, o una fase se hace en olas (una ola por sesión) |
-| `wave-qa` | Lo lanza `orchestrate` con la ola mergeada, antes de cerrarla (usa `qa:local`) |
-| `design-qa` / `functional-qa` | Al cerrar una página / un flujo completo |
+| `wave-qa` | `orchestrate`, tras una ola con flujos de riesgo (usa `qa:local`) |
+| `functional-qa` | Cierra un flujo de riesgo (auth, datos guardados, pagos) · QA de versión |
+| `design-qa` | Solo en la QA de versión (fase 09 / PR de release) |

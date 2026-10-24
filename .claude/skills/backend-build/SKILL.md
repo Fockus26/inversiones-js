@@ -64,8 +64,9 @@ These are not discussed or postponed "for later". Later never comes.
 
 ### Local database for QA
 QA never runs against the real database: `bun run qa:local` (`scripts/qa-local.ts`) starts
-Supabase in Docker, applies migrations + seed, creates the accounts and points the app at
-the local stack. For it to work, from the first unit with a database:
+Supabase in Docker (or the Firebase emulators, below), applies migrations + seed, creates
+the accounts and points the app at the local stack. For it to work, from the first unit with
+a database:
 - `supabase init` and **every schema change as a migration** in `supabase/migrations/`
   (`supabase migration new <name>`). A change made only in the dashboard does not exist in
   the local database: QA would test another schema.
@@ -81,6 +82,20 @@ the local stack. For it to work, from the first unit with a database:
   (`ADMIN_EMAILS`) → `ROLE_BY_ENV`. If the app uses a Supabase variable with another name,
   add it to `ENV_MAP` there (the script aborts if any is left pointing at `*.supabase.co`).
   (Projects from before 3.8.0 have these as `asignarRol`, `ROL_POR_ENV` and `MAPEO`.)
+- **Firebase** (Auth + Firestore): the local backend is the emulators, not Docker — they
+  need Java (a JDK) and the `firebase-tools` CLI. `firebase.json` with an `emulators` block
+  (auth, firestore, ui) in git, a `"emulators": "firebase emulators:start --project
+  demo-<project>"` script, and the client connecting to them when
+  `NEXT_PUBLIC_USE_EMULATORS` (`PUBLIC_`/`VITE_` in Astro/Vite) is `"true"`
+  (`connectAuthEmulator`, `connectFirestoreEmulator`); the Admin SDK reads
+  `FIREBASE_AUTH_EMULATOR_HOST`/`FIRESTORE_EMULATOR_HOST` by itself. `qa-local.ts` sets all of
+  that, gives the role as a custom claim (`role`) and runs `scripts/seed-emulator.ts` if it
+  exists; a role kept in a document (`admins/{uid}`) → `assignRoleFirebase`. The project is
+  always `demo-*`: with it the emulators cannot reach real resources.
+  **Rules tests** (`@firebase/rules-unit-testing`): `initializeTestEnvironment` in
+  `beforeAll(fn, 30_000)` — bun's default 5 s ran out on the first cold run and the suite
+  failed (inversiones-js) — and their folder out of `test:related` (`--dir`), since they need
+  the emulator.
 - Another external database (Neon Postgres, etc.): the local equivalent in Docker and its
   `DATABASE_URL` in `ENV_MAP`. A service with no local equivalent: say so in "How to test";
   QA tests it remotely with data cleanup.
@@ -89,6 +104,12 @@ the local stack. For it to work, from the first unit with a database:
 - **Always validate on the server**, even if you validate on the client. Client validation
   is UX; server validation is security. An attacker does not use your form.
 - A single Zod schema, shared between client and server.
+- **Every text field trimmed before it is checked:** `z.string().trim().min(1, '…').max(<the
+  column's>)`; emails also `.toLowerCase()`. Dates with a 4-digit year enforced, never
+  `new Date(<free text>)`. Why: "only spaces" passing as filled is the finding QA brings
+  back in every project, and a 2-digit year was saved as 1926 (inversiones-js, High).
+- **Before closing the unit**, the kit's `reference/QA-PREVENTION.md` §1-§3: the defects QA
+  keeps finding in forms, submits and errors, with the rule that prevents each.
 - Never trust client data for authorization: the `userId` comes from the server session,
   never from the request body.
 
@@ -205,11 +226,12 @@ Identical to the frontend's:
         ↓
 [git-flow: close — pr mode: PR César reviews · local mode: pause → commit → merge]
         ↓
-[functional-qa: when a full flow closes] ← launch the subagent
+[functional-qa: when a risk flow closes] ← launch the subagent
 ```
 
-`functional-qa` is launched when a **full flow** closes (sign-up + login + session, or
-cart + checkout + confirmation), not after every loose route.
+`functional-qa` is launched when a **full risk flow** closes (sign-up + login + session,
+cart + checkout + confirmation, a form that saves data), not after every loose route. The
+adversarial pass over every flow, and `design-qa`, are the version QA (phase 09).
 
 ---
 

@@ -91,6 +91,37 @@ and flag that part of the code as "written without checking current docs".
   Reimplementing a primitive is how half the accessibility bugs slip in: the keyboard and
   focus behavior is already solved there. See `reference/UI-LIBRARIES.md` for what changes
   depending on which one was chosen.
+- **Built to survive 200 % text and 320 px**, from the first version — in world-flags the
+  same reflow class came back with every new piece and took four QA rounds:
+  - a row of buttons or chips → `flex-wrap`, and the button allows its text to wrap;
+  - a name or title that can be long → never `truncate` without another way to read it
+    (tooltip, a second line); headings with `wrap-anywhere` / `break-words`;
+  - a `fixed` container (toast, banner, sheet) → `max-height` in `dvh` + its own scroll;
+  - if the project has a versioned reflow script (`tests/e2e/reflow-*`), run it on the new
+    piece before closing.
+- **Motion in interactive widgets** — nothing that opens, closes or moves does it with a
+  jump. Why: accordions, tabs and anchor links that teleport kept coming back as polish
+  requests César made by hand (2026-10-23).
+  - **Accordion / FAQ / collapsible:** height animated with the library's variable
+    (`--radix-accordion-content-height` with Radix/shadcn, `--accordion-panel-height` with
+    Base UI); by hand, a grid with `grid-template-rows` from `0fr` to `1fr` — never `height:
+    auto` or a fixed `max-height`. The chevron rotates with the same duration.
+  - **Tabs and nav links:** the active indicator slides between items (`transform` on one
+    indicator, not a border that appears); the panel content fades.
+  - **Select, dropdown, popover, menu, dialog:** enter/exit with opacity + a small
+    translate/scale, using the library's states (`data-[state=open]` / `data-starting-style`).
+  - **Anchor links (in-page nav, "volver arriba"):** `motion-safe:scroll-smooth` on `<html>`
+    and `scroll-margin-top` on the targets equal to the sticky header's height token. A
+    `scrollIntoView` from JS uses `behavior: 'smooth'` only if `prefers-reduced-motion` is
+    not `reduce`.
+  - Always the `DESIGN_TOKENS.md` durations and easing, only `transform`/`opacity` (or the
+    grid rows) — never `top`/`height` in px — and every one behind `motion-safe:` (or
+    turned off under `prefers-reduced-motion: reduce`).
+- **Forms that submit:** the button is `disabled` + `aria-busy` while the request is in
+  flight (double click and repeated Enter are the most common QA finding), the shared Zod
+  schema trims every text field, and a failed request ends in an error state with a retry,
+  never an endless spinner. The full list, with what each prevents: the kit's
+  `reference/QA-PREVENTION.md` — go through the sections your unit touches before closing.
 - **Names:** components in `PascalCase`, component files in `PascalCase.tsx`, utilities in
   `camelCase.ts`, routes in `kebab-case`.
 
@@ -123,7 +154,9 @@ Follow the order the handoff brings. If it brings none, this one:
 5. Sections        → in each page's vertical order
 6. Pages           → assemble and wire routes
 7. States          → empty, loading, error; 404 / 500 / offline / maintenance screens
-                     (the kit's reference/STATUS-SCREENS.md)
+                     (the kit's reference/STATUS-SCREENS.md), AND the /estados?screen=…
+                     gallery in the same unit (dev only, 404 in production): design-qa
+                     audits through it; without it the 500 went unaudited (inversiones-js)
 8. Responsive      → polish across every breakpoint
 ```
 
