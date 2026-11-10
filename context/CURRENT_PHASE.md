@@ -1,11 +1,15 @@
 # Fase actual
 
-Ola 0 (base) en `main`. Ola 1 en paralelo: W1 auth/login, W2 catálogo CRUD, W3 seed + chatbot.
-Plan: `context/plans/orquestacion-2026-10-01.md`.
+**Migración Firebase → Postgres en el VPS** (pedida por César el 2026-11-10).
+Plan: `context/plans/migrate-vps.md` · Rama: `feat/migrate-vps` (PR en borrador hasta el corte).
 
-| Unidad | Rama | PR | Estado |
-|---|---|---|---|
-| W1 | feat/auth-login (wt1) | #2 | listo para revisión |
-| W2 | feat/catalogo-crud (wt2) | #3 | listo para revisión |
-| W3 | feat/chatbot-produccion (wt3) | #1 | listo para revisión |
-| Adenda de diseño | feat/pantallas-estado-y-marca | — | listo para revisión |
+| Paso | Estado |
+|---|---|
+| Preparativos (Brevo, hash, permiso Vercel) | Hecho: variables en Vercel prod + preview |
+| 0 Arranque (rama, Tech refs, D044 modelo) | Hecho · PR #26 (borrador) |
+| 1 BD (3 bases en kit-vps, esquema, migración en _dev y _preview) | Hecho · PR #26 |
+| 2 Auth · 3 Capa de datos · 4 Bot · 5 Tests | Pendiente |
+| 6 Ensayo de exportación · 7 QA | Pendiente |
+| 8 Corte con César | Pendiente |
+
+Antes: olas 0–1 (auth, catálogo, chatbot) y adendas mergeadas; sin PRs abiertos.
