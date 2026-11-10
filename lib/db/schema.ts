@@ -3,8 +3,7 @@
  * de `lib/*\/tipos.ts` en snake_case. Los límites de `firestore.rules` son CHECK, así que se
  * aplican también a lo que escribe el bot. Contrato con el chatbot: ver docs/chatbot.md.
  *
- * Las tablas de Better Auth (`user`, `session`, `account`, `verification`) se suman en el
- * paso de auth; entonces `admins.user_id` y `suscripciones_push.user_id` pasan a FK de `user.id`.
+ * Las tablas de Better Auth viven en ./auth-schema y se reexportan aquí (drizzle-kit lee este archivo).
  */
 import { sql } from "drizzle-orm";
 import {
@@ -24,6 +23,9 @@ import {
 import type { PlanPagos } from "../financiamiento/tipos";
 import type { CategoriaRcv } from "../rcv/tipos";
 import type { EstadoCita } from "../solicitudes/tipos";
+import { user } from "./auth-schema";
+
+export * from "./auth-schema";
 
 // Ids de Firestore (20 caracteres) y uid de Firebase se conservan: texto, no uuid.
 const id = () => text().primaryKey().default(sql`gen_random_uuid()::text`);
@@ -41,7 +43,9 @@ const PATRON_MARCA = "^[A-Z0-9ÁÉÍÓÚÜÑ][A-Z0-9ÁÉÍÓÚÜÑ &.+-]*$";
 
 /** `admins/{uid}` (D003): la fila existe ⇔ ese usuario entra al panel. */
 export const admins = pgTable("admins", {
-  userId: text().primaryKey(),
+  userId: text()
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
   creadoEn: creadoEn(),
 });
 
@@ -271,7 +275,9 @@ export const suscripcionesPush = pgTable(
     endpoint: text().notNull().unique(),
     p256dh: text().notNull(),
     auth: text().notNull(),
-    userId: text().notNull(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
     dispositivo: text().notNull().default(""),
     creadaEn: creadoEn(),
   },
@@ -286,3 +292,13 @@ export const suscripcionesPush = pgTable(
     ),
   ],
 );
+
+/**
+ * Fallos de inicio de sesión por correo (kit `vps-postgres.md` § Rate limit por cuenta).
+ * Con ≥ 5 fallos en 15 min se responde 429 a esa cuenta; un acierto borra la fila.
+ */
+export const intentosLogin = pgTable("intentos_login", {
+  correo: text().primaryKey(),
+  fallos: integer().notNull().default(0),
+  desde: timestamp({ withTimezone: true, mode: "date" }).notNull().defaultNow(),
+});

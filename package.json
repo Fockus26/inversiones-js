@@ -23,10 +23,12 @@
     "qa:local": "node scripts/qa-local.ts",
     "vps:env": "bun scripts/vps-env.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "usuarios:importar": "bun scripts/importar-usuarios.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "better-auth": "^1.7.19",
     "class-variance-authority": "^0.7.1",
     "drizzle-orm": "^0.45.4",
     "firebase": "^12.19.0",
@@ -34,6 +36,7 @@
     "lucide-react": "^1.49.0",
     "next": "16.3.8",
     "next-themes": "^0.4.6",
+    "nodemailer": "^10.5.0",
     "pg": "^8.23.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -50,6 +53,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/bun": "^1.4.2",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
