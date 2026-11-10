@@ -1,18 +1,8 @@
 "use client";
 
-import {
-  collection,
-  deleteDoc,
-  doc,
-  type FirestoreError,
-  onSnapshot,
-  serverTimestamp,
-  setDoc,
-  Timestamp,
-} from "firebase/firestore";
-import { firebaseAuth, firestore } from "@/lib/firebase/client";
-import { actualizar, escribir } from "@/lib/firebase/escritura";
-import { conTextos, esPlanPagos } from "@/lib/firebase/normalizar";
+import * as acciones from "@/lib/data/clientes";
+import type { ErrorDatos } from "@/lib/data/errores";
+import { escribir, sondear } from "@/lib/data/sondeo";
 import {
   actualizarDemo,
   borrarDemo,
@@ -32,97 +22,59 @@ import {
 } from "./tipos";
 
 /**
- * Acceso a los clientes con financiamiento desde el panel (D032). Igual que los otros
- * repositorios: toda escritura lleva la huella `actualizadoPor`/`actualizadoEn` de las reglas.
- * En modo demo (`?demo`, D037) todo va a la memoria de la pestaña, nunca a Firestore.
+ * Acceso a los clientes con financiamiento desde el panel (D032), sobre `lib/data/clientes.ts`.
+ * La huella la pone el servidor. En modo demo (`?demo`, D037) todo va a la memoria de la
+ * pestaña, nunca a la base.
  */
-
-function huella() {
-  const uid = firebaseAuth().currentUser?.uid;
-  if (!uid) throw new Error("Sin sesión: inicia sesión para guardar cambios.");
-  return { actualizadoPor: uid, actualizadoEn: serverTimestamp() };
-}
-
-const aFecha = (v: unknown) => (v instanceof Timestamp ? v.toDate() : null);
 
 type Coleccion =
   | typeof COLECCION_CLIENTES_CELULARES
   | typeof COLECCION_CLIENTES_RCV;
 
-const TEXTOS_CLIENTE = [
-  "nombre",
-  "cedula",
-  "telefono",
-  "equipo",
-  "correo",
-  "direccion",
-  "vehiculo",
-  "placa",
-  "notas",
-] as const;
+const TABLA: Record<Coleccion, string> = {
+  [COLECCION_CLIENTES_CELULARES]: "clientes_celulares",
+  [COLECCION_CLIENTES_RCV]: "clientes_rcv",
+};
 
-/**
- * Documento → cliente, tolerante (ver `lib/firebase/normalizar.ts`). Un cliente de celular sin
- * plan de pagos válido no se puede mostrar: se omite y se avisa en la consola.
- */
-function aCliente(
-  coleccion: Coleccion,
-  id: string,
-  datos: Record<string, unknown>,
-): Record<string, unknown> | null {
-  const pagos = esPlanPagos(datos.pagos) ? datos.pagos : null;
-  if (coleccion === COLECCION_CLIENTES_CELULARES && !pagos) {
-    console.warn(
-      `[clientes] ${coleccion}/${id} sin plan de pagos válido: se omite`,
-    );
-    return null;
-  }
-  return {
-    ...conTextos(datos, TEXTOS_CLIENTE),
-    pagos,
-    id,
-    actualizadoEn: aFecha(datos.actualizadoEn),
-  };
-}
-
-function escuchar<T extends { id: string; nombre: string }>(
-  coleccion: Coleccion,
-  alCambiar: (clientes: T[], omitidos: number) => void,
-  alFallar: (error: FirestoreError) => void,
+export function escucharClientesCelulares(
+  alCambiar: (c: ClienteCelularConId[], omitidos: number) => void,
+  alFallar: (e: ErrorDatos) => void,
 ): () => void {
-  if (modoDemo()) return escucharDemo(coleccion, (c: T[]) => alCambiar(c, 0));
-  return onSnapshot(
-    collection(firestore(), coleccion),
-    (snap) => {
-      const clientes = snap.docs
-        .map((d) => aCliente(coleccion, d.id, d.data()) as T | null)
-        .filter((c): c is T => c !== null)
-        .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
-      alCambiar(clientes, snap.size - clientes.length);
-    },
+  if (modoDemo())
+    return escucharDemo(
+      COLECCION_CLIENTES_CELULARES,
+      (c: ClienteCelularConId[]) => alCambiar(c, 0),
+    );
+  return sondear(
+    [TABLA[COLECCION_CLIENTES_CELULARES]],
+    acciones.listarClientesCelulares,
+    (r) => alCambiar(r.clientes, r.omitidos),
     alFallar,
   );
 }
 
-export const escucharClientesCelulares = (
-  alCambiar: (c: ClienteCelularConId[], omitidos: number) => void,
-  alFallar: (e: FirestoreError) => void,
-) => escuchar(COLECCION_CLIENTES_CELULARES, alCambiar, alFallar);
-
-export const escucharClientesRcv = (
+export function escucharClientesRcv(
   alCambiar: (c: ClienteRcvConId[], omitidos: number) => void,
-  alFallar: (e: FirestoreError) => void,
-) => escuchar(COLECCION_CLIENTES_RCV, alCambiar, alFallar);
+  alFallar: (e: ErrorDatos) => void,
+): () => void {
+  if (modoDemo())
+    return escucharDemo(COLECCION_CLIENTES_RCV, (c: ClienteRcvConId[]) =>
+      alCambiar(c, 0),
+    );
+  return sondear(
+    [TABLA[COLECCION_CLIENTES_RCV]],
+    acciones.listarClientesRcv,
+    (r) => alCambiar(r.clientes, r.omitidos),
+    alFallar,
+  );
+}
 
 export async function crearClienteCelular(
   campos: CamposClienteCelular,
 ): Promise<void> {
   if (modoDemo()) return crearDemo(COLECCION_CLIENTES_CELULARES, campos);
-  await escribir(
-    setDoc(doc(collection(firestore(), COLECCION_CLIENTES_CELULARES)), {
-      ...campos,
-      ...huella(),
-    }),
+  await escribir([TABLA[COLECCION_CLIENTES_CELULARES]], () =>
+    acciones.crearClienteCelular(campos),
   );
 }
 
@@ -132,19 +84,15 @@ export async function actualizarClienteCelular(
 ): Promise<void> {
   if (modoDemo())
     return actualizarDemo(COLECCION_CLIENTES_CELULARES, id, campos);
-  await actualizar(doc(firestore(), COLECCION_CLIENTES_CELULARES, id), {
-    ...campos,
-    ...huella(),
-  });
+  await escribir([TABLA[COLECCION_CLIENTES_CELULARES]], () =>
+    acciones.actualizarClienteCelular(id, campos),
+  );
 }
 
 export async function crearClienteRcv(campos: CamposClienteRcv): Promise<void> {
   if (modoDemo()) return crearDemo(COLECCION_CLIENTES_RCV, campos);
-  await escribir(
-    setDoc(doc(collection(firestore(), COLECCION_CLIENTES_RCV)), {
-      ...campos,
-      ...huella(),
-    }),
+  await escribir([TABLA[COLECCION_CLIENTES_RCV]], () =>
+    acciones.crearClienteRcv(campos),
   );
 }
 
@@ -153,10 +101,9 @@ export async function actualizarClienteRcv(
   campos: Partial<CamposClienteRcv>,
 ): Promise<void> {
   if (modoDemo()) return actualizarDemo(COLECCION_CLIENTES_RCV, id, campos);
-  await actualizar(doc(firestore(), COLECCION_CLIENTES_RCV, id), {
-    ...campos,
-    ...huella(),
-  });
+  await escribir([TABLA[COLECCION_CLIENTES_RCV]], () =>
+    acciones.actualizarClienteRcv(id, campos),
+  );
 }
 
 export async function borrarCliente(
@@ -164,7 +111,9 @@ export async function borrarCliente(
   id: string,
 ): Promise<void> {
   if (modoDemo()) return borrarDemo(coleccion, id);
-  await escribir(deleteDoc(doc(firestore(), coleccion, id)));
+  await escribir([TABLA[coleccion]], () =>
+    acciones.borrarCliente(coleccion, id),
+  );
 }
 
 /** Guarda las cuotas tras marcar o desmarcar una (la lista va completa). */
@@ -174,8 +123,7 @@ export async function guardarCuotas(
   cuotas: Cuota[],
 ): Promise<void> {
   if (modoDemo()) return guardarCuotasDemo(coleccion, id, cuotas);
-  await actualizar(doc(firestore(), coleccion, id), {
-    "pagos.cuotas": cuotas,
-    ...huella(),
-  });
+  await escribir([TABLA[coleccion]], () =>
+    acciones.guardarCuotas(coleccion, id, cuotas),
+  );
 }

@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { actualizarProducto, borrarProducto } from "@/lib/catalogo/repositorio";
 import type { ProductoConId } from "@/lib/catalogo/tipos";
-import { mensajeDeError } from "@/lib/firebase/errores";
+import { mensajeDeError } from "@/lib/data/errores";
 import { cn } from "@/lib/utils";
 
 interface Props {

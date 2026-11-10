@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { mensajeDeError } from "@/lib/data/errores";
 import { marcarCuota, resumenPagos } from "@/lib/financiamiento/cuotas";
 import {
   diasEntre,
@@ -34,7 +35,6 @@ import type {
   CampoPagos,
   FormularioPagos,
 } from "@/lib/financiamiento/validacion";
-import { mensajeDeError } from "@/lib/firebase/errores";
 import { cn } from "@/lib/utils";
 import { BadgePagos, Campo, type Coleccion } from "./comun";
 

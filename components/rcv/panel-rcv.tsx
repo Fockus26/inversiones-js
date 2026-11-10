@@ -40,7 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { mensajeDeError } from "@/lib/firebase/errores";
+import { mensajeDeError } from "@/lib/data/errores";
 import { cotizar, numeroEs, textoCop } from "@/lib/rcv/cotizacion";
 import {
   actualizarPlanRcv,

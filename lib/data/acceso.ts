@@ -4,16 +4,15 @@ import { auth } from "../auth/servidor";
 import { db } from "../db/client";
 import { admins } from "../db/schema";
 import type { Db } from "../db/tipos";
+import { ErrorAcceso } from "./acceso-error";
+import { ejecutarComo } from "./accion";
+import type { Resultado } from "./resultado";
 
 /**
- * Sustituye `esAdmin()` de firestore.rules (D003): cada función de `lib/data/` empieza por
- * `requireAdmin()`. Sin sesión → 401; con sesión pero sin fila en `admins` → 403.
+ * Sustituye `esAdmin()` de firestore.rules (D003): cada server action de `lib/data/` pasa por
+ * `comoAdmin()`. Solo en el servidor.
  */
-export class ErrorAcceso extends Error {
-  constructor(readonly estado: 401 | 403) {
-    super(estado === 401 ? "Inicia sesión para continuar." : "Sin acceso.");
-  }
-}
+export { ErrorAcceso };
 
 export async function esAdmin(database: Db, userId: string): Promise<boolean> {
   const [fila] = await database
@@ -23,10 +22,20 @@ export async function esAdmin(database: Db, userId: string): Promise<boolean> {
   return Boolean(fila);
 }
 
+/** Uid del usuario de la sesión, o `null` sin sesión. */
+export async function uidDeSesion(): Promise<string | null> {
+  const sesion = await auth.api.getSession({ headers: await headers() });
+  return sesion?.user.id ?? null;
+}
+
 /** Devuelve el uid del admin de la sesión (para la huella `actualizado_por`). */
 export async function requireAdmin(): Promise<string> {
-  const sesion = await auth.api.getSession({ headers: await headers() });
-  if (!sesion) throw new ErrorAcceso(401);
-  if (!(await esAdmin(db, sesion.user.id))) throw new ErrorAcceso(403);
-  return sesion.user.id;
+  const uid = await uidDeSesion();
+  if (!uid) throw new ErrorAcceso(401);
+  if (!(await esAdmin(db, uid))) throw new ErrorAcceso(403);
+  return uid;
 }
+
+export const comoAdmin = <T>(
+  fn: (uid: string) => Promise<T>,
+): Promise<Resultado<T>> => ejecutarComo(requireAdmin, fn);

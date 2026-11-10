@@ -1,9 +1,5 @@
 "use client";
 
-import {
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
 import { EyeIcon, EyeOffIcon, Loader2Icon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -25,7 +21,10 @@ import {
   AVISO_SIN_ACCESO,
   rutaSiguienteSegura,
 } from "@/lib/auth/siguiente";
-import { firebaseAuth } from "@/lib/firebase/client";
+import {
+  entrar as entrarConCorreo,
+  pedirRestablecer,
+} from "@/lib/auth/usuario";
 import { cn } from "@/lib/utils";
 
 // El anillo de shadcn va al 50 %: el verde azulado así no llega a 3:1 sobre blanco.
@@ -86,12 +85,8 @@ export function FormularioLogin() {
     setEnviando(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(
-        firebaseAuth(),
-        correo.trim(),
-        contrasena,
-      );
-      // Sigue "enviando" hasta que la sesión compruebe admins/{uid} (efecto de arriba).
+      await entrarConCorreo(correo.trim(), contrasena);
+      // Sigue "enviando" hasta que la sesión compruebe si es admin (efecto de arriba).
     } catch (e) {
       setError(mensajeDeErrorAuth(e));
       ocupado.current = false;
@@ -109,7 +104,7 @@ export function FormularioLogin() {
     setRestableciendo(true);
     setError(null);
     try {
-      await sendPasswordResetEmail(firebaseAuth(), correo.trim());
+      await pedirRestablecer(correo.trim());
       setAviso(MENSAJE_RESTABLECER);
     } catch (e) {
       const codigo = codigoDeError(e);
@@ -129,7 +124,7 @@ export function FormularioLogin() {
 
   const idError = `${id}-error`;
 
-  // Mientras Firebase recupera la sesión guardada no se sabe si ya entró: mostrar el formulario
+  // Mientras se comprueba la sesión guardada no se sabe si ya entró: mostrar el formulario
   // ahí lo hace parpadear antes de saltar al panel. Si ya es admin, solo se redirige.
   if (!enviando && (estado === "cargando" || estado === "admin"))
     return <ComprobandoSesion />;

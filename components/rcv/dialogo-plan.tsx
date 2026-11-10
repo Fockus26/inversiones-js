@@ -20,7 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { parsearEntero } from "@/lib/catalogo/validacion";
-import { mensajeDeError } from "@/lib/firebase/errores";
+import { mensajeDeError } from "@/lib/data/errores";
 import { cotizar, textoPrecio } from "@/lib/rcv/cotizacion";
 import { actualizarPlanRcv, crearPlanRcv } from "@/lib/rcv/repositorio";
 import {

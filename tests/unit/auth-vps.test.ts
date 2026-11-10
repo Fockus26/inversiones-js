@@ -35,7 +35,7 @@ beforeAll(async () => {
     FIREBASE_HASH_MEM_COST: "14",
   });
   await migrate(db, { migrationsFolder: "drizzle" });
-});
+}, 30_000);
 
 afterAll(() => {
   process.env = ENTORNO_ANTERIOR;

@@ -28,7 +28,7 @@ import {
   LIMITES,
   validarProducto,
 } from "@/lib/catalogo/validacion";
-import { mensajeDeError } from "@/lib/firebase/errores";
+import { mensajeDeError } from "@/lib/data/errores";
 import { cn } from "@/lib/utils";
 import { DIALOGO_CON_PIE_FIJO, haceCuanto } from "./formato";
 import { SelectorMarca } from "./selector-marca";

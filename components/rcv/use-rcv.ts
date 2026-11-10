@@ -1,10 +1,12 @@
 "use client";
 
-import { onAuthStateChanged } from "firebase/auth";
-import type { FirestoreError } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { firebaseAuth } from "@/lib/firebase/client";
-import { MENSAJE_INESPERADO, mensajeDeError } from "@/lib/firebase/errores";
+import { escucharUsuario } from "@/lib/auth/usuario";
+import {
+  type ErrorDatos,
+  MENSAJE_INESPERADO,
+  mensajeDeError,
+} from "@/lib/data/errores";
 import { escucharConfigRcv, escucharPlanesRcv } from "@/lib/rcv/repositorio";
 import type { ConfigRcv, PlanRcvConId } from "@/lib/rcv/tipos";
 
@@ -28,7 +30,7 @@ export function useRcv(): EstadoRcv {
       for (const f of dejar) f();
       dejar = [];
     };
-    const dejarAuth = onAuthStateChanged(firebaseAuth(), (usuario) => {
+    const dejarAuth = escucharUsuario((usuario) => {
       parar();
       if (!usuario) {
         setEstado({ tipo: "sin-acceso" });
@@ -42,7 +44,7 @@ export function useRcv(): EstadoRcv {
         if (!fallo && planes && config !== undefined)
           setEstado({ tipo: "listo", planes, config });
       };
-      const alFallar = (error: FirestoreError) => {
+      const alFallar = (error: ErrorDatos) => {
         fallo = true;
         setEstado(
           error.code === "permission-denied"

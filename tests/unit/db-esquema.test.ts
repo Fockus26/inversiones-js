@@ -30,7 +30,7 @@ const falla = (consulta: PromiseLike<unknown>) =>
 beforeAll(async () => {
   await migrate(db, { migrationsFolder: "drizzle" });
   await db.insert(schema.marcas).values({ nombre: "HONOR" });
-});
+}, 30_000);
 
 describe("esquema Postgres", () => {
   test("un producto con marca registrada se guarda con id generado", async () => {

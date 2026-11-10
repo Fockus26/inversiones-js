@@ -1,12 +1,14 @@
 "use client";
 
-import { onAuthStateChanged } from "firebase/auth";
-import type { FirestoreError } from "firebase/firestore";
 import { useEffect, useState } from "react";
+import { escucharUsuario } from "@/lib/auth/usuario";
 import { escucharMarcas, escucharProductos } from "@/lib/catalogo/repositorio";
 import type { Marca, ProductoConId } from "@/lib/catalogo/tipos";
-import { firebaseAuth } from "@/lib/firebase/client";
-import { MENSAJE_INESPERADO, mensajeDeError } from "@/lib/firebase/errores";
+import {
+  type ErrorDatos,
+  MENSAJE_INESPERADO,
+  mensajeDeError,
+} from "@/lib/data/errores";
 
 export type EstadoCatalogo =
   | { tipo: "cargando" }
@@ -29,7 +31,7 @@ export function useCatalogo(): EstadoCatalogo {
       for (const f of dejarDeEscuchar) f();
       dejarDeEscuchar = [];
     };
-    const dejarAuth = onAuthStateChanged(firebaseAuth(), (usuario) => {
+    const dejarAuth = escucharUsuario((usuario) => {
       parar();
       if (!usuario) {
         setEstado({ tipo: "sin-sesion" });
@@ -43,7 +45,7 @@ export function useCatalogo(): EstadoCatalogo {
         if (!fallo && productos && marcas)
           setEstado({ tipo: "listo", productos, marcas });
       };
-      const alFallar = (error: FirestoreError) => {
+      const alFallar = (error: ErrorDatos) => {
         fallo = true;
         setEstado(
           error.code === "permission-denied"

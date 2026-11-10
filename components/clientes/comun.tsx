@@ -1,7 +1,5 @@
 "use client";
 
-import { onAuthStateChanged } from "firebase/auth";
-import type { FirestoreError } from "firebase/firestore";
 import {
   CircleAlertIcon,
   CircleCheckIcon,
@@ -34,6 +32,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { escucharUsuario } from "@/lib/auth/usuario";
+import {
+  type ErrorDatos,
+  MENSAJE_INESPERADO,
+  mensajeDeError,
+} from "@/lib/data/errores";
 import type { ResumenPagos } from "@/lib/financiamiento/cuotas";
 import { fechaCorta } from "@/lib/financiamiento/fechas";
 import { whatsappDe } from "@/lib/financiamiento/poliza";
@@ -42,8 +46,6 @@ import type {
   COLECCION_CLIENTES_CELULARES,
   COLECCION_CLIENTES_RCV,
 } from "@/lib/financiamiento/tipos";
-import { firebaseAuth } from "@/lib/firebase/client";
-import { MENSAJE_INESPERADO, mensajeDeError } from "@/lib/firebase/errores";
 import { cn } from "@/lib/utils";
 
 /** Piezas compartidas por /clientes/celulares y /clientes/rcv (D032). */
@@ -56,14 +58,14 @@ export type EstadoClientes<T> =
   | { tipo: "cargando" }
   | { tipo: "sin-acceso" }
   | { tipo: "error"; mensaje: string }
-  /** `omitidos`: documentos a medias que no se pueden mostrar (lib/firebase/normalizar.ts). */
+  /** `omitidos`: documentos a medias que no se pueden mostrar (lib/data/normalizar.ts). */
   | { tipo: "listo"; clientes: T[]; omitidos: number };
 
 /** Como `useRcv`: espera la sesión y escucha la colección en vivo. */
 export function useClientes<T>(
   escuchar: (
     alCambiar: (c: T[], omitidos?: number) => void,
-    alFallar: (e: FirestoreError) => void,
+    alFallar: (e: ErrorDatos) => void,
   ) => () => void,
 ): EstadoClientes<T> {
   const [estado, setEstado] = useState<EstadoClientes<T>>({
@@ -71,7 +73,7 @@ export function useClientes<T>(
   });
   useEffect(() => {
     let dejar: (() => void) | null = null;
-    const dejarAuth = onAuthStateChanged(firebaseAuth(), (usuario) => {
+    const dejarAuth = escucharUsuario((usuario) => {
       dejar?.();
       dejar = null;
       if (!usuario) {

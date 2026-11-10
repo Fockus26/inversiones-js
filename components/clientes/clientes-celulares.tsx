@@ -33,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { mensajeDeError } from "@/lib/data/errores";
 import {
   type EstadoPagos,
   type ResumenPagos,
@@ -55,7 +56,6 @@ import {
   LIMITES_CLIENTE,
   validarClienteCelular,
 } from "@/lib/financiamiento/validacion";
-import { mensajeDeError } from "@/lib/firebase/errores";
 import { cn } from "@/lib/utils";
 import {
   AreaTexto,
