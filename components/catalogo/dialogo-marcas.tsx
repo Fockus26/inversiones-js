@@ -30,7 +30,7 @@ import {
   renombrarMarca,
 } from "@/lib/catalogo/repositorio";
 import type { Marca } from "@/lib/catalogo/tipos";
-import { mensajeDeError } from "@/lib/firebase/errores";
+import { mensajeDeError } from "@/lib/data/errores";
 import { cn } from "@/lib/utils";
 import { DIALOGO_CON_PIE_FIJO } from "./formato";
 

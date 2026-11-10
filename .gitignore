@@ -62,3 +62,6 @@ context/plans/
 .claude/worktrees/
 
 .vercel
+
+# Exportación de Firebase Auth (lleva hashes de contraseña)
+usuarios*.json

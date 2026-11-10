@@ -14,6 +14,9 @@ const MENSAJES: Record<string, string> = {
     "Demasiados intentos seguidos. Espera unos minutos o restablece tu contraseña.",
   "auth/network-request-failed":
     "No hay conexión. Revisa tu internet e inténtalo de nuevo.",
+  // 403 de Better Auth: se entró por un dominio que no es el del panel (BETTER_AUTH_URL).
+  "auth/origen":
+    "No se puede iniciar sesión desde esta dirección. Entra por el enlace habitual del panel.",
   "auth/user-disabled":
     "Esta cuenta está desactivada. Habla con quien administra el panel.",
 };

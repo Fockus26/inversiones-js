@@ -4,14 +4,13 @@ Pasos A–E: preparación (Google + VPS). Pasos F–I: levantar el bot y vincula
 
 ## A. Clave JSON `chatbot-lectura` (Google Cloud)
 
-1. Entra a https://console.cloud.google.com con la cuenta dueña del proyecto de Firebase del panel.
-   Arriba, selecciona **el mismo proyecto** que usa el panel.
+1. Entra a https://console.cloud.google.com con la cuenta dueña del proyecto de Google del negocio.
+   (Desde la migración al VPS la cuenta **solo** se usa para Google Calendar: los datos están en
+   Postgres del VPS. Si ya existía, quítale el rol de Datastore: no lo necesita.)
 2. Menú ☰ › **IAM y administración › Cuentas de servicio › + Crear cuenta de servicio**.
    - Nombre: `chatbot-lectura` → Crear y continuar.
-   - Rol: **Cloud Datastore User** (busca "Datastore User") → Continuar → Listo. Hace falta
-     para guardar las solicitudes de póliza RCV (D030). Si la cuenta ya existía con
-     "Datastore Viewer": IAM y administración › IAM › lápiz de `chatbot-lectura` › cambia el
-     rol a **Cloud Datastore User** › Guardar.
+   - Rol: ninguno (Continuar → Listo). Calendar no usa roles de IAM: el permiso se da al
+     compartir el calendario con la cuenta (paso B).
 3. Abre la cuenta recién creada › pestaña **Claves › Agregar clave › Crear clave nueva › JSON**.
    Se descarga un archivo `.json`. **No lo pegues en el chat ni lo subas a git.**
 4. Copia el correo de la cuenta (algo como `chatbot-lectura@TU-PROYECTO.iam.gserviceaccount.com`).
@@ -93,6 +92,9 @@ Completa:
 - `EVOLUTION_API_KEY` = la `AUTHENTICATION_API_KEY` de Evolution (la que ya guardaste).
 - `WEBHOOK_TOKEN` = el resultado de `openssl rand -hex 16`.
 - `GOOGLE_CALENDAR_ID` = el ID del calendario del paso B.
+- `DATABASE_URL` = la URL de Postgres del VPS, la misma base que el panel. Para no dejarla en
+  la pantalla ni en el historial, añádela así (en el VPS, en `/opt/inversiones-js/bot`):
+  `printf 'DATABASE_URL=%s\n' "$(kit-db url inversiones_js)" >> .env`
 - `ASESOR_NUMEROS` = número(s) que pueden mandar `gaby on`/`gaby off` (`58412…`, separados por
   coma). **No pongas el mismo número del bot.** Gaby no les escribe avisos: las solicitudes
   del chat se ven en el panel, pestaña **Solicitudes** (D043).
@@ -102,7 +104,7 @@ docker compose up -d --build
 docker compose logs -f gaby      # debe decir "Gaby escuchando en :3000 …"  (Ctrl+C para salir)
 ```
 
-Comprueba todas las conexiones (Firestore, Calendar, Evolution) antes de vincular:
+Comprueba todas las conexiones (base de datos, Calendar, Evolution) antes de vincular:
 
 ```bash
 docker compose run --rm gaby bun src/diagnostico.ts

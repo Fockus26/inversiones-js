@@ -1,12 +1,10 @@
 import { config } from "./config";
+import { baseDeDatos, leerCatalogo, leerHorario } from "./db";
 import {
   borrarEvento,
   correoCuentaServicio,
   crearEvento,
-  leerCatalogo,
-  leerHorario,
   ocupados,
-  proyectoFirestore,
 } from "./google";
 
 /**
@@ -31,20 +29,20 @@ async function paso(
 }
 
 console.log(`Cuenta de servicio: ${correoCuentaServicio}`);
-console.log(`Proyecto Firestore: ${proyectoFirestore}\n`);
+console.log(`Base de datos: ${baseDeDatos()}\n`);
 
 await paso(
-  "Firestore (catálogo)",
+  "Base de datos (catálogo)",
   async () => {
     const p = await leerCatalogo();
     const conStock = p.filter((x) => x.cantidad > 0).length;
     return `${p.length} equipos activos, ${conStock} con stock (los que verá el cliente)`;
   },
-  "¿El panel usa este mismo proyecto de Firebase? Si no, pon FIREBASE_PROJECT_ID en .env y dale a la cuenta el rol 'Cloud Datastore Viewer' en ESE proyecto.",
+  "Revisa DATABASE_URL en bot/.env (ssh kit-vps kit-db url inversiones_js) y que el contenedor llegue al puerto 6432 del VPS.",
 );
 
 await paso(
-  "Firestore (horario)",
+  "Base de datos (horario)",
   async () => {
     const h = await leerHorario();
     return `citas de ${h.duracionMinutos} min, ${h.diasAdelante} días adelante`;

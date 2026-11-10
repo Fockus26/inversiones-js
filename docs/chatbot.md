@@ -1,195 +1,91 @@
 # Integración con el chatbot
 
-El panel y el chatbot comparten **una colección de Firestore**: `productos`. Lo que el cliente
-guarda en el panel es lo que el chatbot responde (D005). Este archivo es el contrato entre los
-dos: si cambias el modelo (`lib/catalogo/tipos.ts`), actualiza aquí y anota la decisión.
+El panel y el chatbot comparten **una base Postgres en el VPS** (`inversiones_js`, D044; antes
+Firestore). Lo que el cliente guarda en el panel es lo que el chatbot responde (D005). Este
+archivo es el contrato entre los dos: si cambias el modelo (`lib/db/schema.ts` y
+`lib/catalogo/tipos.ts`), actualiza aquí y anota la decisión.
+
+## Colecciones de antes → tablas
+
+Las secciones de abajo usan todavía los nombres de colección: cada una es una tabla con los
+mismos campos, en snake_case en la base y en camelCase en el código (Drizzle,
+`casing: "snake_case"`).
+
+| Antes (Firestore) | Tabla | Quién escribe |
+|---|---|---|
+| `productos` | `productos` | Panel |
+| `marcas/{nombre}` | `marcas` (PK `nombre`) | Panel |
+| `admins/{uid}` | `admins` (PK `user_id` → `user.id`) | `bun run admin:crear` |
+| `configuracion/horario`, `configuracion/rcv` | `configuracion` (PK `clave`, `valor jsonb`) | Panel (`rcv`); `horario` a mano |
+| `planesRcv` | `planes_rcv` | Panel |
+| `solicitudesRcv`, `solicitudesCelulares`, `solicitudesCitas` | `solicitudes_rcv`, `solicitudes_celulares`, `solicitudes_citas` | Bot |
+| `clientesCelulares`, `clientesRcv` | `clientes_celulares`, `clientes_rcv` (`pagos jsonb`) | Panel; el bot solo marca `recordatorio30/3` |
+| `suscripcionesPush` | `suscripciones_push` (`endpoint` único, `user_id`) | Panel; el bot borra las vencidas |
+
+Los límites que validaban `firestore.rules` son **CHECK** en la base: se aplican también a lo
+que escribe el bot. Las comprobaciones de acceso del panel están en `lib/data/` (`comoAdmin`).
 
 ## Contrato de datos
 
-Colección `productos`, un documento por equipo (D002).
+Tabla `productos`, una fila por equipo (D002).
 
 | Campo | Tipo | Qué significa |
 |---|---|---|
-| `marca` | string | Nombre de la marca en mayúsculas (`HONOR`, `REDMI`…). **No es una lista fija** (D025): el cliente agrega, renombra y borra marcas desde el panel. |
-| `nombre` | string | Modelo como lo ve el cliente final: `"600 Elite"`, `"Note 15"`. No incluye la marca. |
-| `variante` | string | RAM/almacenamiento en GB: `"8/256"`. Puede venir vacío. |
-| `inicial` | number | Pago inicial en USD. Normalmente entero; puede traer decimales. |
-| `cuota` | number | Monto de **cada** cuota quincenal en USD. |
-| `numeroCuotas` | number (entero) | Cuántas cuotas quincenales (hoy 6). Precio total = `inicial + cuota × numeroCuotas`. |
-| `cantidad` | number (entero) | Unidades disponibles. `0` = agotado. |
+| `marca` | text (FK → `marcas.nombre`) | Nombre de la marca en mayúsculas (`HONOR`, `REDMI`…). **No es una lista fija** (D025): el cliente agrega, renombra y borra marcas desde el panel. |
+| `nombre` | text | Modelo como lo ve el cliente final: `"600 Elite"`, `"Note 15"`. No incluye la marca. |
+| `variante` | text | RAM/almacenamiento en GB: `"8/256"`. Puede venir vacío. |
+| `inicial` | double precision | Pago inicial en USD. Normalmente entero; puede traer decimales. |
+| `cuota` | double precision | Monto de **cada** cuota quincenal en USD. |
+| `numero_cuotas` | integer | Cuántas cuotas quincenales (hoy 6). Precio total = `inicial + cuota × numeroCuotas`. |
+| `cantidad` | integer | Unidades disponibles. `0` = agotado. |
 | `activo` | boolean | `false` = oculto: el chatbot **no** debe ofrecerlo (no está borrado). |
-| `orden` | number | Orden dentro de la marca (menor primero). |
-| `actualizadoEn` | Timestamp | Fecha de la última edición (puede faltar en datos viejos). |
-| `actualizadoPor` | string | UID de quien editó, o `"seed"` si viene de la carga inicial. |
+| `orden` | double precision | Orden dentro de la marca (menor primero). |
+| `actualizado_en` | timestamptz | Fecha de la última edición (puede faltar en datos viejos). |
+| `actualizado_por` | text | Id de quien editó (`user.id`), o `"seed"` si viene de la carga inicial. |
 
-- **Id del documento:** los del catálogo inicial son estables (`honor-600-elite-8-256`); los
-  productos creados desde el panel usan id automático. No dependas del formato del id: busca
-  por `marca` + `nombre` + `variante`.
-- **Marcas:** viven en la colección `marcas` (id = nombre, `{ nombre, actualizadoEn,
-  actualizadoPor }`). El chatbot no necesita leerla: basta con el campo `marca` de cada
-  producto. Al renombrar una marca, el panel actualiza `marca` en todos sus productos a la vez.
+- **Id:** texto. Los del catálogo inicial son estables (`honor-600-elite-8-256`); los ids de
+  Firestore se conservaron al migrar y los nuevos son UUID. No dependas del formato: busca por
+  `marca` + `nombre` + `variante`.
+- **Marcas:** tabla `marcas`. El chatbot no necesita leerla: basta con `marca` de cada
+  producto. Renombrar una marca actualiza sus productos en cascada (FK `ON UPDATE CASCADE`).
   Ordénalas alfabéticamente (`compararMarcas` de `lib/catalogo/tipos.ts`), como el panel.
 - **Montos:** son números, no texto. Para mostrarlos como el cliente (`125$`) usa
   `formatearMonto` de `lib/catalogo/texto-lista.ts`.
-- **Qué NO cambiar sin coordinar:** nombres de campo, tipos (precios como número), valores de
-  `marca` en mayúsculas (sin asumir una lista cerrada) y el significado de `activo`/`cantidad`. Las reglas de Firestore
-  (`firestore.rules`) validan estos mismos campos: un cambio aquí exige cambiarlas también.
-- **El chatbot solo lee.** Toda escritura pasa por el panel (las reglas exigen sesión de admin y
-  dejan la huella `actualizadoPor`/`actualizadoEn`).
+- **Qué NO cambiar sin coordinar:** nombres de columna, tipos (precios como número), valores
+  de `marca` en mayúsculas (sin asumir una lista cerrada) y el significado de
+  `activo`/`cantidad`. Un cambio va como migración de Drizzle (`bun run db:generate`).
+- **El chatbot no edita el catálogo.** Toda edición pasa por el panel, que deja la huella
+  `actualizado_por`/`actualizado_en`.
 
 ## Cómo leer desde el servidor del chatbot
 
-El chatbot **no puede** usar el SDK web de Firebase sin sesión: las reglas solo dejan leer
-`productos` a usuarios con documento en `admins/{uid}` (D003). Lee con el **Admin SDK**
-(`firebase-admin`) desde su servidor, que no pasa por las reglas.
-
-### Credenciales: cuenta de servicio del bot (D024, D030)
-
-1. Google Cloud Console del proyecto › IAM y administración › Cuentas de servicio › Crear.
-   Nombre sugerido: `chatbot-lectura`.
-2. Rol: **Cloud Datastore User** (`roles/datastore.user`). Desde D030 el bot guarda las
-   solicitudes de póliza RCV; antes bastaba Datastore Viewer. No uses la cuenta por defecto
-   de Firebase Admin (además de Firestore, administra Auth y todo el proyecto).
-3. Claves › Agregar clave › JSON. Guárdala en el gestor de secretos del hosting del chatbot
-   (variable de entorno o archivo montado). **Nunca** en git.
-4. En el servidor del chatbot: `GOOGLE_APPLICATION_CREDENTIALS=/ruta/a/la/clave.json`.
-
-### Consulta
+Gaby usa la misma base que el panel con `DATABASE_URL` (PgBouncer del VPS, `ssh kit-vps kit-db
+url inversiones_js`) y el mismo esquema (`lib/db/schema.ts`). Todo su acceso está en
+`bot/src/db.ts`:
 
 ```ts
-import { initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import type { ProductoConId } from "./tipos"; // copia de lib/catalogo/tipos.ts
+import { db } from "../../lib/db/client";
+import { eq } from "../../lib/db/consultas"; // operadores de la misma copia de drizzle-orm
+import { productos } from "../../lib/db/schema";
 
-initializeApp(); // toma GOOGLE_APPLICATION_CREDENTIALS y su project_id
-const db = getFirestore();
-
-async function leerCatalogo(): Promise<ProductoConId[]> {
-  const snap = await db
-    .collection("productos")
-    .where("activo", "==", true)
-    .get();
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ProductoConId);
-}
+const activos = await db.select().from(productos).where(eq(productos.activo, true));
 ```
 
-`where("activo", "==", true)` usa un índice de un solo campo (automático): no hace falta
-crear índices compuestos. El orden de presentación (marca y `orden`) se aplica en memoria.
+Los operadores se importan de `lib/db/consultas.ts`, no de `drizzle-orm`: en la imagen del bot
+`lib/` y `bot/` comparten un solo `node_modules`, y dos copias de drizzle-orm dan tipos
+incompatibles. El orden de presentación (marca y `orden`) se aplica en memoria.
 
-### Lista de precios en el formato del cliente
+## Caché de 60 s (D024)
 
-`lib/catalogo/texto-lista.ts` es TypeScript puro (sin Firebase): cópialo al proyecto del
-chatbot junto con `lib/catalogo/tipos.ts`, o reprodúcelo. Genera el mismo texto que el
-cliente manda por chat:
+El catálogo es pequeño y cambia pocas veces al día: `bot/src/db.ts` guarda cada lectura 60 s
+en memoria, así un cambio del panel se ve en el chatbot en menos de un minuto sin una consulta
+por mensaje.
 
-```ts
-import { textoListaDePrecios } from "./texto-lista";
+## Probar en local
 
-const productos = await leerCatalogo(); // ya filtrado por activo
-const texto = textoListaDePrecios(productos, new Date());
-// Lista de precios actualizada (01/10)
-//
-// HONOR
-// 600 Elite 8/256
-// Inic 125$.   6 quincenas 63$
-//
-// Magic 8 Lite 8/256
-// Inic 130$.   6 quincenas 65$
-// ...
-//
-//
-// INFINIX
-// ...
-```
-
-Opciones (D021):
-
-- `agotados: "ocultar"` (por defecto, D041) quita los de `cantidad == 0`; `"marcar"` los deja
-  con ` (agotado)`. **Ojo:** el catálogo inicial arranca con `cantidad = 0`; hasta que el
-  cliente cargue el stock en el panel, la lista saldrá vacía (solo el título).
-- `zonaHoraria` (por defecto `America/Caracas`) para el `DD/MM` del título.
-
-### Buscar un modelo
-
-Para "¿cuánto está el Redmi Note 15?": filtra en memoria sobre el catálogo ya leído
-(son pocas decenas de documentos), sin distinguir mayúsculas ni acentos. Gana el modelo con más
-palabras en común, para que "note 15" no traiga también el "Redmi 15".
-
-```ts
-import { lineasDeProducto, type ProductoDeLista } from "./texto-lista";
-
-const palabras = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .split(/[^a-z0-9/]+/)
-    .filter(Boolean);
-
-/** Productos cuyo nombre completo aparece en la consulta; gana el de más palabras. */
-function buscar<T extends ProductoDeLista>(productos: T[], consulta: string): T[] {
-  const q = new Set(palabras(consulta));
-  const conPuntaje = productos.map((p) => {
-    const nombre = palabras(p.nombre);
-    // La marca es opcional en la consulta ("note 15" sirve); el nombre completo, no.
-    const conMarca = palabras(p.marca).every((w) => q.has(w)) ? 1 : 0;
-    const puntaje = nombre.every((w) => q.has(w)) ? nombre.length + conMarca : 0;
-    return { p, puntaje };
-  });
-  const max = Math.max(0, ...conPuntaje.map((c) => c.puntaje));
-  return max === 0 ? [] : conPuntaje.filter((c) => c.puntaje === max).map((c) => c.p);
-}
-
-const encontrados = buscar(productos, "cuanto esta el redmi note 15");
-const respuesta = encontrados.map((p) => lineasDeProducto(p).join("\n")).join("\n");
-// Note 15 8/256
-// Inic 80$.   6 quincenas 40$
-```
-
-Si la consulta trae la variante (`8/256`), filtra además por `p.variante`.
-
-## ¿Leer en cada mensaje o suscribirse? (D024)
-
-**Recomendado: leer y guardar en caché 60 segundos.** El catálogo es pequeño y cambia pocas
-veces al día; una caché corta en memoria hace que un cambio del panel se vea en el chatbot en
-menos de un minuto, sin una lectura por mensaje (Firestore cobra por documento leído).
-
-```ts
-let cache: { cuando: number; productos: ProductoConId[] } | null = null;
-
-async function catalogo() {
-  if (!cache || Date.now() - cache.cuando > 60_000) {
-    cache = { cuando: Date.now(), productos: await leerCatalogo() };
-  }
-  return cache.productos;
-}
-```
-
-**Alternativa: suscripción en vivo** con `onSnapshot`, si el chatbot corre como proceso
-persistente (no serverless). Los cambios llegan al instante y solo se cobra lo que cambia, pero
-en funciones serverless la conexión se corta y no compensa.
-
-```ts
-let enVivo: ProductoConId[] = [];
-db.collection("productos")
-  .where("activo", "==", true)
-  .onSnapshot(
-    (snap) => {
-      enVivo = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ProductoConId);
-    },
-    (error) => console.error("Suscripción a productos caída", error),
-  );
-```
-
-## Probar en local contra el emulador
-
-```bash
-bun run emulators        # en otra terminal
-bun run seed:emulador
-```
-
-En el código del chatbot, antes de `initializeApp`:
-`FIRESTORE_EMULATOR_HOST=127.0.0.1:8080` e `initializeApp({ projectId: "demo-inversiones-js" })`.
+`bot/tests/db.test.ts` corre `bot/src/db.ts` contra la migración real en PGlite (en memoria,
+sin VPS). Para probar el bot entero contra una base, `DATABASE_URL` de `inversiones_js_dev`
+(`bun run vps:env inversiones_js_dev` en la raíz) y la cuenta de Calendar.
 
 ## El bot: Gaby (`bot/`, D027)
 
@@ -225,7 +121,7 @@ Se edita en el panel (`/rcv`). Modelo en `lib/rcv/tipos.ts`; el bot lo lee con c
 |---|---|---|
 | `planesRcv/{id}` | `clase`, `descripcion`, `precioEur` (number, o `null` = "Solicitar cotización"), `categorias` (`publico`/`privado`, al menos una; datos de antes pueden traer `extranjeras`, que se ignora), `financiamiento` (bool), `activo` (bool), `orden` (number), huella | Panel |
 | `configuracion/rcv` | `tasaUsd` (1 € = X $), `tasaBs` (1 € = X Bs.; con BCV, la última consultada como respaldo), `tasaCop` (1 € = X COP), `fuenteBs` (`"bcv"` o `"manual"`; sin el campo = manual), `fuenteUsd`/`fuenteCop` (`"mercado"` o `"manual"`; sin el campo = manual, D036), `requisitosGenerales` (lista de texto, la misma para todo vehículo, D034; `requisitos` por categoría es de antes y el panel lo borra al guardar), huella | Panel |
-| `solicitudesRcv/{id}` | `nombre`, `correo`, `telefono`, `whatsapp`, `categoria`, `planId`, `clase`, `descripcion`, `vehiculo` (solo placas extranjeras: el vehículo a cotizar), `precioEur`, `precioUsd`, `precioBs`, `precioCop` (los del momento; `precioCop` puede faltar en las viejas), `financiamiento` (bool o `null`), `creadoEn` | Bot (Admin SDK) |
+| `solicitudesRcv/{id}` | `nombre`, `correo`, `telefono`, `whatsapp`, `categoria`, `planId`, `clase`, `descripcion`, `vehiculo` (solo placas extranjeras: el vehículo a cotizar), `precioEur`, `precioUsd`, `precioBs`, `precioCop` (los del momento; `precioCop` puede faltar en las viejas), `financiamiento` (bool o `null`), `creadoEn` | Bot |
 
 - **Precios:** el euro es fijo por transporte; dólares y bolívares = `precioEur × tasa`,
   redondeados a 2 decimales; pesos colombianos sin céntimos (`cotizar` de
@@ -247,10 +143,10 @@ Se edita en el panel (`/rcv`). Modelo en `lib/rcv/tipos.ts`; el bot lo lee con c
   La solicitud se guarda con `planId: "cotizacion-extranjera"`, precios `null` y `vehiculo`.
 - **Sin planes que mostrar (D043):** si no se pudieron leer los planes, la solicitud se guarda
   igual con `planId: "sin-planes"`, `correo: ""`, `telefono` = su WhatsApp y precios `null`.
-- **Escritura del bot:** la cuenta `chatbot-lectura` pasa a **Cloud Datastore User**
-  (`roles/datastore.user`) para poder crear las solicitudes (`solicitudesRcv`,
-  `solicitudesCelulares`, `solicitudesCitas`).
-- Seed: `bun run seed:emulador` y `bun run seed:produccion` cargan la tabla del cliente
+- **Escritura del bot:** con `DATABASE_URL` de la misma base crea las solicitudes
+  (`solicitudes_rcv`, `solicitudes_celulares`, `solicitudes_citas`); los CHECK limitan lo que
+  entra. La cuenta `chatbot-lectura` ya solo se usa para Calendar.
+- Seed: `lib/db/seed.ts` (QA, vía `qa:local`) carga la tabla del cliente
   (`lib/rcv/planes-iniciales.ts`) y sus tasas implícitas (1 € = 1,1193 $ = 979,0788 Bs.).
 
 ## Clientes con financiamiento y vencimiento de pólizas (D032, D033)
@@ -272,7 +168,7 @@ Se editan en el panel (`/clientes`). Modelo en `lib/financiamiento/tipos.ts`. Fe
 
 ## Solicitudes del chat (D043)
 
-Modelo en `lib/solicitudes/tipos.ts`. Solo las escribe el bot (Admin SDK); el panel las lee y
+Modelo en `lib/solicitudes/tipos.ts`. Solo las escribe el bot; el panel las lee y
 las borra en `/solicitudes`. Las de póliza RCV siguen en `solicitudesRcv` (arriba).
 
 | Dónde | Campos | Cuándo |

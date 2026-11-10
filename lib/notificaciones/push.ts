@@ -1,12 +1,11 @@
 "use client";
 
-import { deleteDoc, doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { firebaseAuth, firestore } from "@/lib/firebase/client";
-import { COLECCION_SUSCRIPCIONES_PUSH } from "./tipos";
+import * as acciones from "@/lib/data/push";
+import { llamar } from "@/lib/data/resultado";
 
 /**
  * Avisos push en este teléfono o computadora (D035): registra `public/sw.js`, pide permiso,
- * se suscribe con la clave VAPID pública y guarda la suscripción en Firestore para que el bot
+ * se suscribe con la clave VAPID pública y guarda la suscripción en la base para que el bot
  * la use. En iPhone solo funciona con el panel instalado en la pantalla de inicio (iOS 16.4+).
  */
 
@@ -61,16 +60,6 @@ function claveABytes(base64: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-async function idDe(endpoint: string): Promise<string> {
-  const hash = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(endpoint),
-  );
-  return Array.from(new Uint8Array(hash), (b) =>
-    b.toString(16).padStart(2, "0"),
-  ).join("");
-}
-
 function dispositivo(): string {
   const ua = navigator.userAgent;
   const sistema = /android/i.test(ua)
@@ -96,9 +85,6 @@ function dispositivo(): string {
 
 /** Pide permiso y guarda la suscripción. Devuelve el estado final. */
 export async function activarPush(): Promise<EstadoPush> {
-  const uid = firebaseAuth().currentUser?.uid;
-  if (!uid)
-    throw new Error("Sin sesión: inicia sesión para activar los avisos.");
   const permiso = await Notification.requestPermission();
   if (permiso !== "granted")
     return permiso === "denied" ? "bloqueado" : "inactivo";
@@ -113,16 +99,14 @@ export async function activarPush(): Promise<EstadoPush> {
   const json = sub.toJSON();
   if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth)
     throw new Error("El navegador no devolvió una suscripción completa.");
-  await setDoc(
-    doc(firestore(), COLECCION_SUSCRIPCIONES_PUSH, await idDe(json.endpoint)),
-    {
+  // El servidor pone el usuario de la sesión (nunca el que mande el cliente).
+  await llamar(() =>
+    acciones.guardarSuscripcion({
       endpoint: json.endpoint,
-      p256dh: json.keys.p256dh,
-      auth: json.keys.auth,
-      uid,
+      p256dh: json.keys?.p256dh,
+      auth: json.keys?.auth,
       dispositivo: dispositivo(),
-      creadaEn: serverTimestamp(),
-    },
+    }),
   );
   return "activo";
 }
@@ -131,8 +115,8 @@ export async function desactivarPush(): Promise<void> {
   const registro = await navigator.serviceWorker.getRegistration("/");
   const sub = await registro?.pushManager.getSubscription();
   if (!sub) return;
-  await deleteDoc(
-    doc(firestore(), COLECCION_SUSCRIPCIONES_PUSH, await idDe(sub.endpoint)),
-  ).catch((e) => console.error("[push] No se pudo borrar la suscripción:", e));
+  await llamar(() => acciones.borrarSuscripcion(sub.endpoint)).catch((e) =>
+    console.error("[push] No se pudo borrar la suscripción:", e),
+  );
   await sub.unsubscribe();
 }

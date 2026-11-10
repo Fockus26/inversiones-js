@@ -1,7 +1,7 @@
 import type { Producto } from "./tipos";
 
 /**
- * Lista de precios del 29/09/2026 tal como la entregó el cliente. Fuente del seed (scripts/seed-emulador.ts).
+ * Lista de precios del 29/09/2026 tal como la entregó el cliente. Fuente del seed de QA (lib/db/seed.ts).
  * `cantidad` no venía en la lista: arranca en 0 y el cliente la llena desde el panel (acción manual).
  *
  * Valores a confirmar con el cliente (se copiaron literal, ver CONTENT_CHECKLIST):

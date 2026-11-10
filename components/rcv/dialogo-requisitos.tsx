@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { mensajeDeError } from "@/lib/firebase/errores";
+import { mensajeDeError } from "@/lib/data/errores";
 import { guardarRequisitos } from "@/lib/rcv/repositorio";
 import { validarRequisitos } from "@/lib/rcv/validacion";
 import { cn } from "@/lib/utils";

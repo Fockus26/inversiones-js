@@ -8,7 +8,7 @@ import { ACTIVO } from "@/components/panel/estilos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { mensajeDeError } from "@/lib/firebase/errores";
+import { mensajeDeError } from "@/lib/data/errores";
 import { cotizar, numeroEs, textoPrecio } from "@/lib/rcv/cotizacion";
 import { guardarTasas } from "@/lib/rcv/repositorio";
 import {

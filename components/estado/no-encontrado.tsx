@@ -1,6 +1,5 @@
 "use client";
 
-import { onAuthStateChanged } from "firebase/auth";
 import { SearchXIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -9,7 +8,7 @@ import {
   BOTON_ESTADO_SECUNDARIO,
   PantallaEstado,
 } from "@/components/estado/pantalla-estado";
-import { firebaseAuth } from "@/lib/firebase/client";
+import { escucharUsuario } from "@/lib/auth/usuario";
 
 const CAUSA =
   "Puede que el enlace esté mal escrito o que la página ya no exista.";
@@ -22,10 +21,7 @@ const CAUSA =
 export function NoEncontrado() {
   const [conSesion, setConSesion] = useState(false);
 
-  useEffect(
-    () => onAuthStateChanged(firebaseAuth(), (u) => setConSesion(!!u)),
-    [],
-  );
+  useEffect(() => escucharUsuario((u) => setConSesion(!!u)), []);
 
   return (
     <PantallaEstado

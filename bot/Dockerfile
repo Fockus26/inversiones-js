@@ -4,6 +4,7 @@ FROM oven/bun:1-slim
 ENV NODE_ENV=production TZ=America/Caracas
 WORKDIR /app
 COPY lib/catalogo ./lib/catalogo
+COPY lib/db ./lib/db
 COPY lib/financiamiento ./lib/financiamiento
 COPY lib/horario ./lib/horario
 COPY lib/notificaciones ./lib/notificaciones
@@ -12,6 +13,9 @@ COPY lib/solicitudes ./lib/solicitudes
 COPY bot/package.json bot/bun.lock ./bot/
 WORKDIR /app/bot
 RUN bun install --frozen-lockfile --production
+# lib/db importa drizzle-orm y pg: desde /app/lib se resuelven subiendo a /app/node_modules,
+# que es el mismo node_modules del bot (una sola copia, tipos y conexión compartidos).
+RUN ln -s /app/bot/node_modules /app/node_modules
 COPY bot/src ./src
 EXPOSE 3000
 CMD ["bun", "src/servidor.ts"]

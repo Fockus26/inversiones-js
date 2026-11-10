@@ -1,5 +1,7 @@
 # Gaby (bot de WhatsApp). Comparte la red `automation-net` con Evolution API, así se llaman
 # por nombre (http://evolution-api:8080 ↔ http://gaby:3000) sin abrir puertos a internet.
+# La base es Postgres del mismo VPS: DATABASE_URL en bot/.env (PgBouncer :6432, TLS).
+# La clave de Google (/secretos/google.json) queda solo para Calendar.
 services:
   gaby:
     build:

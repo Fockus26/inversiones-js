@@ -1,10 +1,12 @@
 "use client";
 
-import { onAuthStateChanged } from "firebase/auth";
-import type { FirestoreError } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { firebaseAuth } from "@/lib/firebase/client";
-import { MENSAJE_INESPERADO, mensajeDeError } from "@/lib/firebase/errores";
+import { escucharUsuario } from "@/lib/auth/usuario";
+import {
+  type ErrorDatos,
+  MENSAJE_INESPERADO,
+  mensajeDeError,
+} from "@/lib/data/errores";
 import { escucharConfigRcv, escucharPlanesRcv } from "@/lib/rcv/repositorio";
 import type { ConfigRcv, PlanRcvConId } from "@/lib/rcv/tipos";
 
@@ -28,7 +30,7 @@ export function useRcv(): EstadoRcv {
       for (const f of dejar) f();
       dejar = [];
     };
-    const dejarAuth = onAuthStateChanged(firebaseAuth(), (usuario) => {
+    const dejarAuth = escucharUsuario((usuario) => {
       parar();
       if (!usuario) {
         setEstado({ tipo: "sin-acceso" });
@@ -37,13 +39,15 @@ export function useRcv(): EstadoRcv {
       setEstado({ tipo: "cargando" });
       let planes: PlanRcvConId[] | null = null;
       let config: ConfigRcv | null | undefined;
-      let fallo = false;
+      // Por fuente: si la primera carga falló y una consulta siguiente sale bien, la pantalla
+      // se recupera sola (la PWA instalada no tiene botón de recargar).
+      const fallos = new Set<string>();
       const publicar = () => {
-        if (!fallo && planes && config !== undefined)
+        if (fallos.size === 0 && planes && config !== undefined)
           setEstado({ tipo: "listo", planes, config });
       };
-      const alFallar = (error: FirestoreError) => {
-        fallo = true;
+      const alFallar = (fuente: string) => (error: ErrorDatos) => {
+        fallos.add(fuente);
         setEstado(
           error.code === "permission-denied"
             ? { tipo: "sin-acceso" }
@@ -56,12 +60,14 @@ export function useRcv(): EstadoRcv {
       dejar = [
         escucharPlanesRcv((p) => {
           planes = p;
+          fallos.delete("planes");
           publicar();
-        }, alFallar),
+        }, alFallar("planes")),
         escucharConfigRcv((c) => {
           config = c;
+          fallos.delete("config");
           publicar();
-        }, alFallar),
+        }, alFallar("config")),
       ];
     });
     return () => {

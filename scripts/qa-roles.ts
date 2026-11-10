@@ -75,10 +75,11 @@ export async function existingAccount({
   email: string;
   role: string;
 }): Promise<boolean> {
-  // e.g. return email.endsWith('@seed.test')
+  // Inversiones JS: sin registro público (Better Auth `disableSignUp`). `scripts/seed-db.ts` crea
+  // las cuentas de .env.test.local (ADMIN_… con fila en `admins`, EMAIL_TEST sin acceso).
   void email;
   void role;
-  return false;
+  return true;
 }
 
 /** The Postgres backend: `sql` runs a statement in the QA database and returns its output. */

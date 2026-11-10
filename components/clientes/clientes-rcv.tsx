@@ -49,6 +49,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { mensajeDeError } from "@/lib/data/errores";
 import { type ResumenPagos, resumenPagos } from "@/lib/financiamiento/cuotas";
 import {
   FECHA_MINIMA,
@@ -79,7 +80,6 @@ import {
   LIMITES_CLIENTE,
   validarClienteRcv,
 } from "@/lib/financiamiento/validacion";
-import { mensajeDeError } from "@/lib/firebase/errores";
 import { cn } from "@/lib/utils";
 import {
   AreaTexto,

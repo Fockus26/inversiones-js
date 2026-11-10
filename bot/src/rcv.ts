@@ -8,11 +8,11 @@ import type { CategoriaRcv, PlanRcvConId, TasasRcv } from "../../lib/rcv/tipos";
 
 /**
  * Póliza RCV en el chat (D029, D030). Transportes, tasas y requisitos se editan en el panel
- * (/rcv) y el bot los lee de Firestore con `Servicios.rcv()`.
+ * (/rcv) y el bot los lee de Postgres con `Servicios.rcv()`.
  */
 
-/** Lo que el bot necesita de Firestore para el flujo RCV. */
-export interface DatosRcvFirestore {
+/** Lo que el bot necesita de la base para el flujo RCV. */
+export interface LecturaRcv {
   planes: PlanRcvConId[];
   /** `null` si el cliente aún no guardó tasas: el chat muestra solo euros. */
   tasas: TasasRcv | null;
@@ -32,7 +32,7 @@ export interface PlanMostrado {
 export const TELEFONO_RCV = "0414-7221091";
 
 export function planesMostrados(
-  datos: DatosRcvFirestore,
+  datos: LecturaRcv,
   categoria: CategoriaRcv,
 ): PlanMostrado[] {
   return planesDe(datos.planes, categoria).map((p) => ({

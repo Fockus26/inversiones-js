@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { MENSAJE_INESPERADO, mensajeDeError } from "@/lib/firebase/errores";
+import {
+  ErrorDatos,
+  MENSAJE_INESPERADO,
+  mensajeDeError,
+} from "@/lib/data/errores";
 
 const conCodigo = (code: string) =>
   Object.assign(new Error(`${code.toUpperCase()}: evaluation error at L228`), {
@@ -7,7 +11,7 @@ const conCodigo = (code: string) =>
   });
 
 describe("mensajeDeError", () => {
-  test("traduce los códigos de Firestore y nunca muestra el texto técnico", () => {
+  test("traduce los códigos de la capa de datos y nunca muestra el texto técnico", () => {
     const m = mensajeDeError(conCodigo("permission-denied"));
     expect(m).toContain("No se aceptó el cambio");
     expect(m).not.toContain("L228");
@@ -23,5 +27,14 @@ describe("mensajeDeError", () => {
       "Sin sesión: inicia sesión.",
     );
     expect(mensajeDeError("texto")).toBeUndefined();
+  });
+
+  test("un ErrorDatos muestra su mensaje propio o el de su código", () => {
+    expect(
+      mensajeDeError(new ErrorDatos("invalid-argument", "Nombre muy largo.")),
+    ).toBe("Nombre muy largo.");
+    expect(mensajeDeError(new ErrorDatos("unauthenticated"))).toContain(
+      "Tu sesión terminó",
+    );
   });
 });
