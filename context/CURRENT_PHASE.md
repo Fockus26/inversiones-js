@@ -8,7 +8,8 @@ Plan: `context/plans/migrate-vps.md` · Rama: `feat/migrate-vps` (PR en borrador
 | Preparativos (Brevo, hash, permiso Vercel) | Hecho: variables en Vercel prod + preview |
 | 0 Arranque (rama, Tech refs, D044 modelo) | Hecho · PR #26 (borrador) |
 | 1 BD (3 bases en kit-vps, esquema, migración en _dev y _preview) | Hecho · PR #26 |
-| 2 Auth · 3 Capa de datos · 4 Bot · 5 Tests | Pendiente |
+| 2 Auth (Better Auth, hash de Firebase, límites, correo, scripts) | Hecho · PR #26 |
+| 3 Login + capa de datos · 4 Bot · 5 Tests | Pendiente |
 | 6 Ensayo de exportación · 7 QA | Pendiente |
 | 8 Corte con César | Pendiente |
 
