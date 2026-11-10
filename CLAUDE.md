@@ -24,6 +24,7 @@ chatbot responde.
 | llega con un prompt de orquestador | **solo** lo que el prompt cite |
 
 Buscar, no leer: `grep -rh "^# D" context/decisions/`.
+**El `reference/…` del kit** = `~/.claude/kit-reference/…` (o `.claude/kit-reference/…`).
 
 ## Stack
 
