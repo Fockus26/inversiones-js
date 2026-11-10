@@ -146,7 +146,7 @@ Se edita en el panel (`/rcv`). Modelo en `lib/rcv/tipos.ts`; el bot lo lee con c
 - **Escritura del bot:** con `DATABASE_URL` de la misma base crea las solicitudes
   (`solicitudes_rcv`, `solicitudes_celulares`, `solicitudes_citas`); los CHECK limitan lo que
   entra. La cuenta `chatbot-lectura` ya solo se usa para Calendar.
-- Seed: `bun run seed:emulador` y `bun run seed:produccion` cargan la tabla del cliente
+- Seed: `lib/db/seed.ts` (QA, vía `qa:local`) carga la tabla del cliente
   (`lib/rcv/planes-iniciales.ts`) y sus tasas implícitas (1 € = 1,1193 $ = 979,0788 Bs.).
 
 ## Clientes con financiamiento y vencimiento de pólizas (D032, D033)

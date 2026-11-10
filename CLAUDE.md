@@ -4,7 +4,7 @@
 
 Panel web privado para que el cliente (tienda de celulares a crédito) edite su catálogo:
 nombre, variante, inicial, cuota quincenal y cantidad de cada equipo. El **chatbot** del
-cliente lee la misma colección de Firestore, así que lo que se guarda aquí es lo que el
+cliente (Gaby, en `bot/`) lee la misma base Postgres, así que lo que se guarda aquí es lo que el
 chatbot responde.
 
 **Tipo:** dashboard · **Cliente:** Inversiones JS · **Modo git:** ver `context/GIT_STATE.md`
@@ -19,7 +19,7 @@ chatbot responde.
 |---|---|
 | toca UI | `context/DESIGN_RULES.md` (colores y reglas de contraste) |
 | toca despliegue, assets o correos | `context/PROJECT_CONTEXT.md` |
-| toca datos, auth o reglas | `lib/catalogo/tipos.ts` + `firestore.rules` + `context/decisions/` (grep) |
+| toca datos, auth o permisos | `lib/db/schema.ts` + `lib/data/` (`comoAdmin`) + `context/decisions/` (grep) |
 | toca lo que lee el chatbot | `docs/chatbot.md` |
 | llega con un prompt de orquestador | **solo** lo que el prompt cite |
 
@@ -31,35 +31,43 @@ Buscar, no leer: `grep -rh "^# D" context/decisions/`.
 
 - Next.js 16 (App Router) + React 19 + TypeScript estricto · Tailwind v4 + shadcn/ui (base-nova)
 - **bun** para todo (nunca npm/yarn/pnpm) · Biome para lint y formato
-- Firebase: Auth (correo + contraseña) y Firestore, **SDK cliente** en el navegador.
-  La seguridad vive en `firestore.rules`, no en el front (D003).
-- Desarrollo local contra los **emuladores** (proyecto `demo-inversiones-js`, no toca nada real).
+- **Postgres en el VPS** (`kit-vps`, D044) con **Drizzle**; **Better Auth** (correo + contraseña,
+  sin registro público); correos por SMTP de Brevo. Server actions en `lib/data/`: cada una
+  pasa por `comoAdmin()` (D003). Los límites de datos son CHECK en la base.
+- Bases: `inversiones_js` (producción), `_preview` (Vercel Preview), `_dev` (tu máquina:
+  hay datos reales, nunca se desarrolla sobre producción).
+- Firebase queda solo para el corte de la migración (`firestore.rules` en `deny` y exportación).
 
 ```bash
 bun install
-bun run emulators          # Auth :9099, Firestore :8080, UI :4000 (necesita Java)
-bun run dev                # usa .env.local (NEXT_PUBLIC_USE_EMULATORS=true)
+bun run vps:env inversiones_js_dev   # DATABASE_URL/DIRECT_URL → .env.development.local (sin mostrarlas)
+bun run dev
 bun run typecheck
 bun run lint
-bun run test               # tests puros en tests/unit
-bun run emulators:test     # tests de reglas en tests/rules contra el emulador
+bun run test               # tests/unit (PGlite en memoria para la base: sin Docker)
+bun run db:generate        # migración nueva tras cambiar lib/db/schema.ts
+bun run db:migrate         # con el túnel abierto: ssh -N -L 5433:127.0.0.1:5432 kit-vps
 bun run build
 ```
+
+Migraciones a `_preview` y a producción: kit `tech/vps-postgres.md` › Migrations (producción,
+antes de mergear y con el sí de César).
 
 **Servidor de desarrollo:** lo levanta César. Excepciones: los agentes de QA (`wave-qa`,
 `functional-qa`) siempre, y los workers si César lo autoriza para una tanda (cada uno en su
 puerto, en segundo plano). Build, typecheck, lint y tests sí se corren sin preguntar.
 
-**QA contra base local:** `bun run qa:local -- --port <p>` levanta los **emuladores de
-Firebase** (Java, sin Docker; proyecto `demo-inversiones-js`), carga `seed-emulador`, crea
-las cuentas de `.env.test.local` (la escribes tú; nunca pidas a César iniciar sesión para QA;
-`ADMIN_…` con `admins/{uid}`, `EMAIL_TEST` sin acceso) y arranca el servidor sobre ellos.
-Nunca contra el proyecto real. Sin ellos: `--offline`.
+**QA contra base local:** `bun run qa:local -- --port <p>` (ya lleva `--postgres`) levanta
+**Postgres y Mailpit en Docker** (Docker Desktop abierto), migra, corre `scripts/seed-db.ts`
+(datos de `lib/db/seed.ts` + las cuentas de `.env.test.local`, que escribes tú; nunca pidas a
+César iniciar sesión para QA; `ADMIN_…` con fila en `admins`, `EMAIL_TEST` sin acceso) y
+arranca el servidor sobre ellos. Los correos se ven en Mailpit. Nunca contra el VPS. Sin
+Docker: `--offline`. Solo la base, sin servidor: `--db-only`.
 
 **QA: al final** — sin `wave-qa` ni servidor de los workers por ola; la QA va en la de versión.
 
 Playwright, si se usa, se corre con `node`, no con `bun` (en Windows se cuelga).
-Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/dist/docs/`.
+Antes de usar una API de Next 16, Drizzle o Better Auth: Context7 o `node_modules/next/dist/docs/`.
 
 **Modelo por tarea:** antes de cada una, `Modelo recomendado: <modelo · esfuerzo>` (kit
 `TOKEN-ECONOMY.md` §12; riesgo → `opus`); los subagentes llevan ambos en `Agent(...)`.

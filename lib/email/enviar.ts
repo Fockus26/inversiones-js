@@ -13,7 +13,10 @@ function smtp(): Transporter | null {
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT ?? 587),
     auth: process.env.SMTP_USER
-      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD }
+      ? {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD ?? process.env.SMTP_PASS,
+        }
       : undefined,
   });
   return transporte;
@@ -43,6 +46,14 @@ export function correoRestablecer(correo: string, enlace: string) {
   return { asunto: "Restablece tu contraseña · Inversiones JS", html, texto };
 }
 
+/** `EMAIL_FROM` (Brevo: solo la dirección) o `SMTP_FROM` (qa:local: "Nombre <dir>"). */
+function remitente(): string | { name: string; address: string } {
+  const valor = process.env.EMAIL_FROM ?? process.env.SMTP_FROM ?? "";
+  return valor.includes("<")
+    ? valor
+    : { name: "Inversiones JS", address: valor };
+}
+
 export async function enviarCorreo(
   para: string,
   asunto: string,
@@ -55,7 +66,7 @@ export async function enviarCorreo(
     return;
   }
   await t.sendMail({
-    from: { name: "Inversiones JS", address: process.env.EMAIL_FROM ?? "" },
+    from: remitente(),
     to: para,
     subject: asunto,
     html,

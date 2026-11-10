@@ -10,6 +10,37 @@ const CREDENCIAL = "credential";
 
 const idNuevo = () => randomBytes(16).toString("base64url");
 
+/**
+ * Crea un usuario con contraseña conocida (seed de QA: `scripts/seed-db.ts`). Si ya existe, no lo
+ * toca. Devuelve su id.
+ */
+export async function crearUsuario(
+  db: Db,
+  correoCrudo: string,
+  password: string,
+): Promise<string> {
+  const correo = correoCrudo.trim().toLowerCase();
+  const [existe] = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(eq(user.email, correo));
+  if (existe) return existe.id;
+  const id = idNuevo();
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(user)
+      .values({ id, name: correo, email: correo, emailVerified: true });
+    await tx.insert(account).values({
+      id: idNuevo(),
+      accountId: id,
+      providerId: CREDENCIAL,
+      userId: id,
+      password: await hashPassword(password),
+    });
+  });
+  return id;
+}
+
 export interface ResultadoAdmin {
   userId: string;
   /** Solo si el usuario se creó ahora: se muestra una vez (D022). */
