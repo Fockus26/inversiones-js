@@ -20,7 +20,8 @@
     "vps:env": "bun scripts/vps-env.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "usuarios:importar": "bun scripts/importar-usuarios.ts"
+    "usuarios:importar": "bun scripts/importar-usuarios.ts",
+    "firestore:exportar": "bun scripts/exportar-firestore.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
