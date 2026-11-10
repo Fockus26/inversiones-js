@@ -25,7 +25,7 @@ chatbot responde.
 
 Buscar, no leer: `grep -rh "^# D" context/decisions/`.
 **El `reference/…` del kit** = `~/.claude/kit-reference/…` (o `.claude/kit-reference/…`).
-**Tech refs:** firebase → su `tech/<nombre>.md` cuando la tarea lo toque; solo estos.
+**Tech refs:** firebase, vercel → su `tech/<nombre>.md` cuando la tarea lo toque; solo estos.
 
 ## Stack
 
