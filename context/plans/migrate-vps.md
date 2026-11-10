@@ -173,3 +173,8 @@ copian a mano (el volumen es bajo).
   cada 60 s). Ya no hay cola sin conexión: una escritura sin red falla con "No hay conexión".
 - **Falta para el paso 5:** `qa:local` y `seed-emulador` siguen siendo de Firebase; `tests/rules`
   y `firebase.json` se quedan hasta el corte (reglas en `deny` 30 días).
+- **Paso 6 (2026-11-10):** `usuarios.json` (3 usuarios, todos con contraseña) + `firestore:exportar`
+  con la clave admin de Firebase de César (`Descargas/inversiones-js-firebase-adminsdk-…json`,
+  fuera del repo; revocarla tras el corte). Firestore: 76 docs, sin clientes ni solicitudes RCV,
+  sin `configuracion/horario` (el bot usa el horario por defecto). `admins/WePC8E…` sin usuario en
+  Auth: se omite. `_dev` ya tiene la copia: el panel en local entra con las cuentas reales.

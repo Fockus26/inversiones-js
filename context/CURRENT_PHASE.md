@@ -12,7 +12,7 @@ Plan: `context/plans/migrate-vps.md` · Rama: `feat/migrate-vps` (PR en borrador
 | 3 Login + capa de datos (server actions con comoAdmin, sondeo, /restablecer) | Hecho · PR #26 |
 | 4 Bot (bot/src/db.ts, Docker, CI, D045) | Hecho · PR #26 |
 | 5 qa:local + seed sobre Postgres (probado en Docker) | Hecho · PR #26 |
-| 6 Exportación: usuarios ensayados en _dev; script de Firestore listo | Falta correrlo (clave de lectura) |
+| 6 Exportación ensayada: usuarios + 76 docs de Firestore en _dev, comparados | Hecho · PR #26 |
 | 7 QA | Pendiente |
 | 8 Corte con César | Pendiente |
 
