@@ -57,6 +57,7 @@ $//'` en vez de `reset --hard` |
 | 29 | 2026-11-10 | Prevención | 1 | reference/QA-PREVENTION.md | CHECK con columnas nulables pasa cuando la expresión da NULL | `is null`/`is not null` explícitos y un test con NULL en una sola columna |
 | 30 | 2026-11-10 | Prevención | 1 | reference/QA-PREVENTION.md | Toggle que manda la lista completa de la última lectura: el segundo deshace el primero (típico al pasar de tiempo real a sondeo) | Operación por elemento en el servidor (`jsonb_set` por número) y fusión de lo guardado al editar el registro completo |
 | 31 | 2026-11-10 | Prevención | 1 | reference/QA-PREVENTION.md | Hook de sondeo con error pegajoso: tras una primera carga fallida los datos buenos se descartan | La siguiente lectura buena limpia el error y publica |
+| 32 | 2026-11-10 | Hueco | 1 | tech/vps-postgres.md › Actions for César | Pone `BETTER_AUTH_URL` como acción de César y no dice qué valor lleva: el agente (y la QA) le preguntaron "el dominio", y César entendió que lo resolvía el VPS. El valor sale del dominio de producción del proyecto en Vercel (`list_project_domains`) | Decir que el panel sigue en Vercel (el VPS solo tiene la base), que `BETTER_AUTH_URL` = dominio de producción de Vercel y que el agente lo saca de Vercel y lo sube en el corte |
 
 ## Cómo se envía al kit
 
