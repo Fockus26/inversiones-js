@@ -14,7 +14,8 @@
       "!dist",
       "!build",
       "!components/ui",
-      "!**/.claude/worktrees"
+      "!**/.claude/worktrees",
+      "!**/.claude/kit-reference"
     ]
   },
   "formatter": {
