@@ -14,6 +14,6 @@ Plan: `context/plans/migrate-vps.md` · Rama: `feat/migrate-vps` (PR en borrador
 | 5 qa:local + seed sobre Postgres (probado en Docker) | Hecho · PR #26 |
 | 6 Exportación ensayada: usuarios + 76 docs de Firestore en _dev, comparados | Hecho · PR #26 |
 | 7 QA | Hecho (functional-qa: 12 hallazgos corregidos en e84a1af; QA en navegador no repetida) |
-| 8 Corte con César | Pendiente |
+| 8 Corte con César | Hecho 2026-11-10 (PR #26 mergeado; cierre en PR #27; pendientes de César en D046) |
 
 Antes: olas 0–1 (auth, catálogo, chatbot) y adendas mergeadas; sin PRs abiertos.
