@@ -1,4 +1,4 @@
-# D044 · Datos · Modelo relacional en Postgres (VPS): una tabla por colección, `jsonb` en pagos y configuración · En curso
+# D044 · Datos · Modelo relacional en Postgres (VPS): una tabla por colección, `jsonb` en pagos y configuración · Implementado (corte 2026-11-10, D046)
 
 **Contexto:** migración Firebase → Postgres en el VPS (`context/plans/migrate-vps.md`, guía del kit
 `tech/migrate-firebase-vps.md`). Las 12 colecciones son planas (sin subcolecciones).
