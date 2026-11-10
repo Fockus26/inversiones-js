@@ -163,3 +163,13 @@ copian a mano (el volumen es bajo).
 - `configuracion`: ¿`jsonb` por clave o columnas tipadas para `rcv`? (D044: decidido `jsonb`)
 - Intervalo de las consultas periódicas en Solicitudes (¿15 s?): el push ya avisa al instante.
 - ¿Dominio propio para el correo? (ver riesgo de entrega)
+
+## Notas de avance
+- **Paso 3 (2026-11-10):** `lib/data/` = núcleo puro (`nucleo/*.ts`, probado con PGlite en
+  `tests/unit/datos-vps.test.ts`) + server actions `"use server"` que pasan por `comoAdmin`.
+  Las acciones devuelven `Resultado` (nunca lanzan: Next oculta el mensaje en producción). Los
+  `repositorio.ts` mantienen su API; `escuchar…` = `sondear()` (20 s, 15 s en solicitudes, al
+  volver a la pestaña y tras cada escritura propia). Sesión: `lib/auth/usuario.ts` (refresco
+  cada 60 s). Ya no hay cola sin conexión: una escritura sin red falla con "No hay conexión".
+- **Falta para el paso 5:** `qa:local` y `seed-emulador` siguen siendo de Firebase; `tests/rules`
+  y `firebase.json` se quedan hasta el corte (reglas en `deny` 30 días).

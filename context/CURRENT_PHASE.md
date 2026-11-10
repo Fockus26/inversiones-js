@@ -9,7 +9,8 @@ Plan: `context/plans/migrate-vps.md` · Rama: `feat/migrate-vps` (PR en borrador
 | 0 Arranque (rama, Tech refs, D044 modelo) | Hecho · PR #26 (borrador) |
 | 1 BD (3 bases en kit-vps, esquema, migración en _dev y _preview) | Hecho · PR #26 |
 | 2 Auth (Better Auth, hash de Firebase, límites, correo, scripts) | Hecho · PR #26 |
-| 3 Login + capa de datos · 4 Bot · 5 Tests | Pendiente |
+| 3 Login + capa de datos (server actions con comoAdmin, sondeo, /restablecer) | Hecho · PR #26 |
+| 4 Bot · 5 Tests (qa:local, seeds) | Pendiente |
 | 6 Ensayo de exportación · 7 QA | Pendiente |
 | 8 Corte con César | Pendiente |
 
