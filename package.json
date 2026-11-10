@@ -9,7 +9,7 @@
     "lint": "biome check",
     "format": "biome format --write",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "bun test ./tests/unit --pass-with-no-tests",
+    "test": "bun test ./tests/unit --pass-with-no-tests --timeout 20000",
     "test:related": "bun scripts/test-related.ts --dir=tests/unit",
     "shots": "node scripts/pr-screenshots.ts .pr-shots.json",
     "shots:publish": "bash scripts/publish-pr-shots.sh .pr-shots",

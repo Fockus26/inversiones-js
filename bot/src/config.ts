@@ -15,12 +15,10 @@ export const config = {
   ).replace(/\/$/, ""),
   evolutionApiKey: requerida("EVOLUTION_API_KEY"),
   instancia: process.env.EVOLUTION_INSTANCIA ?? "inversiones-js",
-  /** Ruta a la clave JSON de la cuenta de servicio (Firestore lectura + Calendar). */
+  /** Ruta a la clave JSON de la cuenta de servicio (solo Google Calendar). */
   credenciales:
     process.env.GOOGLE_APPLICATION_CREDENTIALS ?? "/secretos/google.json",
   calendarId: requerida("GOOGLE_CALENDAR_ID"),
-  /** Proyecto de Firebase del panel, si no es el mismo de la cuenta de servicio. */
-  proyectoFirebase: process.env.FIREBASE_PROJECT_ID?.trim() ?? "",
   /**
    * Número(s) del asesor, separados por coma (58412…). Opcional. Solo para que manden
    * "gaby on/off": Gaby no les escribe avisos (D043, riesgo de baneo); van al panel.

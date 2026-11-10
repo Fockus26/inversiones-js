@@ -1,11 +1,11 @@
 import webpush from "web-push";
 import type { AvisoPush } from "../../lib/notificaciones/tipos";
 import { config } from "./config";
-import { borrarSuscripcionPush, suscripcionesPush } from "./google";
+import { borrarSuscripcionPush, suscripcionesPush } from "./db";
 
 /**
  * Avisos push al panel instalado (D035): cada teléfono que activó la campana guardó su
- * suscripción en Firestore. Las que el navegador dio de baja (404/410) se borran solas.
+ * suscripción en la base (`suscripciones_push`). Las que el navegador dio de baja (404/410) se borran solas.
  * Nunca hace fallar a quien lo llama: un aviso perdido no debe tumbar una cita.
  */
 

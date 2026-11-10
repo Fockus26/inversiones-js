@@ -6,11 +6,11 @@ import {
 } from "../../lib/financiamiento/poliza";
 import { notificarPanel } from "./avisos-push";
 import { textoAvisoVencimiento } from "./avisos-rcv";
+import { clientesRcvPorVencer, marcarAvisoRcv } from "./db";
 import { enviarTexto } from "./evolution";
-import { clientesRcvPorVencer, marcarAvisoRcv } from "./google";
 
 /**
- * Recordatorios de vencimiento de la póliza RCV (D033). Cada hora mira en Firestore los
+ * Recordatorios de vencimiento de la póliza RCV (D033). Cada hora mira en la base los
  * clientes cuya póliza vence en los próximos 30 días y le escribe a quien le toque el aviso
  * del mes o el de 3 días. Solo entre 9:00 y 19:00 (hora de Caracas). Como los recordatorios
  * de citas, sale aunque Gaby esté apagada: es un aviso que el dueño ya dejó programado.

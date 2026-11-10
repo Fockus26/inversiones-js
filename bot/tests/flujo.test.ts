@@ -28,9 +28,9 @@ import {
   type Servicios,
   telefonoValido,
 } from "../src/flujo";
-import type { DatosRcvFirestore } from "../src/rcv";
+import type { LecturaRcv } from "../src/rcv";
 
-const datosRcv: DatosRcvFirestore = {
+const datosRcv: LecturaRcv = {
   planes: PLANES_RCV_INICIALES,
   tasas: TASAS_RCV_INICIALES,
   requisitos: [...REQUISITOS],
@@ -424,7 +424,7 @@ describe("flujo", () => {
   test("placas extranjeras sigue aunque no se puedan leer los requisitos", async () => {
     const { s } = falsos({
       rcv: async () => {
-        throw new Error("sin Firestore");
+        throw new Error("sin base de datos");
       },
     });
     const { respuestas, estado } = await conversar(s, ["hola", "3", "3"]);

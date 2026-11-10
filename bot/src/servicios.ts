@@ -10,18 +10,13 @@ import {
   type SolicitudCita,
 } from "../../lib/solicitudes/tipos";
 import { notificarPanel } from "./avisos-push";
+import * as bd from "./db";
+import { leerCatalogo, leerHorario, leerRcv } from "./db";
 import type { Contacto, DatosCita, Servicios } from "./flujo";
-import * as google from "./google";
-import {
-  crearEvento,
-  leerCatalogo,
-  leerHorario,
-  leerRcv,
-  ocupados,
-} from "./google";
+import { crearEvento, ocupados } from "./google";
 
 /**
- * `Servicios` reales del flujo: Firestore, Google Calendar y avisos push al panel. Nada sale
+ * `Servicios` reales del flujo: Postgres del VPS, Google Calendar y avisos push al panel. Nada sale
  * por WhatsApp hacia los asesores (D043): cada solicitud se guarda y avisa al panel instalado.
  */
 
@@ -81,7 +76,7 @@ const quien = (nombre: string, whatsapp: string) =>
   nombre || (whatsapp ? `+${whatsapp}` : "Cliente");
 
 async function guardarSolicitudRcv(s: SolicitudRcv): Promise<void> {
-  await google.guardarSolicitudRcv(s);
+  await bd.guardarSolicitudRcv(s);
   void notificarPanel({
     titulo: "🚗 Nueva solicitud de póliza RCV",
     cuerpo: `${quien(s.nombre, s.whatsapp)} · ${s.vehiculo ?? NOMBRES_CATEGORIA[s.categoria]}`,
@@ -90,7 +85,7 @@ async function guardarSolicitudRcv(s: SolicitudRcv): Promise<void> {
 }
 
 async function guardarSolicitudCelular(s: SolicitudCelular): Promise<void> {
-  await google.guardarSolicitudCelular(s);
+  await bd.guardarSolicitudCelular(s);
   void notificarPanel({
     titulo: "📱 Nueva solicitud de celular",
     cuerpo: `${quien(s.nombre, s.whatsapp)} · ${s.equipo ?? "no pudo ver la lista"}`,
@@ -99,7 +94,7 @@ async function guardarSolicitudCelular(s: SolicitudCelular): Promise<void> {
 }
 
 async function guardarSolicitudCita(s: SolicitudCita): Promise<void> {
-  await google.guardarSolicitudCita(s);
+  await bd.guardarSolicitudCita(s);
   // La cita agendada ya avisó al crear el evento (arriba): solo las que hay que cuadrar a mano.
   if (s.estado === "agendada") return;
   void notificarPanel({

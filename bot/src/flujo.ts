@@ -15,7 +15,7 @@ import type {
   SolicitudCita,
 } from "../../lib/solicitudes/tipos";
 import {
-  type DatosRcvFirestore,
+  type LecturaRcv,
   type PlanMostrado,
   planesMostrados,
   TELEFONO_RCV,
@@ -88,7 +88,7 @@ export interface Servicios {
   /** Crea la cita. `false` si el horario ya no está libre. */
   agendar(turno: Turno, contacto: Contacto, datos: DatosCita): Promise<boolean>;
   /** Transportes, tasas y requisitos de la póliza RCV (panel /rcv). */
-  rcv(): Promise<DatosRcvFirestore>;
+  rcv(): Promise<LecturaRcv>;
   /**
    * Solicitudes para el panel (/solicitudes, D043). Nada se avisa por WhatsApp a los asesores:
    * escribirles desde el número del negocio sube el riesgo de que lo baneen.
