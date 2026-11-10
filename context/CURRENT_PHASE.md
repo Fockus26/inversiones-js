@@ -10,7 +10,8 @@ Plan: `context/plans/migrate-vps.md` · Rama: `feat/migrate-vps` (PR en borrador
 | 1 BD (3 bases en kit-vps, esquema, migración en _dev y _preview) | Hecho · PR #26 |
 | 2 Auth (Better Auth, hash de Firebase, límites, correo, scripts) | Hecho · PR #26 |
 | 3 Login + capa de datos (server actions con comoAdmin, sondeo, /restablecer) | Hecho · PR #26 |
-| 4 Bot · 5 Tests (qa:local, seeds) | Pendiente |
+| 4 Bot (bot/src/db.ts, Docker, CI, D045) | Hecho · PR #26 |
+| 5 qa:local + seed sobre Postgres (probado en Docker) | Hecho · PR #26 |
 | 6 Ensayo de exportación · 7 QA | Pendiente |
 | 8 Corte con César | Pendiente |
 
