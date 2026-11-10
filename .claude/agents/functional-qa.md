@@ -29,6 +29,11 @@ If you cannot reproduce it consistently, say so and describe the conditions in w
 it. An honest intermittent finding is useful; one presented as deterministic that does not
 reproduce burns trust in the whole report.
 
+**Write the report as you go**, in `.qa/functional-qa-<flow>.md` (format at the end): the
+header at the start, each finding when it reproduces, the summary last. Your final message is
+that file. Two runs in KREA were cut off when the session closed and, written only at the
+end, left nothing.
+
 ---
 
 ## Preparation
@@ -39,7 +44,12 @@ inside the project (ignored by git; from the scratchpad they cannot find Playwri
 Files with Write/Edit or a `.mjs`; never Python in text mode (it writes CRLF and rewrites
 unicode escapes) and never `node -e` or a heredoc with backticks (Git Bash runs them). API
 calls with a body: `fetch` from a node script, never `curl` from Git Bash — it turns
-characters outside the BMP into "??" and gave false 201s (world-flags). Each finding leaves
+characters outside the BMP into "??" and gave false 201s (world-flags). Two Playwright traps
+gave false findings (melao): it does not click an `aria-disabled` element (use `click({
+force: true })` to prove the disabled button does nothing), and `textContent` includes
+hidden text such as a button's `loadingText` (compare with `innerText()`). Accounts a script
+needs are created already confirmed through the local admin API, not by a public sign-up
+that expects a session at once (that only works with `enable_confirmations` off). Each finding leaves
 its reproduction script in `.qa/repro/<n>-<slug>.mjs` (base URL as its argument, prints
 `PASS` or `FAIL <measure>`): the fix is closed by running it, not by another QA.
 
@@ -47,10 +57,10 @@ its reproduction script in `.qa/repro/<n>-<slug>.mjs` (base URL as its argument,
 `bun run qa:local -- --port <port>` (if you are launched in a pool slot, the slot's port;
 otherwise, a free one that is not César's), and you shut it down when done by killing its
 process tree (Windows: `taskkill /PID <pid> /T /F`). `qa:local` starts the local backend —
-Supabase in Docker (migrations and seed), or the Firebase emulators with a `demo-*` project
-(they need Java, not Docker) — creates the test accounts and points the app at it; it aborts
+Supabase or Postgres in Docker (migrations and seed), or the Firebase emulators with a `demo-*`
+project (they need Java, not Docker) — creates the test accounts and points the app at it; it aborts
 if anything still points at the real database or if the port is taken. **You never test
-against production data:** if it aborts, or Docker (Supabase) / Java (Firebase) does not
+against production data:** if it aborts, or Docker (Supabase, Postgres) / Java (Firebase) does not
 respond, what touches data goes to "Not verified" and to the actions for César. Without
 them, `--offline` lets you test what does not need data, as a guest.
 
@@ -125,7 +135,12 @@ await context.setOffline(true)                                    // offline
 
 **What you look for:** does an understandable error appear, or does it spin forever? Can it
 be retried? Does the button stay disabled and lock the user out? Is typed data lost? Does a
-stack trace leak to the user?
+stack trace leak to the user? Does a service failure (5xx) say "check your connection"?
+
+**A repro that calls a Next.js Server Action directly** reads its id on every run from the
+running server (`.next/server/server-reference-manifest.json`, by the action's file and
+export name), never from a saved `ids.json`: ids change with each build, and the repros
+failed with "Server Action unavailable" on another server (KREA).
 
 ## 4. Authentication and session
 

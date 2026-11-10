@@ -8,7 +8,10 @@ description: Batch and phase orchestrator. Use it when César arrives with a lis
 You plan; the workers execute. Your expensive work (reading code, deciding groupings,
 writing precise prompts) happens **once**; each worker starts cold and reads only what its
 prompt points to. That is why you run at high effort and they at medium (see
-`reference/TOKEN-ECONOMY.md` §11-12).
+`reference/TOKEN-ECONOMY.md` §11-12). The kit's `reference/` is installed next to the skills:
+`~/.claude/kit-reference/` (or `.claude/kit-reference/` in the project). Open the §12 table
+there before assigning models; never assign them by eye (melao: a unit with an RLS migration
+ended on `sonnet` because the file was not found).
 
 **Language:** everything you say to César — questions, the closing summary, PR bodies,
 commit messages — is in Spanish. Projects created before kit 3.8.0 keep their `context/` in
@@ -91,9 +94,42 @@ are about to ask:
 - **Is there a way to verify it?** Before asking for a DOM test, check that the project has
   a DOM test environment (`happy-dom`/`jsdom` in `package.json`); if not, ask for "verify by
   measuring with Playwright". Before calling something a bug, measure it (e.g. two `font-*`
-  classes that `cn` already resolves are not a bug).
+  classes that `cn` already resolves are not a bug). If César suppressed visual QA (no
+  server, no `design-qa`) and the unit adds a color, the prompt asks for the contrast pairs
+  computed in light **and** dark in the report: a new color that did not show in dark
+  reached `main` because nobody saw it (KREA).
+- **Is what you will state as exact true?** A shared shape, a type change ("widening it to
+  `string` compiles the same") or a trap of a library: check it before writing it — a quick
+  `typecheck` with the change in a free slot, the version in `node_modules`. The worker
+  takes the brief as fact: that claim failed in 11 assignments (KREA), and a trap about
+  Radix was false for the installed version (KREA). The same for everything the prompt
+  cites (KREA ×5):
+  - a state, a view or a text it points to **exists** (an "empty state of /secciones/evaluar"
+    that did not exist left the worker writing its own copy);
+  - counts and texts are **copied from the canvas** (`.dc.html`), not remembered ("4 samples"
+    where the canvas paints 5);
+  - demo data of earlier waves the unit combines **match** (ids of one list that are not in
+    the other);
+  - each requirement fits the **API of the components the unit may not edit** — if not, the
+    prompt authorizes the API change or says it from the start;
+  - an a11y trap (two `nav` with the same name) is real **at the same breakpoint**: two
+    elements that never coexist are not one.
+  What you already verified is stated once with path:line; do not also ask the worker to
+  re-check it (extra reads for something the brief had settled: KREA).
+- **Which tests watch these files?** A project test that guards them (`tokens.test.ts` that
+  forbids hex in `app/`, even in comments) goes in the prompt's traps: the worker found it
+  when it failed (KREA).
+- **States: all the combinations.** With two selectors on one view (role × tab), the prompt
+  lists the product, not each one apart: two states without a destination were missing
+  (KREA).
 - **Is there an image involved?** Open it before proposing its `alt` or its text: an alt
   written without seeing it describes nothing.
+- **Does it change tokens?** Read the CSS the build generates (`.next/static/css`, `dist/`),
+  not the framework's documented default: a prompt said "spacing is already rem" from
+  Tailwind's default while the generated CSS emitted `--spacing: 4px` (melao).
+- **Does the test you will ask for run on that code?** A PGlite test cannot run a query
+  written with the Supabase client. Ask for a test of the equivalent SQL plus a code guard,
+  or move the query to an SQL function that PGlite can call (melao).
 
 Signs that a request is bigger than it looks:
 - It touches stored data or the database (merge, migrations, columns) → needs tests of the
@@ -113,6 +149,9 @@ asked now, in a single round (max. 4 questions, with a recommended option):
 - May they apply **additive** database changes (new columns) through the MCP, or leave them
   written for César?
 - Product decisions the request leaves open that change the unit's design.
+- **The scope of a rule when the request does not fix it** ("in this area" or "everywhere"):
+  a prompt narrowed a rule to one area by interpretation, it had to apply to all cases, and
+  César fixed it after the merge (KREA).
 
 Do not ask about the closing QA: the server and test accounts for `wave-qa` are already
 authorized (§8).
@@ -137,15 +176,33 @@ So that parallel units do not collide, assign each one:
 |---|---|
 | Branch | `feat/ranking-top20` |
 | Range of decision IDs (one file per ID) | D075–D079 |
-| `CONTENT_CHECKLIST` rows | 26–27 |
+| `CONTENT_CHECKLIST` rows — only for a unit that brings new placeholder copy | 26–27 (or none) |
 | Changeset bump | `minor` (or `none`) |
-| Range of custom error codes, if the project uses them (SQLSTATE of `raise … using errcode`) | MS010–MS014 |
+| Range of custom error codes, if the project uses them (SQLSTATE of `raise … using errcode`): closed and disjoint per unit, never "F5+" (two units overlapped: melao) | MS010–MS014 |
 | Model · effort (`reference/TOKEN-ECONOMY.md` §12) | `sonnet` · medium |
 | Docker for this unit (local database, containers) | yes / no |
+| Test services on fixed ports for this unit (emulators, a test database the suite starts) | yes / no |
+
+**Two units sharing a shape** (the same table, column, type or event): fix its name and type
+in the brief's "Shared shapes" before launching. Otherwise the second one improvises its own
+(melao).
+
+**Handoff values without a token** (144/136 px, 140 ms): the prompt says beforehand which it
+is — "the nearest existing token" or "new tokens `--x`/`--y`, recorded in a decision". A worker
+cannot ask, and "zero magic values" with no token left it stuck (melao).
+A token nobody foresaw, when the brief forbids touching the global stylesheet: the worker
+uses the nearest one, lists the missing token in its report ("Missing tokens"), and you add
+them in one PR when the wave closes (§9). "Do not touch `globals.css`" against "add the token
+you need" left values without a token in two units (KREA ×2).
+
+**The last unit of a phase reserves one more decision ID**, for the phase's closing
+decision: it had none and the number was improvised (KREA).
 
 **Docker yes/no is decided here**, not left to the worker: "Docker only if the other unit
 finished" could not be followed, since a worker cannot know that (world-flags). At most one
-unit per wave gets "yes" unless they use separate stacks.
+unit per wave gets "yes" unless they use separate stacks. Two local Supabase stacks of the
+same project collide on ports: a fix whose FAIL → PASS needs the local database runs after
+`wave-qa` releases Docker, not while it runs (melao).
 
 **IDs are reserved against `origin/main`**, not against the local folder, which may be
 behind (D186 was reserved by looking at `context/decisions/` without a pull and it already
@@ -157,6 +214,18 @@ git ls-tree --name-only origin/main context/decisions/ | sort | tail -3
 ```
 
 And above that, the ranges reserved in still-open PRs of another batch, if any.
+
+**`CONTENT_CHECKLIST` rows, the same way: against the file's real last row** (it is local:
+in the main folder) plus the ranges of still-open units, never against the plan. A row
+reserved as free for a later wave had already been used by another PR (KREA ×2). Reserve
+one extra row per unit: within its range the worker distributes them freely (5 copy bands
+with 4 rows forced a merge: KREA).
+
+**Test services on fixed ports yes/no is decided here too, like Docker:** at most one unit
+per wave runs them. Firebase's emulators with several slots did not start in 60 s, collided
+on the fixed ports and contaminated each other's runs (KREA ×8). The others verify through
+CI (`gh pr checks`) when it runs those tests; the technology's reference says how (e.g.
+`tech/firebase.md` § Emulators in parallel).
 
 The slot and its port are not reserved here: `wt take` assigns them at launch (wt2 → 4302, §6).
 
@@ -258,7 +327,10 @@ or two units share a page or a table. A wave of sections, copy or styles gets no
 the workers' gates (`a11y`, the versioned class scripts) cover it, and its visual review is
 the version QA's `design-qa` (phase 09). `wave-qa` is never a visual audit either. Why: the
 full audit per wave and per page was most of the QA tokens, and its visual findings were
-classes one end-of-version sweep fixes at once (César, 2026-10-23). Note it in the closing
+classes one end-of-version sweep fixes at once (César, 2026-10-23).
+**A project with `QA: al final` in its `CLAUDE.md`** gets no `wave-qa` at all, and its
+workers no server (verify by code and tests): it is asked once, not in every wave. César
+asked KREA for no QA until the end of the project and had to repeat it. Note it in the closing
 (§9): "QA: no aplica — ola sin flujos de riesgo".
 
 ```bash
@@ -286,14 +358,15 @@ tabs and axe on every screen with no file of theirs changed (×3). With no previ
 whole wave.
 
 No need to repeat what the agent already knows: it starts its server with `bun run
-qa:local` against the local backend (Supabase in Docker, or the Firebase emulators with
-Java; never the real one); it logs in with `EMAIL_TEST`/`PASSWORD_TEST`,
+qa:local` against the local backend (Supabase or Postgres in Docker, or the Firebase emulators
+with Java; never the real one); it logs in with `EMAIL_TEST`/`PASSWORD_TEST`,
 `ADMIN_EMAIL_TEST`/`ADMIN_PASSWORD_TEST` and `<ROLE>_EMAIL_TEST`/`<ROLE>_PASSWORD_TEST` from
 `.env.test.local` without seeing the values. If Docker (or Java) is missing, it will report
 it as an action for César: do not start it yourself.
 
-**No local database possible** (Supabase without Docker on the machine, Firebase without
-Java, or the project has no `supabase/config.toml`/`firebase.json` emulators yet): the wave does not stay blocked. Launch it anyway,
+**No local database possible** (Supabase or Postgres without Docker on the machine, Firebase
+without Java, or the project has no `supabase/config.toml`, `drizzle.config.*` or `firebase.json`
+emulators yet): the wave does not stay blocked. Launch it anyway,
 with "no local database: `qa:local -- --offline`" in the prompt; it tests as a guest with the
 database variables pointing nowhere. In the closing (§9), "QA: guest only — <reason>", and
 that wave's logged-in QA goes to "Blocked" until there is a local database.
@@ -304,13 +377,19 @@ With the report:
 - **Critical or High** → a fix unit **in this same wave** (same slots, no new wave or
   session), with the finding's reproduction script in its prompt: the worker runs it on
   `main` (FAIL) and on its branch (PASS) and attaches both to the PR. That closes the
-  finding: **no second QA of the fixes**. The wave closes when those PRs are merged. Why: in
+  finding: **no second QA of the fixes**. The wave closes when those PRs are merged. The FAIL
+  half runs with `bash scripts/run-on-main.sh -- node .qa/repro/<n>.mjs <url>` (a temporary
+  worktree of `origin/main`): proving it by patching the logic back in the slot risked the
+  patch reaching the PR (melao). Why: in
   world-flags each QA opened a wave and each fix got a QA that found more, a loop with no
   end; the owner fixed this rule on 2026-10-22.
 - **A finding that is a class** (several instances of the same defect) → the fix unit
   sweeps the **whole class**: the `grep` pattern from the report over `src/`, every instance
   fixed, and the measuring script left versioned in the repo (`tests/e2e/` or
-  `scripts/qa/`) so later workers run it before their PR. Its prompt says "every component
+  `scripts/qa/`) so later workers run it before their PR. **The measured guard decides, the
+  `grep` is only a hint:** a reflow prompt named the class by grep (`min-w-0`) while the real
+  cause was a grid without `grid-cols-1` and the `min-content` of a button and a fieldset
+  (melao); the worker runs the guard per route and fixes what it measures. Its prompt says "every component
   with this anatomy", never one folder. Why: four QAs in a row found more of the same
   reflow-at-200 % class, because each fix covered only the listed instances (world-flags ×4).
 - **Medium or Low** → `context/plans/backlog.md`.
@@ -327,6 +406,8 @@ tests what is public and flags it), and in the closing ask César to add them
 1. Phase plan: the wave's status, its "Closings" row, fixes added to the next wave, and the
    **start prompt** of the next one.
 2. `CURRENT_PHASE.md`: "Now" with the phase and the next wave; "Blocked" with the QA items.
+   If the reports listed "Missing tokens" (§4), one PR adds them and replaces the nearest
+   ones the workers used, before the next wave.
 3. **Back up the local state:** `bun run context:backup` (copies the local `context/` to the
    `context-state` branch; see `git-flow` §2.1.2). Without it, losing the main folder means
    the next session does not know where the project stood. If the project does not have

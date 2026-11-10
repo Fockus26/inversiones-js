@@ -93,6 +93,17 @@ git checkout -b <type>/<kebab-case-description>
 In a **worktree pool slot** (a unit delegated by `orchestrate`), the branch already exists:
 `wt take` created it from `origin/main`. Do not create another one or switch branches.
 
+**Uncommitted work before opening** (`git status --short` is not empty and it is not from
+this unit): a worktree or a new branch from `origin/main` does not carry it, so the unit
+would start without that code. Do not stash, discard or carry it along silently. Show César
+the list (`git status --short`, grouped) and propose, in this order: (1) it is finished work
+→ commit it on its own branch and PR first, then open this unit from there or from `main`
+once merged; (2) it is work in progress the unit depends on → open the unit on top of that
+branch, in place, and say so in the PR; (3) it is unrelated → leave it in the main folder
+and do the unit in a pool slot. Why: in InspecChile a whole migration was uncommitted, the
+clean worktree from HEAD had no plugin, and the kit's adoption had to be done in the dirty
+tree (2026-11-07).
+
 **Valid types:** `feat`, `fix`, `refactor`, `style`, `docs`, `chore`, `perf`, `test`,
 `design`, `a11y`, `seo`.
 
@@ -124,7 +135,12 @@ Before even mentioning a commit:
    with its open findings explicitly accepted by César. Without that, it does not close.
 2. **If the unit closed a section with content, a page, or initialized the repo:** the
    `seo` skill must already have run.
-3. `bun run build` (or the project's build command) passes with no errors.
+3. **The build runs in CI, not here.** The PR is not merged until CI's `build` job is green;
+   locally, only if the unit touches `next.config`, the dependencies or the build setup, or
+   CI's build failed. With a deploy preview (Vercel), open its URL once: a route answers
+   200. Why: the local build took 109–309 s per unit on an HDD against 44 s in CI, and it
+   did not catch the production 500 (`require(esm)`) that only the real startup showed
+   (KREA; César, 2026-11-05). A project without CI keeps the local build.
 4. `bunx tsc --noEmit` and the linter pass, if the project has them configured.
 5. **Tests:** during the work `bun run test:related` was enough; here goes the full suite
    (`bun run test`, with `--dots`). CI runs it again on the PR.
@@ -258,6 +274,7 @@ of the PR.
 
 ```bash
 git add <the unit's specific files>                  # never -A blindly
+git diff --cached --stat                             # only the unit's files? (a staged `git rm` slipped in: KREA)
 git commit -m "<type>(<scope>): <descripción>"       # one or several, Conventional Commits
 git push -u origin <branch>
 gh pr create --base main --title "<type>(<scope>): <descripción>" --body-file <file>
