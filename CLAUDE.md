@@ -24,6 +24,8 @@ chatbot responde.
 | llega con un prompt de orquestador | **solo** lo que el prompt cite |
 
 Buscar, no leer: `grep -rh "^# D" context/decisions/`.
+**El `reference/…` del kit** = `~/.claude/kit-reference/…` (o `.claude/kit-reference/…`).
+**Tech refs:** firebase, vercel → su `tech/<nombre>.md` cuando la tarea lo toque; solo estos.
 
 ## Stack
 
@@ -50,8 +52,11 @@ puerto, en segundo plano). Build, typecheck, lint y tests sí se corren sin preg
 
 **QA contra base local:** `bun run qa:local -- --port <p>` levanta los **emuladores de
 Firebase** (Java, sin Docker; proyecto `demo-inversiones-js`), carga `seed-emulador`, crea
-las cuentas de `.env.test.local` (`ADMIN_…` con `admins/{uid}`, `EMAIL_TEST` sin acceso) y
-arranca el servidor sobre ellos. Nunca contra el proyecto real. Sin ellos: `--offline`.
+las cuentas de `.env.test.local` (la escribes tú; nunca pidas a César iniciar sesión para QA;
+`ADMIN_…` con `admins/{uid}`, `EMAIL_TEST` sin acceso) y arranca el servidor sobre ellos.
+Nunca contra el proyecto real. Sin ellos: `--offline`.
+
+**QA: al final** — sin `wave-qa` ni servidor de los workers por ola; la QA va en la de versión.
 
 Playwright, si se usa, se corre con `node`, no con `bun` (en Windows se cuelga).
 Antes de usar una API de Next 16 o de Firebase: Context7 o `node_modules/next/dist/docs/`.
