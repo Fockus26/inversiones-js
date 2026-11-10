@@ -2,7 +2,12 @@ import { eq, sql } from "drizzle-orm";
 import { intentosLogin } from "../db/schema";
 import type { Db } from "../db/tipos";
 
-/** Tope por cuenta: solo cuentan los fallos, así una oficina con una IP no se bloquea. */
+/**
+ * Tope por cuenta: 5 contraseñas comprobadas cada 15 min (solo cuentan los fallos, así una
+ * oficina con una IP no se bloquea). El intento se reserva ANTES de comprobar la contraseña con
+ * un solo `upsert … returning`: en paralelo no pasan más de 5 (antes se leía y luego se sumaba,
+ * y 30 intentos a la vez pasaban casi todos).
+ */
 export const MAX_FALLOS = 5;
 export const VENTANA_MS = 15 * 60 * 1000;
 
@@ -30,22 +35,40 @@ export async function cuentaBloqueada(db: Db, correo: string) {
   return bloqueada(fila);
 }
 
-/** Suma un fallo; si la ventana venció, empieza de nuevo en 1. */
-export async function registrarFallo(db: Db, correo: string) {
-  if (!correo) return;
-  const ventana = sql.raw(`interval '${VENTANA_MS / 1000} seconds'`);
-  await db
+const ventana = () => sql.raw(`interval '${VENTANA_MS / 1000} seconds'`);
+
+/**
+ * Reserva un intento (cuenta como fallo hasta que se sepa el resultado). Devuelve false si la
+ * cuenta ya agotó los 5 de la ventana: entonces no se comprueba la contraseña. Si la ventana
+ * venció, empieza de nuevo en 1.
+ */
+export async function reservarIntento(db: Db, correo: string) {
+  if (!correo) return true;
+  const v = ventana();
+  const [fila] = await db
     .insert(intentosLogin)
     .values({ correo, fallos: 1 })
     .onConflictDoUpdate({
       target: intentosLogin.correo,
       set: {
-        fallos: sql`case when ${intentosLogin.desde} < now() - ${ventana} then 1 else ${intentosLogin.fallos} + 1 end`,
-        desde: sql`case when ${intentosLogin.desde} < now() - ${ventana} then now() else ${intentosLogin.desde} end`,
+        fallos: sql`case when ${intentosLogin.desde} < now() - ${v} then 1 else ${intentosLogin.fallos} + 1 end`,
+        desde: sql`case when ${intentosLogin.desde} < now() - ${v} then now() else ${intentosLogin.desde} end`,
       },
-    });
+    })
+    .returning({ fallos: intentosLogin.fallos });
+  return (fila?.fallos ?? 1) <= MAX_FALLOS;
 }
 
+/** Devuelve un intento reservado que no llegó a comprobar la contraseña (origen, formato…). */
+export async function liberarIntento(db: Db, correo: string) {
+  if (!correo) return;
+  await db
+    .update(intentosLogin)
+    .set({ fallos: sql`greatest(${intentosLogin.fallos} - 1, 0)` })
+    .where(eq(intentosLogin.correo, correo));
+}
+
+/** Entró bien o cambió la contraseña: la cuenta queda sin fallos. */
 export async function limpiarFallos(db: Db, correo: string) {
   if (!correo) return;
   await db.delete(intentosLogin).where(eq(intentosLogin.correo, correo));

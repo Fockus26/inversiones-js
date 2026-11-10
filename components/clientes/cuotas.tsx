@@ -18,14 +18,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { mensajeDeError } from "@/lib/data/errores";
-import { marcarCuota, resumenPagos } from "@/lib/financiamiento/cuotas";
+import { resumenPagos } from "@/lib/financiamiento/cuotas";
 import {
   diasEntre,
   FECHA_MINIMA,
   fechaCorta,
   hoyCaracas,
 } from "@/lib/financiamiento/fechas";
-import { guardarCuotas } from "@/lib/financiamiento/repositorio";
+import { marcarCuotaPagada } from "@/lib/financiamiento/repositorio";
 import {
   FRECUENCIAS,
   NOMBRES_FRECUENCIA,
@@ -46,7 +46,7 @@ interface ClienteConPagos {
 
 /**
  * Cuotas de un cliente: cada una se marca o desmarca como pagada y se guarda al instante.
- * `cliente` viene de la lista en vivo, así el diálogo refleja lo que hay en Firestore.
+ * `cliente` viene de la lista en vivo, así el diálogo refleja lo que hay en la base.
  */
 export function DialogoCuotas({
   coleccion,
@@ -96,10 +96,12 @@ function ListaCuotas({
   async function alternar(numero: number, pagada: boolean) {
     setGuardando(numero);
     try {
-      await guardarCuotas(
+      await marcarCuotaPagada(
         coleccion,
         cliente.id,
-        marcarCuota(cliente.pagos.cuotas, numero, pagada, hoy),
+        cliente.pagos.cuotas,
+        numero,
+        pagada,
       );
     } catch (e) {
       toast.error("No se pudo guardar la cuota", {

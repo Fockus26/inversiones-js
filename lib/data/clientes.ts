@@ -20,8 +20,9 @@ export const actualizarClienteRcv = async (id: unknown, campos: unknown) =>
   comoAdmin((uid) => n.actualizarClienteRcv(db, uid, id, campos));
 export const borrarCliente = async (coleccion: unknown, id: unknown) =>
   comoAdmin(() => n.borrarCliente(db, coleccion, id));
-export const guardarCuotas = async (
+export const marcarCuota = async (
   coleccion: unknown,
   id: unknown,
-  cuotas: unknown,
-) => comoAdmin((uid) => n.guardarCuotas(db, uid, coleccion, id, cuotas));
+  numero: unknown,
+  pagada: unknown,
+) => comoAdmin((uid) => n.marcarCuota(db, uid, coleccion, id, numero, pagada));

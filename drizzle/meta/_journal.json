@@ -15,6 +15,13 @@
       "when": 1794328681087,
       "tag": "0001_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794348777721,
+      "tag": "0002_poliza_completa",
+      "breakpoints": true
     }
   ]
 }

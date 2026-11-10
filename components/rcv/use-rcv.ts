@@ -39,13 +39,15 @@ export function useRcv(): EstadoRcv {
       setEstado({ tipo: "cargando" });
       let planes: PlanRcvConId[] | null = null;
       let config: ConfigRcv | null | undefined;
-      let fallo = false;
+      // Por fuente: si la primera carga falló y una consulta siguiente sale bien, la pantalla
+      // se recupera sola (la PWA instalada no tiene botón de recargar).
+      const fallos = new Set<string>();
       const publicar = () => {
-        if (!fallo && planes && config !== undefined)
+        if (fallos.size === 0 && planes && config !== undefined)
           setEstado({ tipo: "listo", planes, config });
       };
-      const alFallar = (error: ErrorDatos) => {
-        fallo = true;
+      const alFallar = (fuente: string) => (error: ErrorDatos) => {
+        fallos.add(fuente);
         setEstado(
           error.code === "permission-denied"
             ? { tipo: "sin-acceso" }
@@ -58,12 +60,14 @@ export function useRcv(): EstadoRcv {
       dejar = [
         escucharPlanesRcv((p) => {
           planes = p;
+          fallos.delete("planes");
           publicar();
-        }, alFallar),
+        }, alFallar("planes")),
         escucharConfigRcv((c) => {
           config = c;
+          fallos.delete("config");
           publicar();
-        }, alFallar),
+        }, alFallar("config")),
       ];
     });
     return () => {

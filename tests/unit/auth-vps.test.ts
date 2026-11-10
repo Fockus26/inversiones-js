@@ -137,3 +137,84 @@ describe("límite por cuenta", () => {
     expect(filas).toHaveLength(0);
   });
 });
+
+describe("límite por cuenta (QA de la migración)", () => {
+  const fallos = async (correo: string) =>
+    (
+      await db
+        .select()
+        .from(schema.intentosLogin)
+        .where(eq(schema.intentosLogin.correo, correo))
+    )[0]?.fallos ?? 0;
+
+  test(`en paralelo no se comprueban más de ${MAX_FALLOS} contraseñas`, async () => {
+    await crearAdmin(db, "paralelo@ejemplo.com");
+    const r = await Promise.allSettled(
+      Array.from({ length: 20 }, (_, i) =>
+        entrar("paralelo@ejemplo.com", `mala-clave-${i}`),
+      ),
+    );
+    const estados = r.map((x) =>
+      x.status === "rejected" ? (x.reason as { status?: string }).status : "ok",
+    );
+    expect(estados.filter((s) => s === "UNAUTHORIZED")).toHaveLength(
+      MAX_FALLOS,
+    );
+    expect(estados.filter((s) => s === "TOO_MANY_REQUESTS")).toHaveLength(
+      20 - MAX_FALLOS,
+    );
+  }, 30_000);
+
+  test("restablecer la contraseña desbloquea la cuenta", async () => {
+    const { userId } = await crearAdmin(db, "olvido@ejemplo.com");
+    for (let i = 0; i < MAX_FALLOS; i++)
+      await entrar("olvido@ejemplo.com", "mala-clave-000").catch(() => {});
+    const token = "token-de-prueba-olvido";
+    await db.insert(schema.verification).values({
+      id: "v-olvido",
+      identifier: `reset-password:${token}`,
+      value: userId,
+      expiresAt: new Date(Date.now() + 3_600_000),
+    });
+    await auth.api.resetPassword({
+      body: { token, newPassword: "clave-nueva-segura" },
+    });
+    const s = await entrar("olvido@ejemplo.com", "clave-nueva-segura");
+    expect(s.user.id).toBe(userId);
+  });
+
+  test("una contraseña de solo espacios no se acepta y el enlace sigue sirviendo", async () => {
+    const { userId } = await crearAdmin(db, "espacios@ejemplo.com");
+    const token = "token-de-prueba-espacios";
+    await db.insert(schema.verification).values({
+      id: "v-espacios",
+      identifier: `reset-password:${token}`,
+      value: userId,
+      expiresAt: new Date(Date.now() + 3_600_000),
+    });
+    try {
+      await auth.api.resetPassword({
+        body: { token, newPassword: "        " },
+      });
+      throw new Error("debió rechazarla");
+    } catch (e) {
+      expect((e as { body?: { code?: string } }).body?.code).toBe(
+        "PASSWORD_TOO_SHORT",
+      );
+    }
+    await auth.api.resetPassword({
+      body: { token, newPassword: "ahora-si-buena" },
+    });
+  });
+
+  test("un error que no es de contraseña no suma fallo", async () => {
+    await crearAdmin(db, "formato@ejemplo.com");
+    await entrar("formato@ejemplo.com", "mala-clave-000").catch(() => {});
+    expect(await fallos("formato@ejemplo.com")).toBe(1);
+    // Cuerpo inválido (sin contraseña): no llega a comprobarla.
+    await auth.api
+      .signInEmail({ body: { email: "formato@ejemplo.com" } as never })
+      .catch(() => {});
+    expect(await fallos("formato@ejemplo.com")).toBe(1);
+  });
+});

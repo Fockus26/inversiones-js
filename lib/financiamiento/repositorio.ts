@@ -3,6 +3,7 @@
 import * as acciones from "@/lib/data/clientes";
 import type { ErrorDatos } from "@/lib/data/errores";
 import { escribir, sondear } from "@/lib/data/sondeo";
+import { marcarCuota } from "./cuotas";
 import {
   actualizarDemo,
   borrarDemo,
@@ -11,6 +12,7 @@ import {
   guardarCuotasDemo,
   modoDemo,
 } from "./demo";
+import { hoyCaracas } from "./fechas";
 import {
   type CamposClienteCelular,
   type CamposClienteRcv,
@@ -116,14 +118,24 @@ export async function borrarCliente(
   );
 }
 
-/** Guarda las cuotas tras marcar o desmarcar una (la lista va completa). */
-export async function guardarCuotas(
+/**
+ * Marca o desmarca una cuota. El servidor la cambia sobre lo guardado (dos seguidas no se pisan);
+ * `cuotas` solo hace falta en el modo demo, que no tiene servidor.
+ */
+export async function marcarCuotaPagada(
   coleccion: Coleccion,
   id: string,
   cuotas: Cuota[],
+  numero: number,
+  pagada: boolean,
 ): Promise<void> {
-  if (modoDemo()) return guardarCuotasDemo(coleccion, id, cuotas);
+  if (modoDemo())
+    return guardarCuotasDemo(
+      coleccion,
+      id,
+      marcarCuota(cuotas, numero, pagada, hoyCaracas()),
+    );
   await escribir([TABLA[coleccion]], () =>
-    acciones.guardarCuotas(coleccion, id, cuotas),
+    acciones.marcarCuota(coleccion, id, numero, pagada),
   );
 }

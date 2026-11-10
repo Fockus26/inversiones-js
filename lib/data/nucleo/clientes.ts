@@ -1,17 +1,26 @@
 import { asc, eq, sql } from "drizzle-orm";
 import { clientesCelulares, clientesRcv } from "@/lib/db/schema";
 import type { Db } from "@/lib/db/tipos";
+import { conservarPagos } from "@/lib/financiamiento/cuotas";
+import { hoyCaracas } from "@/lib/financiamiento/fechas";
 import {
   type ClienteCelularConId,
   type ClienteRcvConId,
   COLECCION_CLIENTES_CELULARES,
   COLECCION_CLIENTES_RCV,
-  type Cuota,
   FRECUENCIAS,
+  type PlanPagos,
 } from "@/lib/financiamiento/tipos";
 import { ErrorDatos, MENSAJE_BORRADO } from "../errores";
 import { esPlanPagos } from "../normalizar";
-import { esBool, esTexto, exigir, exigirId, soloClaves } from "../validar";
+import {
+  esBool,
+  esFecha,
+  esTexto,
+  exigir,
+  exigirId,
+  soloClaves,
+} from "../validar";
 
 /** Clientes con financiamiento (D032, D033): `clienteCelularValido`, `clienteRcvValido`. */
 
@@ -25,8 +34,6 @@ const tabla = (c: unknown) => {
   return exigir(false) as never;
 };
 
-const FECHA = /^\d{4}-\d{2}-\d{2}$/;
-
 /** `planPagosValido`: forma del plan y hasta 60 cuotas (el contenido lo arma el panel). */
 function validarPagos(p: unknown) {
   exigir(esPlanPagos(p));
@@ -38,20 +45,12 @@ function validarPagos(p: unknown) {
   );
   exigir(
     soloClavesOk(p, ["inicial", "frecuencia", "cuotas"]) &&
-      (plan.cuotas as Record<string, unknown>[]).every((c) =>
-        FECHA.test(String(c.vence)),
-      ),
+      (plan.cuotas as Record<string, unknown>[]).every((c) => esFecha(c.vence)),
   );
 }
 
 function soloClavesOk(o: unknown, permitidas: string[]) {
   return Object.keys(o as object).every((k) => permitidas.includes(k));
-}
-
-function validarCuotas(cuotas: unknown): Cuota[] {
-  exigir(Array.isArray(cuotas) && cuotas.length >= 1 && cuotas.length <= 60);
-  validarPagos({ inicial: 0, frecuencia: "mensual", cuotas });
-  return cuotas as Cuota[];
 }
 
 const TEXTOS_COMUNES = ["nombre", "cedula", "telefono", "notas"] as const;
@@ -89,9 +88,13 @@ function limpiarRcv(entrada: unknown, completo: boolean) {
   ])
     if (k in c) exigir(esTexto(c[k]));
   for (const k of ["emision", "vence"])
-    if (k in c) exigir(c[k] === null || (esTexto(c[k]) && FECHA.test(c[k])));
-  if ("emision" in c && "vence" in c)
+    if (k in c) exigir(c[k] === null || esFecha(c[k]));
+  // Van juntos (también al actualizar solo esos dos) y la póliza vence después de emitirse.
+  exigir("emision" in c === "vence" in c);
+  if ("emision" in c) {
     exigir((c.emision === null) === (c.vence === null));
+    if (c.emision !== null) exigir(String(c.vence) > String(c.emision));
+  }
   for (const k of ["recordatorio30", "recordatorio3"])
     if (k in c) exigir(esBool(c[k]));
   if ("pagos" in c && c.pagos !== null) validarPagos(c.pagos);
@@ -141,18 +144,40 @@ export async function crearClienteCelular(
     .values({ ...limpiarCelular(campos), ...huella(uid) });
 }
 
+/**
+ * Al editar un cliente, lo ya cobrado en la base no se pierde: el formulario arma el plan con
+ * la lectura que tenía abierta, y una cuota marcada mientras tanto (otra pestaña, otro equipo)
+ * no viene en ella. Se fusiona por número de cuota dentro de la transacción (fila bloqueada).
+ */
+function fusionarPagos(nuevo: PlanPagos, guardado: unknown): PlanPagos {
+  if (!esPlanPagos(guardado)) return nuevo;
+  return { ...nuevo, cuotas: conservarPagos(nuevo.cuotas, guardado.cuotas) };
+}
+
 export async function actualizarClienteCelular(
   db: Db,
   uid: string,
   id: unknown,
   campos: unknown,
 ): Promise<void> {
-  const filas = await db
-    .update(clientesCelulares)
-    .set({ ...limpiarCelular(campos), ...huella(uid) })
-    .where(eq(clientesCelulares.id, exigirId(id)))
-    .returning({ id: clientesCelulares.id });
-  if (filas.length === 0) throw new ErrorDatos("not-found", MENSAJE_BORRADO);
+  const c = limpiarCelular(campos);
+  const clave = exigirId(id);
+  await db.transaction(async (tx) => {
+    const [actual] = await tx
+      .select({ pagos: clientesCelulares.pagos })
+      .from(clientesCelulares)
+      .where(eq(clientesCelulares.id, clave))
+      .for("update");
+    if (!actual) throw new ErrorDatos("not-found", MENSAJE_BORRADO);
+    await tx
+      .update(clientesCelulares)
+      .set({
+        ...c,
+        pagos: fusionarPagos(c.pagos, actual.pagos),
+        ...huella(uid),
+      })
+      .where(eq(clientesCelulares.id, clave));
+  });
 }
 
 export async function crearClienteRcv(
@@ -170,12 +195,26 @@ export async function actualizarClienteRcv(
   id: unknown,
   campos: unknown,
 ): Promise<void> {
-  const filas = await db
-    .update(clientesRcv)
-    .set({ ...limpiarRcv(campos, false), ...huella(uid) })
-    .where(eq(clientesRcv.id, exigirId(id)))
-    .returning({ id: clientesRcv.id });
-  if (filas.length === 0) throw new ErrorDatos("not-found", MENSAJE_BORRADO);
+  const c = limpiarRcv(campos, false);
+  const clave = exigirId(id);
+  await db.transaction(async (tx) => {
+    const [actual] = await tx
+      .select({ pagos: clientesRcv.pagos })
+      .from(clientesRcv)
+      .where(eq(clientesRcv.id, clave))
+      .for("update");
+    if (!actual) throw new ErrorDatos("not-found", MENSAJE_BORRADO);
+    const pagos =
+      c.pagos == null ? c.pagos : fusionarPagos(c.pagos, actual.pagos);
+    await tx
+      .update(clientesRcv)
+      .set({
+        ...c,
+        ...("pagos" in c ? { pagos } : {}),
+        ...huella(uid),
+      })
+      .where(eq(clientesRcv.id, clave));
+  });
 }
 
 export async function borrarCliente(
@@ -187,23 +226,48 @@ export async function borrarCliente(
   await db.delete(t).where(eq(t.id, exigirId(id)));
 }
 
-/** Reemplaza solo `pagos.cuotas` (como el `updateDoc` con "pagos.cuotas"). */
-export async function guardarCuotas(
+/**
+ * Marca o desmarca UNA cuota en el servidor, sobre lo que hay en la base (no sobre la lista que
+ * tenía el navegador): dos cuotas marcadas seguidas no se pisan. Si ya estaba así, no cambia
+ * (ni la fecha de pago). La fecha es la de hoy en Caracas.
+ */
+export async function marcarCuota(
   db: Db,
   uid: string,
   coleccion: unknown,
   id: unknown,
-  cuotas: unknown,
+  numero: unknown,
+  pagada: unknown,
 ): Promise<void> {
   const t = tabla(coleccion);
-  const lista = JSON.stringify(validarCuotas(cuotas));
+  exigir(
+    Number.isInteger(numero) &&
+      (numero as number) >= 1 &&
+      (numero as number) <= 60 &&
+      esBool(pagada),
+  );
+  const cambio = JSON.stringify({
+    pagada,
+    pagadaEl: pagada ? hoyCaracas() : null,
+  });
+  const n = numero as number;
   const filas = await db
     .update(t)
     .set({
-      pagos: sql`jsonb_set(${t.pagos}, '{cuotas}', ${lista}::jsonb)`,
+      pagos: sql`jsonb_set(${t.pagos}, '{cuotas}', (
+        select jsonb_agg(
+          case when (x.c->>'numero')::int = ${n}
+                 and (x.c->>'pagada')::boolean is distinct from ${pagada}::boolean
+               then x.c || ${cambio}::jsonb else x.c end
+          order by x.i)
+        from jsonb_array_elements(${t.pagos}->'cuotas') with ordinality as x(c, i)))`,
       ...huella(uid),
     })
-    .where(sql`${t.id} = ${exigirId(id)} and ${t.pagos} is not null`)
+    .where(
+      sql`${t.id} = ${exigirId(id)} and ${t.pagos} is not null
+        and exists (select 1 from jsonb_array_elements(${t.pagos}->'cuotas') as y(c)
+                    where (y.c->>'numero')::int = ${n})`,
+    )
     .returning({ id: t.id });
   if (filas.length === 0) throw new ErrorDatos("not-found", MENSAJE_BORRADO);
 }

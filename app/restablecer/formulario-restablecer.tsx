@@ -14,10 +14,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LARGO_CLAVE } from "@/lib/auth/limites";
 import { restablecer } from "@/lib/auth/usuario";
 import { cn } from "@/lib/utils";
 
-const MINIMO = 8;
+const MINIMO = LARGO_CLAVE.min;
+const MAXIMO = LARGO_CLAVE.max;
 const CLASE_ENLACE =
   "mx-auto flex min-h-11 items-center rounded-md px-2 text-sm text-accent-foreground underline underline-offset-4 outline-none hover:no-underline focus-visible:ring-3 focus-visible:ring-ring";
 
@@ -48,8 +50,14 @@ export function FormularioRestablecer() {
   async function guardar(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     if (ocupado.current || !token) return;
-    if (nueva.length < MINIMO) {
-      setError(`La contraseña debe tener al menos ${MINIMO} caracteres.`);
+    if (nueva.trim().length < MINIMO) {
+      setError(
+        `La contraseña debe tener al menos ${MINIMO} caracteres (sin contar espacios).`,
+      );
+      return;
+    }
+    if (nueva.length > MAXIMO) {
+      setError(`La contraseña no puede pasar de ${MAXIMO} caracteres.`);
       return;
     }
     if (nueva !== repetir) {
@@ -63,6 +71,12 @@ export function FormularioRestablecer() {
     ocupado.current = false;
     setEnviando(false);
     if (r === "ok") setListo(true);
+    else if (r === "clave-corta")
+      setError(
+        `La contraseña debe tener al menos ${MINIMO} caracteres (sin contar espacios).`,
+      );
+    else if (r === "clave-larga")
+      setError(`La contraseña no puede pasar de ${MAXIMO} caracteres.`);
     else if (r === "token-invalido")
       setError(
         "El enlace venció o ya se usó. Pide uno nuevo desde el inicio de sesión.",

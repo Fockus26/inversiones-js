@@ -6,8 +6,9 @@ export type Resultado<T> =
   | { ok: false; codigo: CodigoDatos; mensaje?: string };
 
 /**
- * En el cliente: ejecuta la acción y devuelve sus datos o lanza un `ErrorDatos`. Un fallo de
- * red (la acción no llegó al servidor) se traduce a "unavailable".
+ * En el cliente: ejecuta la acción y devuelve sus datos o lanza un `ErrorDatos`. Sin red (la
+ * acción no llegó: `fetch` lanza TypeError) → "unavailable"; si el servidor respondió con un
+ * 500/504 no es culpa del internet de quien usa el panel → "internal".
  */
 export async function llamar<T>(
   accion: () => Promise<Resultado<T>>,
@@ -17,7 +18,10 @@ export async function llamar<T>(
     r = await accion();
   } catch (e) {
     console.error("[datos] la acción no respondió:", e);
-    throw new ErrorDatos("unavailable");
+    const sinRed =
+      e instanceof TypeError ||
+      (typeof navigator !== "undefined" && navigator.onLine === false);
+    throw new ErrorDatos(sinRed ? "unavailable" : "internal");
   }
   if (r.ok) return r.datos;
   throw new ErrorDatos(r.codigo, r.mensaje);

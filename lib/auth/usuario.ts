@@ -103,13 +103,15 @@ function errorAuth(status: number | undefined, code: string | undefined) {
   const codigo =
     status === 429
       ? "auth/too-many-requests"
-      : code === "INVALID_EMAIL"
+      : code === "INVALID_EMAIL" || code === "VALIDATION_ERROR"
         ? "auth/invalid-email"
-        : status === 401 || status === 400 || status === 403
-          ? "auth/invalid-credential"
-          : status === undefined || status === 0
-            ? "auth/network-request-failed"
-            : "auth/desconocido";
+        : status === 403
+          ? "auth/origen"
+          : status === 401 || status === 400
+            ? "auth/invalid-credential"
+            : status === undefined || status === 0
+              ? "auth/network-request-failed"
+              : "auth/desconocido";
   return Object.assign(new Error(codigo), { code: codigo });
 }
 
@@ -144,17 +146,25 @@ export async function pedirRestablecer(email: string): Promise<void> {
     throw errorAuth(undefined, undefined);
   }
   if (r.error && r.error.status === 429) throw errorAuth(429, undefined);
-  if (r.error && r.error.code === "INVALID_EMAIL")
+  // Un correo sin dominio completo ("maria@gmail") no llega a enviarse: se dice, no se finge.
+  if (
+    r.error &&
+    (r.error.code === "INVALID_EMAIL" || r.error.code === "VALIDATION_ERROR")
+  )
     throw errorAuth(400, "INVALID_EMAIL");
+  if (r.error) throw errorAuth(r.error.status, r.error.code);
 }
 
 export async function restablecer(
   token: string,
   nueva: string,
-): Promise<"ok" | "token-invalido" | "red"> {
+): Promise<"ok" | "token-invalido" | "clave-corta" | "clave-larga" | "red"> {
   try {
     const r = await authClient.resetPassword({ token, newPassword: nueva });
     if (!r.error) return "ok";
+    // Un 400 por la contraseña no es un enlace vencido: el enlace sigue sirviendo.
+    if (r.error.code === "PASSWORD_TOO_SHORT") return "clave-corta";
+    if (r.error.code === "PASSWORD_TOO_LONG") return "clave-larga";
     return r.error.status === 400 ? "token-invalido" : "red";
   } catch {
     return "red";

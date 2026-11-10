@@ -40,13 +40,15 @@ export function useCatalogo(): EstadoCatalogo {
       setEstado({ tipo: "cargando" });
       let productos: ProductoConId[] | null = null;
       let marcas: Marca[] | null = null;
-      let fallo = false;
+      // Por fuente: si la primera carga falló y una consulta siguiente sale bien, la pantalla
+      // se recupera sola (la PWA instalada no tiene botón de recargar).
+      const fallos = new Set<string>();
       const publicar = () => {
-        if (!fallo && productos && marcas)
+        if (fallos.size === 0 && productos && marcas)
           setEstado({ tipo: "listo", productos, marcas });
       };
-      const alFallar = (error: ErrorDatos) => {
-        fallo = true;
+      const alFallar = (fuente: string) => (error: ErrorDatos) => {
+        fallos.add(fuente);
         setEstado(
           error.code === "permission-denied"
             ? { tipo: "sin-acceso" }
@@ -59,12 +61,14 @@ export function useCatalogo(): EstadoCatalogo {
       dejarDeEscuchar = [
         escucharProductos((p) => {
           productos = p;
+          fallos.delete("productos");
           publicar();
-        }, alFallar),
+        }, alFallar("productos")),
         escucharMarcas((m) => {
           marcas = m;
+          fallos.delete("marcas");
           publicar();
-        }, alFallar),
+        }, alFallar("marcas")),
       ];
     });
     return () => {

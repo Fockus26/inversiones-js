@@ -256,14 +256,67 @@ describe("clientes con financiamiento", () => {
     const {
       clientes: [c],
     } = await clientes.listarClientesCelulares(db);
-    await clientes.guardarCuotas(db, uid, "clientesCelulares", c.id, [
-      { ...cuota(1), pagada: true, pagadaEl: "2026-11-10" },
-    ]);
+    await clientes.marcarCuota(db, uid, "clientesCelulares", c.id, 1, true);
     const {
       clientes: [d],
     } = await clientes.listarClientesCelulares(db);
     expect(d.pagos.cuotas[0].pagada).toBe(true);
+    expect(d.pagos.cuotas[0].pagadaEl).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(d.pagos.inicial).toBe(125);
+    expect(
+      codigo(
+        await comoAdmin((u) =>
+          clientes.marcarCuota(db, u, "clientesCelulares", c.id, 50, true),
+        ),
+      ),
+    ).toBe("not-found");
+    expect(
+      codigo(
+        await comoAdmin((u) =>
+          clientes.marcarCuota(db, u, "clientesCelulares", c.id, 1, "sí"),
+        ),
+      ),
+    ).toBe("invalid-argument");
+  });
+
+  test("dos cuotas marcadas seguidas no se pisan, y editar el cliente no deshace un pago", async () => {
+    await clientes.crearClienteCelular(db, uid, {
+      ...clienteCelular,
+      nombre: "Berta",
+      pagos: {
+        inicial: 0,
+        frecuencia: "quincenal",
+        cuotas: [cuota(1), cuota(2), cuota(3)],
+      },
+    });
+    const berta = async () =>
+      (await clientes.listarClientesCelulares(db)).clientes.find(
+        (x) => x.nombre === "Berta",
+      );
+    const b = await berta();
+    if (!b) throw new Error("falta Berta");
+    // Lo que tenía abierto el formulario de edición antes de los pagos.
+    const vieja = structuredClone(b);
+    await Promise.all([
+      clientes.marcarCuota(db, uid, "clientesCelulares", b.id, 1, true),
+      clientes.marcarCuota(db, uid, "clientesCelulares", b.id, 2, true),
+    ]);
+    const { id: _, ...campos } = vieja;
+    await clientes.actualizarClienteCelular(db, uid, b.id, {
+      nombre: campos.nombre,
+      cedula: campos.cedula,
+      telefono: "0424-0000000",
+      equipo: campos.equipo,
+      notas: campos.notas,
+      pagos: campos.pagos,
+    });
+    const final = await berta();
+    expect(final?.telefono).toBe("0424-0000000");
+    expect(final?.pagos.cuotas.map((x) => x.pagada)).toEqual([
+      true,
+      true,
+      false,
+    ]);
   });
 
   test("RCV: emisión y vencimiento van juntos y dentro del rango", async () => {
@@ -287,11 +340,37 @@ describe("clientes con financiamiento", () => {
       { ...base, vence: null },
       { ...base, emision: "1999-01-01" },
       { ...base, vence: "01/01/2027" },
+      { ...base, vence: "2025-12-31" },
+      { ...base, emision: "2026-02-31" },
     ]) {
       expect(
         codigo(await comoAdmin((u) => clientes.crearClienteRcv(db, u, malo))),
       ).toBe("invalid-argument");
     }
+    // Al actualizar, emisión y vencimiento van juntos (una llamada manipulada no deja uno solo).
+    const [luis] = (await clientes.listarClientesRcv(db)).clientes;
+    for (const malo of [
+      { vence: null },
+      { emision: "2026-05-01" },
+      { emision: "2026-05-01", vence: "2026-04-01" },
+    ]) {
+      expect(
+        codigo(
+          await comoAdmin((u) =>
+            clientes.actualizarClienteRcv(db, u, luis.id, malo),
+          ),
+        ),
+      ).toBe("invalid-argument");
+    }
+    // Y el CHECK también lo frena si se salta el servidor.
+    await expect(
+      (async () => {
+        await db
+          .update(schema.clientesRcv)
+          .set({ vence: null })
+          .where(eq(schema.clientesRcv.id, luis.id));
+      })(),
+    ).rejects.toThrow();
     expect(
       codigo(
         await comoAdmin(() =>
@@ -317,6 +396,12 @@ describe("solicitudes y push", () => {
         await comoAdmin(() => solicitudes.borrarSolicitud(db, "admins", "x")),
       ),
     ).toBe("invalid-argument");
+    for (const raro of ["toString", "__proto__", "constructor"])
+      expect(
+        codigo(
+          await comoAdmin(() => solicitudes.borrarSolicitud(db, raro, "x")),
+        ),
+      ).toBe("invalid-argument");
   });
 
   test("la suscripción queda a nombre de la sesión, no del cliente", async () => {

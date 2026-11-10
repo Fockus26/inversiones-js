@@ -261,8 +261,10 @@ export const clientesRcv = pgTable(
         and char_length(${t.vehiculo}) between 1 and 120
         and char_length(${t.placa}) <= 12
         and ((${t.emision} is null and ${t.vence} is null)
-          or (${t.emision} between '2000-01-01' and '2099-12-31'
-            and ${t.vence} between '2000-01-01' and '2099-12-31'))`,
+          or (${t.emision} is not null and ${t.vence} is not null
+            and ${t.emision} between '2000-01-01' and '2099-12-31'
+            and ${t.vence} between '2000-01-01' and '2099-12-31'
+            and ${t.vence} > ${t.emision}))`,
     ),
   ],
 );

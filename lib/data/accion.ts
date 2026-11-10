@@ -25,6 +25,8 @@ const POR_CODIGO_PG: Record<string, CodigoDatos> = {
   "23502": "invalid-argument", // not_null_violation
   "22P02": "invalid-argument", // invalid_text_representation
   "22003": "invalid-argument", // numeric_value_out_of_range
+  "22007": "invalid-argument", // invalid_datetime_format
+  "22008": "invalid-argument", // datetime_field_overflow ("2026-02-31")
   "23503": "failed-precondition", // foreign_key_violation
   "23505": "already-exists", // unique_violation
   "40001": "failed-precondition", // serialization_failure

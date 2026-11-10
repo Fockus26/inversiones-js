@@ -66,7 +66,8 @@ export async function borrarSolicitud(
   coleccion: unknown,
   id: unknown,
 ): Promise<void> {
-  exigir(typeof coleccion === "string" && coleccion in TABLAS);
+  // `Object.hasOwn`: con `in`, "toString" o "__proto__" pasaban y acababan en error inesperado.
+  exigir(typeof coleccion === "string" && Object.hasOwn(TABLAS, coleccion));
   const t = TABLAS[coleccion as ColeccionSolicitudes];
   await db.delete(t).where(eq(t.id, exigirId(id)));
 }
