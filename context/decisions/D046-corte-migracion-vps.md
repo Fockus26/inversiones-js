@@ -19,5 +19,10 @@ volver a abrir las reglas anteriores (`git show 77c2c07^:firestore.rules`), desp
 `3d5f864` y copiar a Firestore lo escrito en Postgres desde el corte. Pasado el plazo, César compara
 los datos y decide borrar el proyecto de Firebase.
 
-**Pendiente de César:** quitar el rol de Datastore a `chatbot-lectura` en `inversiones-js` (Gaby solo
-usa Calendar), revocar la clave de admin usada para exportar y verificar el remitente en Brevo.
+**Permisos (2026-11-10):** quitado `roles/datastore.user` a `chatbot-lectura` en `inversiones-js`
+(Gaby solo usa Calendar, desde `chatbot-458420`) y revocada la clave de admin `58ee7f9f…` de la
+exportación. Queda la clave `b21240bf…` (2026-10-01) de `firebase-adminsdk-fbsvc`, de antes de la
+migración y de origen sin confirmar.
+
+**Pendiente de César:** verificar el remitente en Brevo (DKIM/DMARC) y probar "¿Olvidaste tu
+contraseña?".
