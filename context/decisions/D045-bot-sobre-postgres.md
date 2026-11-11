@@ -1,4 +1,4 @@
-# D045 · Bot · Gaby lee y escribe Postgres del VPS; la cuenta de Google queda solo para Calendar · En curso
+# D045 · Bot · Gaby lee y escribe Postgres del VPS; la cuenta de Google queda solo para Calendar · Implementado (corte 2026-11-10, D046)
 
 **Contexto:** migración al VPS (D044). Gaby corría en el mismo VPS y leía Firestore con la
 cuenta `chatbot-lectura` (D024, D030). Reemplaza en parte D005 (el chatbot lee Firestore directo).

@@ -8,10 +8,10 @@
 
 - Framework: Next.js 16 (App Router) · TypeScript estricto · shadcn/ui (base-nova) + Tailwind v4
 - Gestor de paquetes: **bun** · Lint: Biome
-- Base de datos: Firestore (SDK cliente, reglas en `firestore.rules`)
-- Autenticación: Firebase Auth (correo + contraseña), admins en `admins/{uid}`
+- Base de datos: Postgres 17 en el VPS (`kit-vps`, base `inversiones_js`) con Drizzle; server actions en `lib/data/` (D044). Firestore sin escrituras hasta el 2026-12-10 (D046)
+- Autenticación: Better Auth (correo + contraseña, sin registro), admins en la tabla `admins` (D003, D044)
 - Pagos: N/A
-- Correo: Firebase Auth (restablecer contraseña); la app no manda otros
+- Correo: SMTP de Brevo, solo el de restablecer contraseña
 - Despliegue: Vercel
 - Dominio: PENDIENTE (hoy `inversiones-js.vercel.app`)
 

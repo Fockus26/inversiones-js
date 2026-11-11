@@ -25,7 +25,7 @@ chatbot responde.
 
 Buscar, no leer: `grep -rh "^# D" context/decisions/`.
 **El `reference/…` del kit** = `~/.claude/kit-reference/…` (o `.claude/kit-reference/…`).
-**Tech refs:** firebase, vercel, vps-postgres, migrate-firebase-vps → su `tech/<nombre>.md` cuando la tarea lo toque; solo estos. Migración en curso: `context/plans/migrate-vps.md` (al terminar sale `firebase` y `migrate-firebase-vps`).
+**Tech refs:** vercel, vps-postgres → su `tech/<nombre>.md` cuando la tarea lo toque; solo estos. Migración a Postgres cerrada el 2026-11-10 (D046).
 
 ## Stack
 
@@ -36,7 +36,8 @@ Buscar, no leer: `grep -rh "^# D" context/decisions/`.
   pasa por `comoAdmin()` (D003). Los límites de datos son CHECK en la base.
 - Bases: `inversiones_js` (producción), `_preview` (Vercel Preview), `_dev` (tu máquina:
   hay datos reales, nunca se desarrolla sobre producción).
-- Firebase queda solo para el corte de la migración (`firestore.rules` en `deny` y exportación).
+- Firebase queda **sin escrituras** hasta el 2026-12-10 como vuelta atrás (D046): `firestore.rules`
+  en solo lectura para admins y `firebase-admin` para el script de exportación. Borrarlo lo decide César.
 
 ```bash
 bun install
