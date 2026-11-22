@@ -14,9 +14,9 @@
       "!dist",
       "!build",
       "!components/ui",
-      "!**/.claude/worktrees",
       "!**/.claude/kit-reference",
-      "!drizzle"
+      "!drizzle",
+      "!.claude/worktrees"
     ]
   },
   "formatter": {
