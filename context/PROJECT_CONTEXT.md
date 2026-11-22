@@ -17,7 +17,7 @@
 
 ## Repo y despliegue
 
-- Repo: https://github.com/Fockus26/inversiones-js (privado, modo `pr`)
+- Repo: https://github.com/Fockus26/inversiones-js (público a propósito, modo `pr`; el respaldo de `context/` no se sube: `context:backup` se niega en un repo público)
 - Vercel: proyecto `alejandrorey2654gmailcoms-projects/inversiones-js`, en la cuenta de César,
   conectado al repo
 - Producción: https://inversiones-js.vercel.app · Previews: uno por PR (con Vercel
