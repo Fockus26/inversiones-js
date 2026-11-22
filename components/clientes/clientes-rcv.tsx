@@ -28,6 +28,7 @@ import {
   escalonado,
   TARJETA_VIVA,
 } from "@/components/panel/animacion";
+import { AvisoBorrador, useBorrador } from "@/components/panel/aviso-borrador";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -630,6 +631,7 @@ function FormularioRcv({
   const [tocados, setTocados] = useState<Set<CampoForm>>(new Set());
   const [intentado, setIntentado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const borrador = useBorrador("cliente-rcv", cliente?.id ?? null, form);
 
   const resultado = validarClienteRcv(form, cliente);
   const errores = resultado.ok ? {} : resultado.errores;
@@ -681,11 +683,13 @@ function FormularioRcv({
     try {
       if (cliente) await actualizarClienteRcv(cliente.id, resultado.valor);
       else await crearClienteRcv(resultado.valor);
+      borrador.olvidar();
       toast.success(
         `${cliente ? "Guardaste a" : "Registraste a"} ${resultado.valor.nombre}`,
       );
       alCambiarAbierto(false);
     } catch (err) {
+      borrador.alFallar(err, form);
       toast.error("No se pudo guardar", {
         description: mensajeDeError(err),
       });
@@ -713,6 +717,18 @@ function FormularioRcv({
             avisará antes de que venza.
           </DialogDescription>
         </DialogHeader>
+
+        {borrador.pendiente && (
+          <AvisoBorrador
+            guardadoEn={borrador.pendiente.guardadoEn}
+            alRecuperar={() => {
+              const b = borrador.pendiente;
+              if (b) setForm(b.valor);
+              borrador.olvidar();
+            }}
+            alDescartar={borrador.olvidar}
+          />
+        )}
 
         <Campo
           etiqueta="Nombre y apellido"

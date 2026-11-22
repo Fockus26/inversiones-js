@@ -3,6 +3,7 @@
 import { LoaderCircleIcon, Trash2Icon } from "lucide-react";
 import { type ReactNode, useId, useRef, useState } from "react";
 import { toast } from "sonner";
+import { AvisoBorrador, useBorrador } from "@/components/panel/aviso-borrador";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -115,6 +116,7 @@ function Formulario({
   const [tocados, setTocados] = useState<Set<CampoFormulario>>(new Set());
   const [intentado, setIntentado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const borrador = useBorrador("producto", producto?.id ?? null, form);
 
   // Un producto de antes de D025 puede tener una marca sin registrar: la regla deja guardarlo
   // si no la cambia, así que se ofrece como opción.
@@ -160,6 +162,7 @@ function Formulario({
           soloCambios(resultado.valor, alAbrir),
         );
       else await crearProducto(resultado.valor, ordenNuevo);
+      borrador.olvidar();
       toast.success(
         producto
           ? `Guardaste ${resultado.valor.marca} ${resultado.valor.nombre}`
@@ -167,6 +170,7 @@ function Formulario({
       );
       alCambiarAbierto(false);
     } catch (err) {
+      borrador.alFallar(err, form);
       toast.error("No se pudo guardar", {
         description: mensajeDeError(err),
       });
@@ -240,6 +244,18 @@ function Formulario({
               : "Se agrega al final de su marca. Lo que guardes es lo que responde el chatbot."}
           </DialogDescription>
         </DialogHeader>
+
+        {borrador.pendiente && (
+          <AvisoBorrador
+            guardadoEn={borrador.pendiente.guardadoEn}
+            alRecuperar={() => {
+              const b = borrador.pendiente;
+              if (b) setForm(b.valor);
+              borrador.olvidar();
+            }}
+            alDescartar={borrador.olvidar}
+          />
+        )}
 
         <div className="grid gap-1.5">
           <Label htmlFor={idDe("marca")}>Marca</Label>
