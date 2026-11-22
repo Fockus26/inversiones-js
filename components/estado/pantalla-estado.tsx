@@ -55,7 +55,7 @@ export function PantallaEstado({
         >
           <span
             aria-hidden="true"
-            className="flex size-8 items-center justify-center gap-0.5 rounded-lg bg-sidebar-primary text-sm font-extrabold text-sidebar-primary-foreground"
+            className="flex size-8 items-center justify-center gap-0.5 rounded-lg bg-sidebar-primary text-sm font-extrabold text-sidebar-primary-foreground selection:bg-sidebar-primary-foreground selection:text-sidebar-primary"
           >
             <span className="h-3 w-0.5 rounded-full bg-sidebar-primary-foreground" />
             JS
@@ -75,7 +75,7 @@ export function PantallaEstado({
           <h1
             ref={tituloRef}
             tabIndex={enfocarTitulo ? -1 : undefined}
-            className="mt-2 text-3xl outline-none leading-tight font-extrabold tracking-tight md:text-5xl md:leading-tight"
+            className="mt-2 text-3xl outline-none wrap-anywhere hyphens-auto leading-tight font-extrabold tracking-tight md:text-5xl md:leading-tight"
           >
             {titulo}
           </h1>

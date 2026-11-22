@@ -7,7 +7,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        // Selección invertida sobre el amarillo; en oscuro el anillo (amarillo) se separa del botón.
+        default:
+          "bg-primary text-primary-foreground hover:bg-primary/80 selection:bg-primary-foreground selection:text-primary dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
@@ -15,7 +17,7 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 dark:bg-destructive/10 dark:hover:bg-destructive/15",
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive focus-visible:ring-destructive dark:bg-destructive/10 dark:hover:bg-destructive/15",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

@@ -290,7 +290,7 @@ function Contenido({ marcas, conteo }: Props) {
                       <Button
                         variant="ghost"
                         className={cn(
-                          "size-11 text-destructive hover:text-destructive",
+                          "size-11 text-destructive hover:text-destructive focus-visible:border-destructive focus-visible:ring-destructive",
                         )}
                         disabled={ocupado}
                         onClick={() => {

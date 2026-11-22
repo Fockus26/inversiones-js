@@ -257,7 +257,7 @@ export function Filtros<K extends string>({
     <div
       role="group"
       aria-label={etiqueta}
-      className="-mx-4 flex scroll-px-4 gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
+      className="-mx-4 flex min-w-0 scroll-px-4 gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
     >
       {opciones.map((o) => (
         <button
@@ -370,7 +370,7 @@ export function ProgresoPagos({ r }: { r: ResumenPagos }) {
 export function Contacto({ telefono }: { telefono: string }) {
   const wa = whatsappDe(telefono);
   const clase = cn(
-    "inline-flex min-h-11 items-center rounded-md text-success underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring",
+    "inline-flex min-h-11 items-center rounded-md whitespace-nowrap text-success underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring",
   );
   return (
     <p className="flex flex-wrap items-center gap-x-3 text-sm">

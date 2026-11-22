@@ -258,8 +258,8 @@ function Lista({
       <Encabezado
         resumen={resumen}
         accion={
-          // Móvil: los dos botones reparten el ancho; desde sm vuelven a su tamaño natural.
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+          // Móvil: los dos botones reparten el ancho y, con letra grande, bajan a otra fila.
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto [&>*]:flex-auto">
             <Button
               variant="outline"
               className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
@@ -426,7 +426,10 @@ function Chip({
       className={cn(
         "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 whitespace-nowrap text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring focus-visible:border-ring",
         activo
-          ? cn("border-transparent bg-primary text-primary-foreground", ACTIVO)
+          ? cn(
+              "border-transparent bg-primary text-primary-foreground selection:bg-primary-foreground selection:text-primary",
+              ACTIVO,
+            )
           : "bg-card hover:bg-muted",
       )}
     >
@@ -489,7 +492,9 @@ function Acciones({
       </Button>
       <Button
         variant="ghost"
-        className={cn("size-11 text-destructive hover:text-destructive")}
+        className={cn(
+          "size-11 text-destructive hover:text-destructive focus-visible:border-destructive focus-visible:ring-destructive",
+        )}
         onClick={() => alBorrar(p)}
         aria-label={`Borrar ${nombre}`}
       >

@@ -15,7 +15,7 @@ export function Subnavegacion({
 }) {
   const ruta = usePathname();
   return (
-    <nav aria-label={etiqueta}>
+    <nav aria-label={etiqueta} className="min-w-0">
       <ul className="flex gap-6 overflow-x-auto border-b">
         {secciones.map(({ href, nombre }) => {
           const actual = ruta === href;
@@ -25,7 +25,7 @@ export function Subnavegacion({
                 href={href}
                 aria-current={actual ? "page" : undefined}
                 className={cn(
-                  "-mb-px flex h-11 items-center border-b-2 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring rounded-t-md",
+                  "-mb-px flex h-11 min-w-11 items-center justify-center border-b-2 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring rounded-t-md",
                   actual
                     ? cn("border-success text-foreground", ACTIVO)
                     : "border-transparent text-muted-foreground hover:text-foreground forced-colors:border-transparent",

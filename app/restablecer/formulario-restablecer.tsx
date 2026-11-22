@@ -192,7 +192,7 @@ export function FormularioRestablecer() {
 
           <Button
             type="submit"
-            className={cn("h-11 text-base")}
+            className={cn("h-auto min-h-11 py-2 text-base whitespace-normal")}
             disabled={enviando || !token}
           >
             {enviando && (

@@ -10,6 +10,7 @@ Tokens en `app/globals.css` (claro y `.dark`). Usa las clases de Tailwind de los
 | Acento | `#0f766e` verde azulado | anillo de foco, enlaces, estado "guardado", cantidad > 0 |
 | Destructivo | `#c0262d` | eliminar, errores, "agotado" |
 | Selección (`::selection`) | claro `#fec922` / texto `#1c1f26` (10.6:1) · oscuro `#f4f4f1` / texto `#14161b` (16.9:1) | tokens `--selection` y `--selection-foreground`; distinta del foco y de los enlaces |
+| Borde de campo (`--input`) | claro `#8a877c` (3.4:1 sobre el fondo, 3.6:1 sobre tarjeta) · oscuro `#6b707c` (3.6:1 / 3.3:1) | bordes de input, select y botón secundario; ≥ 3:1 (WCAG 1.4.11) |
 | Scrollbar | pulgar `#8a877c` / riel `#f1f0ea` · oscuro `#6b707c` / `#1c1f26` (≥ 3:1) | tokens `--scrollbar-*`; nunca oculta |
 
 **Contraste:** el amarillo sobre fondo claro mide ~1.5:1. **Nunca** como color de texto, de

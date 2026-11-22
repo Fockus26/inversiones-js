@@ -22,7 +22,7 @@ function Marca() {
       {/* En móvil solo el sello "JS"; el nombre completo sigue para lectores de pantalla. */}
       <span>
         <span className="max-sm:sr-only">Inversiones </span>
-        <span className="rounded-md bg-sidebar-primary px-1.5 py-0.5 text-sidebar-primary-foreground">
+        <span className="rounded-md bg-sidebar-primary px-1.5 py-0.5 text-sidebar-primary-foreground selection:bg-sidebar-primary-foreground selection:text-sidebar-primary">
           JS
         </span>
       </span>

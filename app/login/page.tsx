@@ -18,18 +18,19 @@ export default function LoginPage() {
             />
             <span>
               Inversiones{" "}
-              <span className="rounded-md bg-sidebar-primary px-1.5 py-0.5 text-sidebar-primary-foreground">
+              <span className="rounded-md bg-sidebar-primary px-1.5 py-0.5 text-sidebar-primary-foreground selection:bg-sidebar-primary-foreground selection:text-sidebar-primary">
                 JS
               </span>
             </span>
           </span>
         </div>
-        {/* useSearchParams (siguiente/aviso) necesita Suspense para el prerender. */}
-        <SesionProvider>
-          <Suspense fallback={<FormularioLoginEsqueleto />}>
+        {/* useSearchParams (siguiente/aviso) necesita Suspense para el prerender. La sesión va
+            dentro: si cambiara antes de que el límite se hidrate, React no podría hidratarlo. */}
+        <Suspense fallback={<FormularioLoginEsqueleto />}>
+          <SesionProvider>
             <FormularioLogin />
-          </Suspense>
-        </SesionProvider>
+          </SesionProvider>
+        </Suspense>
       </div>
     </main>
   );
