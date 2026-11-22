@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { geist } from "@/lib/marca/fuente";
 
 /**
  * Imagen al compartir el enlace del panel (HANDOFF §4): tinta con franja amarilla, logo y
@@ -8,31 +9,8 @@ export const alt = "Inversiones JS · Panel";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-/**
- * Geist desde Google Fonts, solo con los caracteres que se usan (se genera al compilar). Si no
- * hay red, sale con la fuente por defecto de `next/og`: la imagen no debe romper el build.
- */
 const TITULO = "Inversiones JS · Panel";
 const SUBTITULO = "Catálogo de equipos a crédito";
-
-async function geist(
-  peso: 400 | 800,
-  texto: string,
-): Promise<ArrayBuffer | null> {
-  try {
-    const css = await (
-      await fetch(
-        `https://fonts.googleapis.com/css2?family=Geist:wght@${peso}&text=${encodeURIComponent(texto)}`,
-      )
-    ).text();
-    const url = css.match(
-      /src: url\((.+?)\) format\('(?:opentype|truetype)'\)/,
-    )?.[1];
-    return url ? await (await fetch(url)).arrayBuffer() : null;
-  } catch {
-    return null;
-  }
-}
 
 export default async function ImagenOpenGraph() {
   const [negrita, regular] = await Promise.all([

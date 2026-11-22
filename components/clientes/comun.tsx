@@ -19,6 +19,7 @@ import {
   formatearMonto,
   normalizarBusqueda,
 } from "@/components/catalogo/formato";
+import { AreaAutoajustable } from "@/components/panel/area-autoajustable";
 import { ACTIVO } from "@/components/panel/estilos";
 import { Subnavegacion } from "@/components/panel/subnavegacion";
 import {
@@ -504,9 +505,9 @@ export function AreaTexto({
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{etiqueta}</Label>
-      <textarea
+      <AreaAutoajustable
         id={id}
-        rows={3}
+        lineas={3}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
         className={cn(

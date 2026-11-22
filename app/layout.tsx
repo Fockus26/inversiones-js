@@ -26,13 +26,23 @@ export const metadata: Metadata = {
   title: { default: "Panel · Inversiones JS", template: "%s · Inversiones JS" },
   description: "Panel administrativo del catálogo de Inversiones JS.",
   applicationName: "Inversiones JS",
+  // Al compartir un enlace del panel (WhatsApp): quien lo abre sin sesión cae en el login, pero
+  // la vista previa sale con nombre, descripción e imagen (`opengraph-image.tsx`). Las páginas
+  // solo cambian `title`, así que este objeto se hereda entero y no pierde la imagen.
+  openGraph: {
+    type: "website",
+    locale: "es_VE",
+    siteName: "Inversiones JS",
+    title: "Inversiones JS · Panel",
+    description: "Panel administrativo del catálogo de Inversiones JS.",
+  },
+  twitter: { card: "summary_large_image" },
   // Instalada en iPhone: sin barra del navegador y con la barra de estado en tinta.
   appleWebApp: {
     capable: true,
     title: "Inversiones JS",
     statusBarStyle: "black",
   },
-  icons: { apple: "/icono/180" },
 };
 
 // Con el teclado del teléfono abierto, Chrome en Android achica también el viewport de layout:
