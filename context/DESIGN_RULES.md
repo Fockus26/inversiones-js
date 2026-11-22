@@ -18,4 +18,12 @@ Tokens en `app/globals.css` (claro y `.dark`). Usa las clases de Tailwind de los
 - Mobile-first: el cliente edita desde el teléfono. Debe funcionar a 320 px sin scroll horizontal.
 - Objetivos táctiles ≥ 44 px. Inputs numéricos con `inputMode="decimal"`.
 - Estados no solo por color: "Agotado" lleva texto/ícono, no solo rojo.
+- El anillo de foco toma el color de tinta del componente que rodea (por `--ring`), ≥ 3:1
+  contra lo que lo rodea: sobre la tinta, amarillo (D013); un solo anillo en todo el panel se
+  ve ajeno sobre un botón rojo.
+- Texto de placeholder ≥ **4.5:1**: el de por defecto (el texto al 50 %) da 3.25:1 en claro, y
+  axe no lo revisa.
+- Una acción dentro de un aviso (el "Reintentar" de un toast) usa el color de ese aviso, no el primario.
+- `::selection` dentro de un componente con fondo propio (botón primario, aviso de color) usa
+  su par invertido: el par global se pierde ahí.
 - Modo claro y oscuro (next-themes, `system` por defecto).
