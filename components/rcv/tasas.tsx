@@ -345,7 +345,7 @@ function FilaTasa<F extends string>({
           <label
             key={o.valor}
             className={cn(
-              "relative flex h-11 cursor-pointer items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring",
+              "relative flex min-h-11 cursor-pointer items-center justify-center rounded-lg px-1.5 py-1 text-center text-sm font-medium hyphens-auto wrap-anywhere transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring",
               fuente === o.valor
                 ? cn("text-card-foreground", ACTIVO)
                 : "text-muted-foreground hover:text-foreground",

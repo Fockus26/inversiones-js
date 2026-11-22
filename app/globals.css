@@ -90,7 +90,7 @@
   --accent-foreground: #0b5a54;
   --destructive: #c0262d;
   --border: #e3e1d8;
-  --input: #a8a59a;
+  --input: #8a877c;
   --ring: #0f766e;
   --success: #0f766e;
   --chart-1: #fec922;
@@ -134,7 +134,7 @@
   --accent-foreground: #b8ece4;
   --destructive: #f2777c;
   --border: #2f333d;
-  --input: #5a5f6b;
+  --input: #6b707c;
   --ring: #fec922;
   --success: #4fd1c0;
   --chart-1: #fec922;
@@ -171,9 +171,12 @@
   }
 }
 
-::selection {
-  background-color: var(--selection);
-  color: var(--selection-foreground);
+/* En la capa base: fuera de ella ganaría a las utilidades `selection:` de los chips amarillos. */
+@layer base {
+  ::selection {
+    background-color: var(--selection);
+    color: var(--selection-foreground);
+  }
 }
 
 /* Firefox y Chrome ≥ 121 usan `scrollbar-color`; Safari, los pseudo-elementos. En el teléfono

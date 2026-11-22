@@ -163,7 +163,7 @@ function Contenido({
       <Encabezado
         resumen={resumen}
         accion={
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto [&>*]:flex-auto">
             <Button
               variant="outline"
               className={cn("h-auto min-h-11 px-4 py-2 whitespace-normal")}
@@ -342,7 +342,9 @@ function Acciones({
       </Button>
       <Button
         variant="ghost"
-        className={cn("size-11 text-destructive hover:text-destructive")}
+        className={cn(
+          "size-11 text-destructive hover:text-destructive focus-visible:border-destructive focus-visible:ring-destructive",
+        )}
         onClick={() => alBorrar(p)}
         aria-label={`Borrar ${p.clase}: ${p.descripcion}`}
       >
@@ -366,7 +368,7 @@ function montos(p: PlanRcvConId, tasas: TasasRcv | null) {
 
 function Tarjetas({ planes, tasas, alEditar, alBorrar }: PropsFilas) {
   return (
-    <ul className="grid gap-3 md:grid-cols-2 lg:hidden">
+    <ul className="grid gap-3 md:grid-cols-2 xl:hidden">
       {planes.map((p, i) => {
         const m = montos(p, tasas);
         return (
@@ -410,7 +412,7 @@ function Tarjetas({ planes, tasas, alEditar, alBorrar }: PropsFilas) {
 
 function Tabla({ planes, tasas, alEditar, alBorrar }: PropsFilas) {
   return (
-    <div className="hidden rounded-xl border bg-card lg:block">
+    <div className="hidden rounded-xl border bg-card xl:block">
       <Table className="table-fixed">
         <caption className="sr-only">Transportes de la póliza RCV</caption>
         <colgroup>

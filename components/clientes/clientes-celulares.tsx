@@ -133,7 +133,7 @@ function Contenido({ clientes }: { clientes: ClienteCelularConId[] }) {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       <Encabezado
         resumen={`${clientes.length} ${clientes.length === 1 ? "cliente" : "clientes"} con celular a crédito`}
         accion={
@@ -283,7 +283,12 @@ function Tarjeta({
           <h2 className="font-medium wrap-anywhere">{c.nombre}</h2>
           <p className="text-sm wrap-anywhere text-muted-foreground">
             {c.equipo}
-            {c.cedula && ` · ${c.cedula}`}
+            {c.cedula && (
+              <>
+                {" · "}
+                <span className="whitespace-nowrap">{c.cedula}</span>
+              </>
+            )}
           </p>
         </div>
         <BadgePagos r={r} />
@@ -315,7 +320,9 @@ function Tarjeta({
         </Button>
         <Button
           variant="ghost"
-          className={cn("size-11 text-destructive hover:text-destructive")}
+          className={cn(
+            "size-11 text-destructive hover:text-destructive focus-visible:border-destructive focus-visible:ring-destructive",
+          )}
           onClick={alBorrar}
           aria-label={`Borrar a ${c.nombre}`}
         >

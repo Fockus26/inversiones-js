@@ -174,7 +174,7 @@ export function ListaSolicitudes<T extends SolicitudBase>({
               <Button
                 variant="ghost"
                 className={cn(
-                  "size-11 shrink-0 text-destructive hover:text-destructive",
+                  "size-11 shrink-0 text-destructive hover:text-destructive focus-visible:border-destructive focus-visible:ring-destructive",
                 )}
                 onClick={() => setBorrando(s)}
                 aria-label={`Borrar la solicitud de ${nombreDe(s)}`}

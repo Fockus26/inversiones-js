@@ -21,7 +21,7 @@ export default function RestablecerPage() {
             />
             <span>
               Inversiones{" "}
-              <span className="rounded-md bg-sidebar-primary px-1.5 py-0.5 text-sidebar-primary-foreground">
+              <span className="rounded-md bg-sidebar-primary px-1.5 py-0.5 text-sidebar-primary-foreground selection:bg-sidebar-primary-foreground selection:text-sidebar-primary">
                 JS
               </span>
             </span>
