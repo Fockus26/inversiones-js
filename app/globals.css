@@ -1,6 +1,12 @@
-@import "tailwindcss";
+/* Tailwind solo escanea el código: sin source(none) leería también context/, .claude/ y docs/
+   y generaría clases citadas en las reglas del kit (STACK-NEXTJS › Tailwind v4). */
+@import "tailwindcss" source(none);
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
+@source "../app";
+@source "../components";
+@source "../lib";
 
 @custom-variant dark (&:is(.dark *));
 
