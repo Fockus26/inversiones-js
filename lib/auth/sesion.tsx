@@ -78,7 +78,12 @@ export function SesionProvider({ children }: { children: React.ReactNode }) {
 
   const salir = useCallback<Sesion["salir"]>(async (motivo = "salida") => {
     motivoPendiente.current = motivo;
-    await salirDeSesion();
+    try {
+      await salirDeSesion();
+    } catch (e) {
+      motivoPendiente.current = null;
+      throw e;
+    }
   }, []);
 
   const valor = useMemo<Sesion>(

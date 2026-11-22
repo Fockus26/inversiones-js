@@ -87,6 +87,11 @@ export function sondear<T>(
   };
 }
 
+/** "Reintentar" de una pantalla que no cargó: consulta ya todo lo que se está sondeando. */
+export function reintentarTodo(): void {
+  for (const fs of oyentes.values()) for (const f of fs) f();
+}
+
 /** Ejecuta una escritura y avisa a las pantallas de esas tablas. */
 export async function escribir<T>(
   tablas: string[],

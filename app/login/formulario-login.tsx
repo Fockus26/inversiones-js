@@ -66,10 +66,12 @@ export function FormularioLogin() {
     } else if (estado === "sin-acceso") {
       setError(MENSAJE_SIN_ACCESO);
       setAviso(null);
-      void salir("sin-acceso").finally(() => {
-        ocupado.current = false;
-        setEnviando(false);
-      });
+      void salir("sin-acceso")
+        .catch(() => {})
+        .finally(() => {
+          ocupado.current = false;
+          setEnviando(false);
+        });
     }
   }, [estado, siguiente, router, salir]);
 

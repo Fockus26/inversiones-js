@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Aviso } from "@/components/catalogo/catalogo-productos";
+import {
+  Aviso,
+  BotonReintentar,
+} from "@/components/catalogo/catalogo-productos";
 import {
   ENTRADA,
   escalonado,
@@ -94,7 +97,8 @@ export function PanelRcv() {
         <Aviso
           icono={<CircleAlertIcon aria-hidden="true" />}
           titulo="No se pudo cargar la póliza RCV"
-          texto={`Revisa tu conexión y recarga la página. Detalle: ${estado.mensaje}`}
+          texto={estado.mensaje}
+          accion={<BotonReintentar />}
         />
       )}
     </div>

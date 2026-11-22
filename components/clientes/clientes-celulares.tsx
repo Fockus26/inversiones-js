@@ -87,8 +87,8 @@ export function ClientesCelulares() {
             aria-hidden="true"
           />
           {estado.omitidos === 1
-            ? "Hay 1 cliente con el plan de pagos incompleto que no se puede mostrar. Revísalo en la consola de Firebase o avísale a soporte."
-            : `Hay ${estado.omitidos} clientes con el plan de pagos incompleto que no se pueden mostrar. Revísalos en la consola de Firebase o avísale a soporte.`}
+            ? "Hay 1 cliente con el plan de pagos incompleto que no se puede mostrar. Avísale a soporte para que lo revise."
+            : `Hay ${estado.omitidos} clientes con el plan de pagos incompleto que no se pueden mostrar. Avísale a soporte para que los revise.`}
         </output>
       )}
       <Contenido clientes={estado.clientes} />

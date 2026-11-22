@@ -48,6 +48,19 @@ export class ErrorDatos extends Error {
   }
 }
 
+/**
+ * Texto de una pantalla que no pudo cargar. La pantalla se recupera sola en el siguiente sondeo,
+ * así que no pide recargar (la PWA instalada no tiene ese botón); y solo culpa a la conexión
+ * cuando de verdad no llegó al servidor.
+ */
+export function textoErrorCarga(error: ErrorDatos): string {
+  const causa =
+    error.code === "unavailable"
+      ? "No hay conexión con el servidor: revisa tu internet."
+      : "El servidor no respondió como debía.";
+  return `${causa} Lo volvemos a intentar solos en unos segundos, o pulsa Reintentar.`;
+}
+
 export function mensajeDeError(error: unknown): string | undefined {
   if (error instanceof ErrorDatos) return error.message;
   const codigo = codigoDeError(error);

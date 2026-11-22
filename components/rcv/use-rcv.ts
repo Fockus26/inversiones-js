@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { escucharUsuario } from "@/lib/auth/usuario";
-import {
-  type ErrorDatos,
-  MENSAJE_INESPERADO,
-  mensajeDeError,
-} from "@/lib/data/errores";
+import { type ErrorDatos, textoErrorCarga } from "@/lib/data/errores";
 import { escucharConfigRcv, escucharPlanesRcv } from "@/lib/rcv/repositorio";
 import type { ConfigRcv, PlanRcvConId } from "@/lib/rcv/tipos";
 
@@ -53,7 +49,7 @@ export function useRcv(): EstadoRcv {
             ? { tipo: "sin-acceso" }
             : {
                 tipo: "error",
-                mensaje: mensajeDeError(error) ?? MENSAJE_INESPERADO,
+                mensaje: textoErrorCarga(error),
               },
         );
       };

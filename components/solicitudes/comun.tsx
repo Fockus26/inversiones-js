@@ -9,7 +9,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Aviso } from "@/components/catalogo/catalogo-productos";
+import {
+  Aviso,
+  BotonReintentar,
+} from "@/components/catalogo/catalogo-productos";
 import { haceCuanto } from "@/components/catalogo/formato";
 import type { EstadoClientes } from "@/components/clientes/comun";
 import {
@@ -94,7 +97,8 @@ export function EstadoCarga({
         <Aviso
           icono={<CircleAlertIcon aria-hidden="true" />}
           titulo="No se pudieron cargar las solicitudes"
-          texto={`Revisa tu conexión y recarga la página. Detalle: ${estado.mensaje}`}
+          texto={estado.mensaje}
+          accion={<BotonReintentar />}
         />
       )}
     </div>
