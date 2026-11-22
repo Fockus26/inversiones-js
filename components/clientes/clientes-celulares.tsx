@@ -23,6 +23,7 @@ import {
   escalonado,
   TARJETA_VIVA,
 } from "@/components/panel/animacion";
+import { AvisoBorrador, useBorrador } from "@/components/panel/aviso-borrador";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -387,6 +388,7 @@ function FormularioCelular({
   const [tocados, setTocados] = useState<Set<CampoForm>>(new Set());
   const [intentado, setIntentado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const borrador = useBorrador("cliente-celular", cliente?.id ?? null, form);
 
   const resultado = validarClienteCelular(form, cliente?.pagos ?? null);
   const errores = resultado.ok ? {} : resultado.errores;
@@ -427,11 +429,13 @@ function FormularioCelular({
     try {
       if (cliente) await actualizarClienteCelular(cliente.id, resultado.valor);
       else await crearClienteCelular(resultado.valor);
+      borrador.olvidar();
       toast.success(
         `${cliente ? "Guardaste a" : "Registraste a"} ${resultado.valor.nombre}`,
       );
       alCambiarAbierto(false);
     } catch (err) {
+      borrador.alFallar(err, form);
       toast.error("No se pudo guardar", {
         description: mensajeDeError(err),
       });
@@ -458,6 +462,18 @@ function FormularioCelular({
             Datos de quien se llevó el equipo y su plan de cuotas.
           </DialogDescription>
         </DialogHeader>
+
+        {borrador.pendiente && (
+          <AvisoBorrador
+            guardadoEn={borrador.pendiente.guardadoEn}
+            alRecuperar={() => {
+              const b = borrador.pendiente;
+              if (b) setForm(b.valor);
+              borrador.olvidar();
+            }}
+            alDescartar={borrador.olvidar}
+          />
+        )}
 
         <Campo
           etiqueta="Nombre y apellido"

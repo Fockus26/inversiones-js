@@ -92,15 +92,24 @@ export function reintentarTodo(): void {
   for (const fs of oyentes.values()) for (const f of fs) f();
 }
 
-/** Ejecuta una escritura y avisa a las pantallas de esas tablas. */
+/**
+ * Ejecuta una escritura y avisa a las pantallas de esas tablas, también si falló: lo que se
+ * muestre debe ser lo que hay en la base. Menos si falló porque la sesión terminó: la consulta
+ * fallaría igual y la pantalla pasaría a "Tu sesión terminó", desmontando el diálogo que se
+ * estaba guardando (QA 2026-11-22). Así el diálogo sigue a la vista con su aviso, y lo escrito
+ * queda como borrador (`lib/borrador.ts`) para cuando vuelva a entrar.
+ */
 export async function escribir<T>(
   tablas: string[],
   accion: () => Promise<Resultado<T>>,
 ): Promise<T> {
   try {
-    return await llamar(accion);
-  } finally {
-    // También si falló: lo que se muestre debe ser lo que hay en la base.
+    const datos = await llamar(accion);
     avisarCambio(...tablas);
+    return datos;
+  } catch (e) {
+    if (!(e instanceof ClaseErrorDatos && e.code === "unauthenticated"))
+      avisarCambio(...tablas);
+    throw e;
   }
 }

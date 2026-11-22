@@ -7,6 +7,7 @@ import {
   DIALOGO_CON_PIE_FIJO,
   haceCuanto,
 } from "@/components/catalogo/formato";
+import { AvisoBorrador, useBorrador } from "@/components/panel/aviso-borrador";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -112,6 +113,7 @@ function Formulario({
   const [tocados, setTocados] = useState<Set<Campo>>(new Set());
   const [intentado, setIntentado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const borrador = useBorrador("plan-rcv", plan?.id ?? null, { form, orden });
 
   const resultado = validarPlanRcv(form);
   const ordenValor = parsearEntero(orden);
@@ -160,11 +162,13 @@ function Formulario({
           orden: ordenValor,
         });
       else await crearPlanRcv(resultado.valor, ordenValor);
+      borrador.olvidar();
       toast.success(
         `${plan ? "Guardaste" : "Creaste"} ${resultado.valor.clase}`,
       );
       alCambiarAbierto(false);
     } catch (err) {
+      borrador.alFallar(err, { form, orden });
       toast.error("No se pudo guardar", {
         description: mensajeDeError(err),
       });
@@ -244,6 +248,21 @@ function Formulario({
             tasas del día.
           </DialogDescription>
         </DialogHeader>
+
+        {borrador.pendiente && (
+          <AvisoBorrador
+            guardadoEn={borrador.pendiente.guardadoEn}
+            alRecuperar={() => {
+              const b = borrador.pendiente;
+              if (b) {
+                setForm(b.valor.form);
+                setOrden(b.valor.orden);
+              }
+              borrador.olvidar();
+            }}
+            alDescartar={borrador.olvidar}
+          />
+        )}
 
         {campo("clase", "Clase de vehículo", {
           maxLength: LIMITES_RCV.claseMax,

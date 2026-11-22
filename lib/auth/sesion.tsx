@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { borrarTodosLosBorradores } from "@/lib/borrador";
 import {
   escucharAcceso,
   salir as salirDeSesion,
@@ -78,6 +79,8 @@ export function SesionProvider({ children }: { children: React.ReactNode }) {
 
   const salir = useCallback<Sesion["salir"]>(async (motivo = "salida") => {
     motivoPendiente.current = motivo;
+    // Cierre a propósito o sin acceso: los borradores de una sesión vencida no se ofrecen a otro.
+    borrarTodosLosBorradores();
     try {
       await salirDeSesion();
     } catch (e) {
