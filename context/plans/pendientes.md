@@ -40,3 +40,10 @@ cerrada, producto borrado, global-error verificado). Solo queda:
 - Movimiento en widgets — frontend-build › Motion in interactive widgets: el indicador de
   `components/panel/navegacion.tsx` y `subnavegacion.tsx` cambia de color pero no se desliza;
   apagado con `prefers-reduced-motion`. Revisar también diálogos y menús (entrada y salida).
+
+# Kit 3.25.0 (2026-11-21)
+- **Tailwind `source(none)`:** `app/globals.css` importa `tailwindcss` sin `source(none)`, así que
+  Tailwind escanea todo el repo (`context/`, `.claude/`, `bot/`). Unidad propia: `@import
+  "tailwindcss" source(none);` + `@source` explícitos (`app`, `components`, `lib`), y comparar el CSS
+  compilado antes y después: solo pueden desaparecer clases que venían de `context/` o `.claude/`
+  (kit `STACK-NEXTJS.md` › Tailwind v4).
