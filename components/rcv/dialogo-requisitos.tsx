@@ -4,6 +4,7 @@ import { LoaderCircleIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { DIALOGO_CON_PIE_FIJO } from "@/components/catalogo/formato";
+import { AreaAutoajustable } from "@/components/panel/area-autoajustable";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -81,11 +82,11 @@ function Formulario({ requisitos, alCambiarAbierto }: Props) {
           <label htmlFor={id} className="text-sm font-medium">
             Requisitos para todos los vehículos
           </label>
-          <textarea
+          <AreaAutoajustable
             id={id}
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            rows={7}
+            lineas={5}
             aria-invalid={error ? true : undefined}
             aria-describedby={`${id}-ayuda${error ? ` ${id}-error` : ""}`}
             className={cn(
