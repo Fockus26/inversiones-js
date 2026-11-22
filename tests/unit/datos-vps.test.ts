@@ -269,6 +269,20 @@ describe("clientes con financiamiento", () => {
           clientes.marcarCuota(db, u, "clientesCelulares", c.id, 50, true),
         ),
       ),
+    ).toBe("failed-precondition");
+    expect(
+      codigo(
+        await comoAdmin((u) =>
+          clientes.marcarCuota(
+            db,
+            u,
+            "clientesCelulares",
+            "no-existe",
+            1,
+            true,
+          ),
+        ),
+      ),
     ).toBe("not-found");
     expect(
       codigo(
@@ -317,6 +331,108 @@ describe("clientes con financiamiento", () => {
       true,
       false,
     ]);
+  });
+
+  test("editar no revive una cuota desmarcada en otra pestaña (QA 2026-11-22)", async () => {
+    await clientes.crearClienteCelular(db, uid, {
+      ...clienteCelular,
+      nombre: "Carla",
+      pagos: {
+        inicial: 0,
+        frecuencia: "quincenal",
+        cuotas: [cuota(1), cuota(2)],
+      },
+    });
+    const carla = async () => {
+      const c = (await clientes.listarClientesCelulares(db)).clientes.find(
+        (x) => x.nombre === "Carla",
+      );
+      if (!c) throw new Error("falta Carla");
+      return c;
+    };
+    const { id } = await carla();
+    await clientes.marcarCuota(db, uid, "clientesCelulares", id, 1, true);
+    // El formulario se abre con la cuota 1 pagada…
+    const { nombre, cedula, equipo, notas, pagos } = await carla();
+    const abierta = { nombre, cedula, equipo, notas, pagos };
+    // …y otra pestaña la desmarca (era un error) antes de guardar.
+    await clientes.marcarCuota(db, uid, "clientesCelulares", id, 1, false);
+    await clientes.actualizarClienteCelular(db, uid, id, {
+      ...abierta,
+      telefono: "0424-1111111",
+    });
+    const final = await carla();
+    expect(final.telefono).toBe("0424-1111111");
+    expect(final.pagos.cuotas.map((x) => [x.pagada, x.pagadaEl])).toEqual([
+      [false, null],
+      [false, null],
+    ]);
+  });
+
+  test("el plan de pagos se valida cuota por cuota", async () => {
+    const con = (cuotas: unknown[], inicial: unknown = 0) => ({
+      ...clienteCelular,
+      pagos: { inicial, frecuencia: "quincenal", cuotas },
+    });
+    for (const malo of [
+      con([{ ...cuota(1), numero: "uno" }]),
+      con([cuota(1), cuota(1)]),
+      con([cuota(2)]),
+      con([{ ...cuota(1), monto: -25 }]),
+      con([{ ...cuota(1), extra: "<script>" }]),
+      con([{ ...cuota(1), pagadaEl: "ayer" }]),
+      con([cuota(1)], -10),
+    ]) {
+      expect(
+        codigo(
+          await comoAdmin((u) => clientes.crearClienteCelular(db, u, malo)),
+        ),
+      ).toBe("invalid-argument");
+    }
+  });
+
+  test("RCV: guardar con la misma emisión no borra el aviso que marcó el bot", async () => {
+    const base = {
+      nombre: "Rosa",
+      cedula: "",
+      telefono: "0412",
+      correo: "",
+      direccion: "",
+      vehiculo: "Moto",
+      placa: "",
+      notas: "",
+      emision: "2026-01-10",
+      vence: "2027-01-10",
+      recordatorio30: false,
+      recordatorio3: false,
+      pagos: null,
+    };
+    await clientes.crearClienteRcv(db, uid, base);
+    const rosa = async () => {
+      const c = (await clientes.listarClientesRcv(db)).clientes.find(
+        (x) => x.nombre === "Rosa",
+      );
+      if (!c) throw new Error("falta Rosa");
+      return c;
+    };
+    const { id } = await rosa();
+    // El bot avisa mientras el formulario está abierto con recordatorio30 = false.
+    await db
+      .update(schema.clientesRcv)
+      .set({ recordatorio30: true })
+      .where(eq(schema.clientesRcv.id, id));
+    await clientes.actualizarClienteRcv(db, uid, id, {
+      ...base,
+      telefono: "0424-2222222",
+    });
+    expect((await rosa()).recordatorio30).toBe(true);
+    // Otra emisión (renovar) sí los vuelve a dejar en false.
+    await clientes.actualizarClienteRcv(db, uid, id, {
+      ...base,
+      emision: "2026-02-10",
+      vence: "2027-02-10",
+    });
+    expect((await rosa()).recordatorio30).toBe(false);
   });
 
   test("RCV: emisión y vencimiento van juntos y dentro del rango", async () => {

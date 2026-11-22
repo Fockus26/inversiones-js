@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import { escucharUsuario } from "@/lib/auth/usuario";
 import { escucharMarcas, escucharProductos } from "@/lib/catalogo/repositorio";
 import type { Marca, ProductoConId } from "@/lib/catalogo/tipos";
-import {
-  type ErrorDatos,
-  MENSAJE_INESPERADO,
-  mensajeDeError,
-} from "@/lib/data/errores";
+import { type ErrorDatos, textoErrorCarga } from "@/lib/data/errores";
 
 export type EstadoCatalogo =
   | { tipo: "cargando" }
@@ -54,7 +50,7 @@ export function useCatalogo(): EstadoCatalogo {
             ? { tipo: "sin-acceso" }
             : {
                 tipo: "error",
-                mensaje: mensajeDeError(error) ?? MENSAJE_INESPERADO,
+                mensaje: textoErrorCarga(error),
               },
         );
       };

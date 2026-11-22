@@ -7,6 +7,7 @@ import {
   PackageXIcon,
   PencilIcon,
   PlusIcon,
+  RefreshCwIcon,
   SearchIcon,
   SearchXIcon,
   TagsIcon,
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { unirMarcas } from "@/lib/catalogo/marcas";
 import type { Marca, ProductoConId } from "@/lib/catalogo/tipos";
+import { reintentarTodo } from "@/lib/data/sondeo";
 import { cn } from "@/lib/utils";
 import { CantidadRapida } from "./cantidad-rapida";
 import { DialogoBorrar, nombreCompleto } from "./dialogo-borrar";
@@ -100,7 +102,8 @@ export function CatalogoProductos() {
             <Aviso
               icono={<CircleAlertIcon aria-hidden="true" />}
               titulo="No se pudo cargar el catálogo"
-              texto={`Revisa tu conexión y recarga la página. Detalle: ${estado.mensaje}`}
+              texto={estado.mensaje}
+              accion={<BotonReintentar />}
             />
           )}
         </>
@@ -154,6 +157,16 @@ export function Aviso({
       <p className="max-w-prose text-sm text-muted-foreground">{texto}</p>
       {accion}
     </div>
+  );
+}
+
+/** "Reintentar" de una pantalla que no cargó: vuelve a consultar sin esperar al sondeo. */
+export function BotonReintentar() {
+  return (
+    <Button variant="outline" className="h-11 px-4" onClick={reintentarTodo}>
+      <RefreshCwIcon aria-hidden="true" />
+      Reintentar
+    </Button>
   );
 }
 

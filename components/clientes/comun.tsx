@@ -10,7 +10,10 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Aviso } from "@/components/catalogo/catalogo-productos";
+import {
+  Aviso,
+  BotonReintentar,
+} from "@/components/catalogo/catalogo-productos";
 import {
   contienePalabras,
   formatearMonto,
@@ -35,8 +38,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { escucharUsuario } from "@/lib/auth/usuario";
 import {
   type ErrorDatos,
-  MENSAJE_INESPERADO,
   mensajeDeError,
+  textoErrorCarga,
 } from "@/lib/data/errores";
 import type { ResumenPagos } from "@/lib/financiamiento/cuotas";
 import { fechaCorta } from "@/lib/financiamiento/fechas";
@@ -90,7 +93,7 @@ export function useClientes<T>(
               ? { tipo: "sin-acceso" }
               : {
                   tipo: "error",
-                  mensaje: mensajeDeError(error) ?? MENSAJE_INESPERADO,
+                  mensaje: textoErrorCarga(error),
                 },
           ),
       );
@@ -167,7 +170,8 @@ export function EstadoCarga({
         <Aviso
           icono={<CircleAlertIcon aria-hidden="true" />}
           titulo="No se pudieron cargar los clientes"
-          texto={`Revisa tu conexión y recarga la página. Detalle: ${estado.mensaje}`}
+          texto={estado.mensaje}
+          accion={<BotonReintentar />}
         />
       )}
     </div>

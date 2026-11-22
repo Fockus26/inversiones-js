@@ -2,6 +2,7 @@
 
 import { LogOutIcon } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { SelectorTema } from "@/components/panel/tema";
 import { BotonAvisos, BotonInstalar } from "@/components/pwa/boton-avisos";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,10 @@ export function Cabecera({
       await onSalir();
     } catch {
       setSaliendo(false);
+      toast.error("No se pudo cerrar la sesión", {
+        description:
+          "Sigue abierta en este equipo. Revisa tu conexión e inténtalo de nuevo.",
+      });
     }
   }
 

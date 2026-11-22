@@ -35,7 +35,7 @@ export function GuardPanel({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (estado === "sin-acceso") {
-      void salir("sin-acceso");
+      void salir("sin-acceso").catch(() => {});
     } else if (estado === "fuera") {
       if (motivoSalida === "salida") router.replace("/login");
       else if (motivoSalida === "sin-acceso")

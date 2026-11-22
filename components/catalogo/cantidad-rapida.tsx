@@ -36,7 +36,7 @@ interface Props {
 
 /**
  * Edición rápida de la cantidad (lo que más cambia): stepper −/+ e input numérico.
- * Guarda con debounce o al salir del campo; si Firestore lo rechaza, vuelve al valor
+ * Guarda con debounce o al salir del campo; si el servidor lo rechaza, vuelve al valor
  * anterior y avisa con un toast.
  */
 export function CantidadRapida({

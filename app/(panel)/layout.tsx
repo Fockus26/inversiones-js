@@ -2,7 +2,7 @@ import { GuardPanel } from "@/lib/auth/guard-panel";
 import { SesionProvider } from "@/lib/auth/sesion";
 
 // Todo lo que cuelga de (panel) exige sesión de admin (D011). El guard es de cliente: la
-// seguridad la ponen las reglas de Firestore (D003), no hay middleware ni cookies (D004).
+// seguridad la pone `comoAdmin` en cada server action (D003); el guard solo evita mostrar el panel.
 export default function PanelLayout({
   children,
 }: {

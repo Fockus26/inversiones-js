@@ -1,7 +1,6 @@
 import { asc, eq, sql } from "drizzle-orm";
 import { clientesCelulares, clientesRcv } from "@/lib/db/schema";
 import type { Db } from "@/lib/db/tipos";
-import { conservarPagos } from "@/lib/financiamiento/cuotas";
 import { hoyCaracas } from "@/lib/financiamiento/fechas";
 import {
   type ClienteCelularConId,
@@ -16,6 +15,7 @@ import { esPlanPagos } from "../normalizar";
 import {
   esBool,
   esFecha,
+  esNumero,
   esTexto,
   exigir,
   exigirId,
@@ -34,19 +34,34 @@ const tabla = (c: unknown) => {
   return exigir(false) as never;
 };
 
-/** `planPagosValido`: forma del plan y hasta 60 cuotas (el contenido lo arma el panel). */
+/**
+ * `planPagosValido`: forma del plan, hasta 60 cuotas y cada cuota con la forma que lee Gaby
+ * (`docs/chatbot.md`). `numero` va de 1 en 1 desde 1: `marcarCuota` busca la cuota por él.
+ */
+const CLAVES_CUOTA = ["numero", "vence", "monto", "pagada", "pagadaEl"];
+const MONTO_MAX = 100_000;
+const esMonto = (v: unknown) => esNumero(v) && v >= 0 && v <= MONTO_MAX;
+
 function validarPagos(p: unknown) {
   exigir(esPlanPagos(p));
-  const plan = p as { frecuencia: string; cuotas: unknown[] };
+  const plan = p as { inicial: unknown; frecuencia: string; cuotas: unknown[] };
   exigir(
     FRECUENCIAS.includes(plan.frecuencia as (typeof FRECUENCIAS)[number]) &&
+      esMonto(plan.inicial) &&
       plan.cuotas.length >= 1 &&
       plan.cuotas.length <= 60,
   );
-  exigir(
-    soloClavesOk(p, ["inicial", "frecuencia", "cuotas"]) &&
-      (plan.cuotas as Record<string, unknown>[]).every((c) => esFecha(c.vence)),
-  );
+  exigir(soloClavesOk(p, ["inicial", "frecuencia", "cuotas"]));
+  (plan.cuotas as Record<string, unknown>[]).forEach((c, i) => {
+    exigir(
+      soloClavesOk(c, CLAVES_CUOTA) &&
+        c.numero === i + 1 &&
+        esFecha(c.vence) &&
+        esMonto(c.monto) &&
+        esBool(c.pagada) &&
+        (c.pagadaEl === null || esFecha(c.pagadaEl)),
+    );
+  });
 }
 
 function soloClavesOk(o: unknown, permitidas: string[]) {
@@ -145,13 +160,24 @@ export async function crearClienteCelular(
 }
 
 /**
- * Al editar un cliente, lo ya cobrado en la base no se pierde: el formulario arma el plan con
- * la lectura que tenía abierta, y una cuota marcada mientras tanto (otra pestaña, otro equipo)
- * no viene en ella. Se fusiona por número de cuota dentro de la transacción (fila bloqueada).
+ * Al editar un cliente, el estado de cada cuota (pagada o no) lo manda la base, nunca el
+ * formulario: este arma el plan con la lectura que tenía abierta, y una cuota marcada o
+ * desmarcada mientras tanto (otra pestaña, otro equipo) no viene en ella. Las cuotas solo se
+ * marcan con `marcarCuota`. Se fusiona por número dentro de la transacción (fila bloqueada); una
+ * cuota que no estaba en la base (el plan se alargó) empieza sin pagar.
  */
 function fusionarPagos(nuevo: PlanPagos, guardado: unknown): PlanPagos {
   if (!esPlanPagos(guardado)) return nuevo;
-  return { ...nuevo, cuotas: conservarPagos(nuevo.cuotas, guardado.cuotas) };
+  const porNumero = new Map(guardado.cuotas.map((c) => [c.numero, c]));
+  return {
+    ...nuevo,
+    cuotas: nuevo.cuotas.map((c) => {
+      const previa = porNumero.get(c.numero);
+      return previa?.pagada
+        ? { ...c, pagada: true, pagadaEl: previa.pagadaEl }
+        : { ...c, pagada: false, pagadaEl: null };
+    }),
+  };
 }
 
 export async function actualizarClienteCelular(
@@ -199,13 +225,25 @@ export async function actualizarClienteRcv(
   const clave = exigirId(id);
   await db.transaction(async (tx) => {
     const [actual] = await tx
-      .select({ pagos: clientesRcv.pagos })
+      .select({
+        pagos: clientesRcv.pagos,
+        emision: clientesRcv.emision,
+        recordatorio30: clientesRcv.recordatorio30,
+        recordatorio3: clientesRcv.recordatorio3,
+      })
       .from(clientesRcv)
       .where(eq(clientesRcv.id, clave))
       .for("update");
     if (!actual) throw new ErrorDatos("not-found", MENSAJE_BORRADO);
     const pagos =
       c.pagos == null ? c.pagos : fusionarPagos(c.pagos, actual.pagos);
+    // Los avisos los marca el bot (D033). Con la misma emisión manda la base: el formulario
+    // traería los de su lectura y borraría un aviso recién enviado (Gaby lo repetiría). Solo
+    // otra emisión (renovar, corregir la fecha) los vuelve a dejar en false.
+    if (!("emision" in c) || c.emision === actual.emision) {
+      delete c.recordatorio30;
+      delete c.recordatorio3;
+    }
     await tx
       .update(clientesRcv)
       .set({
@@ -269,5 +307,14 @@ export async function marcarCuota(
                     where (y.c->>'numero')::int = ${n})`,
     )
     .returning({ id: t.id });
-  if (filas.length === 0) throw new ErrorDatos("not-found", MENSAJE_BORRADO);
+  if (filas.length > 0) return;
+  const [existe] = await db
+    .select({ id: t.id })
+    .from(t)
+    .where(eq(t.id, exigirId(id)));
+  if (!existe) throw new ErrorDatos("not-found", MENSAJE_BORRADO);
+  throw new ErrorDatos("failed-precondition", MENSAJE_CUOTA_QUITADA);
 }
+
+const MENSAJE_CUOTA_QUITADA =
+  "Esa cuota ya no está en el plan: alguien lo cambió mientras lo veías. Revisa las cuotas.";

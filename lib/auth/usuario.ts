@@ -126,8 +126,18 @@ export async function entrar(email: string, password: string): Promise<void> {
   await refrescarSesion();
 }
 
+/**
+ * Cierra la sesión en el servidor. Si no llega (sin red, 5xx) lanza: la sesión sigue viva y
+ * quien pulsó "Cerrar sesión" tiene que saberlo (en un equipo compartido quedaría abierta).
+ */
 export async function salir(): Promise<void> {
-  await authClient.signOut().catch(() => {});
+  let r: Awaited<ReturnType<typeof authClient.signOut>>;
+  try {
+    r = await authClient.signOut();
+  } catch {
+    throw errorAuth(undefined, undefined);
+  }
+  if (r.error) throw errorAuth(r.error.status, r.error.code);
   await refrescarSesion();
 }
 
